@@ -1,0 +1,12 @@
+{
+    "name": "Admin",
+    "enabled": true,
+    "requires": ["Tenancy"],
+    "provider": "AdminServiceProvider",
+    "features": [
+        { "name": "merchant_panel", "default": true }
+    ],
+    "settings": [
+        { "name": "default_locale", "type": "enum", "options": ["he", "en"], "default": "he", "scope": "global" }
+    ]
+}

@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'source' => [
+        'default' => 'Default',
+        'global' => 'Global setting',
+        'shop' => 'Shop setting',
+    ],
+    'units' => [
+        'keys' => 'keys',
+        'requests' => 'requests',
+        'exposures' => 'exposures',
+        'tokens' => 'tokens',
+        'usd' => 'USD',
+        'messages' => 'messages',
+        'candidates' => 'candidates',
+        'chunks' => 'chunks',
+        'tasks' => 'tasks',
+        'percent' => '%',
+        'days' => 'days',
+    ],
+    'errors' => [
+        'not_integer' => 'Enter a whole number.',
+        'not_number' => 'Enter a number.',
+        'not_boolean' => 'Choose yes or no.',
+        'not_string' => 'Enter text.',
+        'not_option' => 'Choose one of: :options.',
+        'too_long' => 'Too long. Maximum :max characters.',
+        'too_short' => 'Too short. Minimum :min characters.',
+        'below_min' => 'Below the minimum allowed value, :min.',
+        'above_max' => 'Above the maximum allowed value, :max.',
+    ],
+];

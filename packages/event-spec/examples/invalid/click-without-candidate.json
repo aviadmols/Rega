@@ -1,0 +1,27 @@
+{
+  "v": 1,
+  "shop": "01k5a8m2q7w3x9z4b6c8d0e2f4",
+  "vid": "anon-7f3a9c2e1b4d6f80",
+  "session": "s-4b1e9a77",
+  "sent_at": 1758040123456,
+  "holdout": false,
+  "events": [
+    {
+      "id": "e-01k5a8m2q7w3x9z4b7",
+      "type": "open",
+      "ts": 1758040121000,
+      "page": {
+        "type": "product",
+        "path": "/product/stanley-hammer-16oz",
+        "product_id": "p_1234"
+      },
+      "bank_version": 42,
+      "eligible": [
+        "position_price_hammers",
+        "faq_hammer_v3",
+        "cmp_hammers"
+      ],
+      "bucket": "same_family_seen"
+    }
+  ]
+}

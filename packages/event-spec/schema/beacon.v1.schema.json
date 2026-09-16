@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.upsell.internal/event-spec/beacon.v1.schema.json",
+  "title": "Widget beacon v1",
+  "description": "A batch of events the widget sends with navigator.sendBeacon. One visitor, one session, one shop per batch.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "shop", "vid", "session", "sent_at", "holdout", "events"],
+  "properties": {
+    "v": { "const": 1 },
+    "shop": { "$ref": "event.v1.schema.json#/$defs/shopId" },
+    "vid": { "$ref": "event.v1.schema.json#/$defs/visitorId" },
+    "session": { "$ref": "event.v1.schema.json#/$defs/sessionId" },
+    "sent_at": { "$ref": "event.v1.schema.json#/$defs/timestampMs" },
+    "holdout": {
+      "description": "True when this visitor is in the control group that never sees the widget. Their page and cart events still count.",
+      "type": "boolean"
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": { "$ref": "event.v1.schema.json" }
+    }
+  }
+}

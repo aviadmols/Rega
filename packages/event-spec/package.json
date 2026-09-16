@@ -1,0 +1,17 @@
+{
+  "name": "@upsell/event-spec",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JSON Schema for the events the widget sends. Shared by the widget, the API and tests.",
+  "type": "module",
+  "exports": {
+    "./beacon.v1.schema.json": "./schema/beacon.v1.schema.json",
+    "./event.v1.schema.json": "./schema/event.v1.schema.json"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1"
+  }
+}

@@ -1,0 +1,13 @@
+{
+    "name": "Tenancy",
+    "enabled": true,
+    "requires": [],
+    "provider": "TenancyServiceProvider",
+    "features": [
+        { "name": "api_access", "default": true }
+    ],
+    "settings": [
+        { "name": "max_active_api_keys", "type": "int", "default": 3, "min": 1, "max": 20, "scope": "shop", "unit": "keys" },
+        { "name": "api_requests_per_minute", "type": "int", "default": 600, "min": 60, "max": 20000, "scope": "shop", "unit": "requests" }
+    ]
+}

@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "shop": "01k5a8m2q7w3x9z4b6c8d0e2f4",
+  "vid": "anon-7f3a9c2e1b4d6f80",
+  "session": "s-4b1e9a77",
+  "sent_at": 1758040123456,
+  "holdout": false,
+  "events": [
+    {
+      "id": "e-01k5a8m2q7w3x9z4b6",
+      "type": "exposure",
+      "ts": 1758040120000,
+      "page": {
+        "type": "product",
+        "path": "/product/hammer?utm_source=newsletter&email=someone@example.com",
+        "product_id": "p_1234",
+        "group_id": "hammers-16oz",
+        "category_path": [
+          "כלי עבודה",
+          "כלי יד",
+          "פטישים"
+        ]
+      },
+      "candidate": {
+        "id": "position_price_hammers",
+        "version": 3,
+        "model": "position",
+        "slot": "teaser"
+      },
+      "bank_version": 42,
+      "eligible": [
+        "position_price_hammers",
+        "faq_hammer_v3",
+        "cmp_hammers"
+      ],
+      "bucket": "same_family_seen",
+      "data": {
+        "visible_ms": 1800,
+        "ratio": 1
+      }
+    }
+  ]
+}
