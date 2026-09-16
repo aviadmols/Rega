@@ -5,6 +5,7 @@ namespace App\Core;
 use App\Core\Console\CheckTranslationsCommand;
 use App\Core\Console\MakeModuleCommand;
 use App\Core\Console\ModuleListCommand;
+use App\Core\Console\SystemCheckCommand;
 use App\Core\Features\FeatureManager;
 use App\Core\Features\FeatureRegistry;
 use App\Core\Modules\ModuleRepository;
@@ -51,6 +52,7 @@ final class CoreServiceProvider extends ServiceProvider
                 CheckTranslationsCommand::class,
                 MakeModuleCommand::class,
                 ModuleListCommand::class,
+                SystemCheckCommand::class,
             ]);
         }
     }

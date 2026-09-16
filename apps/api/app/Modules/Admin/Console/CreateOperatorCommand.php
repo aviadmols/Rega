@@ -12,13 +12,20 @@ use function Laravel\Prompts\password;
 /**
  * Creates or promotes the system operator. The only way the first operator comes to exist,
  * so no default password is ever seeded.
+ *
+ * On a server with no shell, the container entrypoint calls it with --password-env, so the
+ * password travels in an environment variable and never appears in a command line or a log.
+ * An existing user is only promoted: running it on every boot never resets a password.
  */
 final class CreateOperatorCommand extends Command
 {
+    private const MIN_PASSWORD_LENGTH = 12;
+
     protected $signature = 'admin:operator
         {email : The operator\'s email address}
         {--name= : Display name (defaults to the part of the email before @)}
-        {--locale= : Admin language, he or en}';
+        {--locale= : Admin language, he or en}
+        {--password-env= : Name of an environment variable holding the password}';
 
     protected $description = 'Create a system operator, or promote an existing user to operator';
 
@@ -43,16 +50,32 @@ final class CreateOperatorCommand extends Command
         $user = User::query()->where('email', $email)->first();
 
         if ($user !== null) {
-            $user->forceFill(['is_operator' => true])->save();
-            $this->components->info("{$email} is now an operator. Their password is unchanged.");
+            if (! $user->is_operator) {
+                $user->forceFill(['is_operator' => true])->save();
+                $this->components->info("{$email} is now an operator. Their password is unchanged.");
+            } else {
+                $this->components->info("{$email} is already an operator. Nothing changed.");
+            }
 
             return self::SUCCESS;
         }
 
         $generated = null;
 
-        if ($this->input->isInteractive()) {
-            $secret = password(label: 'Password (leave empty to generate one)', validate: fn (string $v) => $v === '' || mb_strlen($v) >= 12 ? null : 'At least 12 characters.');
+        if (filled($variable = $this->option('password-env'))) {
+            // getenv, not env(): with the config cached, env() returns null outside config files.
+            $secret = (string) getenv((string) $variable);
+
+            if (mb_strlen($secret) < self::MIN_PASSWORD_LENGTH) {
+                $this->components->error("Environment variable {$variable} must hold a password of at least ".self::MIN_PASSWORD_LENGTH.' characters.');
+
+                return self::FAILURE;
+            }
+        } elseif ($this->input->isInteractive()) {
+            $secret = password(
+                label: 'Password (leave empty to generate one)',
+                validate: fn (string $v) => $v === '' || mb_strlen($v) >= self::MIN_PASSWORD_LENGTH ? null : 'At least '.self::MIN_PASSWORD_LENGTH.' characters.',
+            );
         } else {
             $secret = '';
         }

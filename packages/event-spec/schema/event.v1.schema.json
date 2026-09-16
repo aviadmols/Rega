@@ -46,6 +46,17 @@
       "then": { "required": ["data"], "properties": { "data": { "$ref": "#/$defs/addToCartData" } } }
     },
     {
+      "description": "An add to cart from inside the widget must say which suggestion it came from.",
+      "if": {
+        "properties": {
+          "type": { "const": "add_to_cart" },
+          "data": { "properties": { "source": { "const": "widget" } }, "required": ["source"] }
+        },
+        "required": ["type", "data"]
+      },
+      "then": { "required": ["candidate", "bank_version", "eligible", "bucket"] }
+    },
+    {
       "if": { "properties": { "type": { "const": "chat_question" } }, "required": ["type"] },
       "then": { "required": ["data"], "properties": { "data": { "$ref": "#/$defs/chatQuestionData" } } }
     },
@@ -178,13 +189,21 @@
       }
     },
     "addToCartData": {
+      "description": "source: page when the visitor used the store's own button, widget when they used a button inside the widget. result records failed attempts too, so broken add-to-cart shows up in reports.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["product_id", "quantity"],
+      "required": ["source", "product_id", "quantity", "result"],
       "properties": {
+        "source": { "enum": ["page", "widget"] },
         "product_id": { "$ref": "#/$defs/catalogId" },
         "variant_id": { "$ref": "#/$defs/catalogId" },
-        "quantity": { "type": "integer", "minimum": 1, "maximum": 999 }
+        "quantity": { "type": "integer", "minimum": 1, "maximum": 999 },
+        "result": { "enum": ["added", "needs_options", "out_of_stock", "error"] },
+        "batch": {
+          "description": "Set when a project checklist adds several products at once: the same id on every line.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        }
       }
     },
     "chatQuestionData": {

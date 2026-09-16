@@ -16,7 +16,7 @@ API validates every incoming beacon against it, and both read the same files.
 | `click` | The visitor used a suggestion's action | candidate, bank version, eligible set, bucket |
 | `dismiss` | The visitor closed it | candidate, bank version, eligible set, bucket, reason |
 | `answer` | One-tap "what's stopping you?" answer | product, fixed answer |
-| `add_to_cart` | Add to cart, seen by the widget | product, quantity |
+| `add_to_cart` | Add to cart from the store page (`source: page`) or from a button inside the widget (`source: widget`) | product, quantity, result; from the widget also candidate, bank version, eligible set, bucket |
 | `chat_question` | A chat question was asked | length and where the answer came from |
 
 Purchases are not widget events. They arrive from the store's order webhook.
