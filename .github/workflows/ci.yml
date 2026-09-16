@@ -46,7 +46,11 @@ jobs:
           php artisan route:cache
           php artisan view:cache
           php artisan event:cache
-          php artisan optimize:clear
+          # Not optimize:clear: it also empties the cache store, which here is a database with no file yet.
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan event:clear
 
       - name: Tests, including module boundary rules
         run: vendor/bin/phpunit
