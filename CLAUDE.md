@@ -7,7 +7,10 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 
 - `apps/api` — Laravel 13, Filament 5, Octane (FrankenPHP), PHPUnit 12, Pint.
 - `packages/*` — language-neutral JSON Schemas shared by API, widget and plugin (npm workspaces).
-- `infra/railway` — Railway service configs. `docs/ADR` — decisions. `docs/runbooks` — how-tos.
+- `docs/ADR` — decisions. `docs/runbooks` — how-tos, including the Railway service settings.
+- Railway services are configured through the Railway API/dashboard, not files: Railway deprecated
+  `railway.json` config-as-code, and its replacement (`.railway/railway.ts`) is applied only via
+  `railway config apply`. A service cannot be managed by both. See `docs/runbooks/deploy-railway.md`.
 
 ## The kernel and modules (apps/api)
 

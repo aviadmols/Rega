@@ -40,6 +40,14 @@ jobs:
       - name: Every admin string exists in Hebrew and English
         run: php artisan i18n:check
 
+      - name: Production caches build, exactly as the container entrypoint runs them
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan event:cache
+          php artisan optimize:clear
+
       - name: Tests, including module boundary rules
         run: vendor/bin/phpunit
 
@@ -115,5 +123,23 @@ jobs:
         with:
           context: apps/api
           push: false
+          load: true
+          tags: rega-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: The image boots its cache step and knows every module
+        run: |
+          docker run --rm \
+            -e APP_KEY="base64:$(openssl rand -base64 32)" \
+            -e APP_ENV=production -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: \
+            -e CACHE_STORE=array -e SESSION_DRIVER=array -e QUEUE_CONNECTION=sync \
+            --entrypoint sh rega-api:ci -c '
+              set -e
+              php artisan config:cache
+              php artisan route:cache
+              php artisan view:cache
+              php artisan event:cache
+              php artisan module:list
+              test -f public/js/filament/filament/app.js
+            '

@@ -10,7 +10,7 @@
 |---|---|
 | `apps/api` | Laravel 13: ליבה, מודולים, שני פאנלי ניהול ב־Filament 5, API, תורים |
 | `packages/event-spec` | JSON Schema של האירועים שהרכיב שולח |
-| `infra/railway` | הגדרות שירותים ל־Railway |
+| `docs/runbooks/deploy-railway.md` | איך השירותים ב־Railway מוגדרים ואיך פורסים |
 | `docs/ADR` | החלטות ארכיטקטורה |
 | `docs/runbooks` | הוראות עבודה: פיתוח מקומי, פריסה, מודול חדש |
 

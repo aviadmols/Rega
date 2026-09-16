@@ -1,67 +1,107 @@
 # פריסה ל־Railway
 
-> **סטטוס:** ההגדרות נכתבו ונבדקו מקומית: קובצי ה־JSON תקינים, ה־caches של production נבנים, ו־CI בונה את ה־image. עדיין לא נפרסו לפרויקט Railway אמיתי. בפריסה הראשונה צריך לאמת את הנקודות שמסומנות "לאמת".
+## איך זה בנוי
 
-## שירותים
+פרויקט Railway אחד, סביבת `production`. חמישה שירותים:
 
-פרויקט אחד, סביבות `staging` ו־`production`. כל שלושת שירותי האפליקציה בונים את אותו image מ־`apps/api`.
+| שירות | מקור | הגדרות עיקריות |
+|---|---|---|
+| api | GitHub `aviadmols/Rega`, ענף `main` | Root directory `apps/api`, watch path `/apps/api/**`, healthcheck `/up` עם 300 שניות, הפעלה מחדש בכישלון עד 5 פעמים, דומיין ציבורי על פורט 8080 |
+| worker | אותו repo | Root directory `apps/api`, watch path `/apps/api/**`, הפעלה מחדש תמיד |
+| scheduler | אותו repo | Root directory `apps/api`, watch path `/apps/api/**`, הפעלה מחדש תמיד |
+| Postgres | image `pgvector/pgvector:pg17` | volume ב־`/var/lib/postgresql/data`, `PGDATA` בתת־תיקייה, בלי דומיין ציבורי |
+| Redis | image `redis:7-alpine` | עם סיסמה, בלי volume ובלי דומיין ציבורי |
 
-| שירות | Root directory | Config file | משתנה APP_ROLE |
-|---|---|---|---|
-| api | `apps/api` | `/infra/railway/web.json` | `web` |
-| worker | `apps/api` | `/infra/railway/background.json` | `worker` |
-| scheduler | `apps/api` | `/infra/railway/background.json` | `scheduler` |
-| Postgres | תבנית Railway | | |
-| Redis | תבנית Railway | | |
+שלושת שירותי האפליקציה בונים את אותו `apps/api/Dockerfile`. התפקיד נקבע במשתנה `APP_ROLE`: `web`, `worker` או `scheduler`.
 
-**לאמת:** שהתבנית של Postgres ב־Railway מאפשרת `CREATE EXTENSION vector`. אם לא, להשתמש ב־image של pgvector כשירות, או ב־Postgres חיצוני. CI כבר בודק את ההרחבה על `pgvector/pgvector:pg17`.
+**למה בלי קובצי הגדרות בריפו.** Railway הוציא משימוש את `railway.json`, והמחליף שלו, `.railway/railway.ts`, מופעל רק בפקודה `railway config apply` ולא ב־push. שירות לא יכול להיות מנוהל גם כקוד וגם דרך הממשק. לכן ההגדרות מנוהלות בממשק של Railway או ב־API, ומתועדות כאן.
 
-**לאמת:** ש־`dockerfilePath` בקובצי ה־config נקרא יחסית ל־root directory של השירות.
+## משתנים
 
-## משתנים משותפים
+**Postgres**
 
 ```
-APP_NAME="Shopping Assistant"
+POSTGRES_USER=rega
+POSTGRES_PASSWORD=<אקראי>
+POSTGRES_DB=rega
+PGDATA=/var/lib/postgresql/data/pgdata
+DATABASE_URL=postgresql://${{POSTGRES_USER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{POSTGRES_DB}}
+```
+
+**Redis**
+
+```
+REDIS_PASSWORD=<אקראי>
+REDIS_URL=redis://default:${{REDIS_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:6379
+```
+
+Start command:
+
+```
+/bin/sh -c 'exec redis-server --requirepass "$REDIS_PASSWORD"'
+```
+
+**api, worker, scheduler, משותפים**
+
+```
+APP_NAME=Rega
 APP_ENV=production
-APP_KEY=base64:...            # php artisan key:generate --show
-APP_URL=https://api.<domain>
+APP_DEBUG=false
+APP_KEY=base64:<אקראי, זהה בשלושת השירותים>
+APP_URL=https://<הדומיין של api>
 APP_LOCALE=he
+APP_FALLBACK_LOCALE=en
+LOG_CHANNEL=stderr
+LOG_LEVEL=info
 DB_CONNECTION=pgsql
 DB_URL=${{Postgres.DATABASE_URL}}
+REDIS_CLIENT=phpredis
 REDIS_URL=${{Redis.REDIS_URL}}
-QUEUE_CONNECTION=redis
 CACHE_STORE=redis
+QUEUE_CONNECTION=redis
 SESSION_DRIVER=redis
-LOG_CHANNEL=stderr
+SESSION_SECURE_COOKIE=true
 ```
 
-רק בשירות `api`:
+**api בלבד**
 
 ```
 APP_ROLE=web
+PORT=8080
 RUN_MIGRATIONS=true
+BOOTSTRAP_OPERATOR_EMAIL=<אימייל המפעיל>
+BOOTSTRAP_OPERATOR_PASSWORD=<סיסמה>
+BOOTSTRAP_OPERATOR_LOCALE=he
 ```
 
-## פריסה ראשונה
+`worker` מקבל `APP_ROLE=worker`, ו־`scheduler` מקבל `APP_ROLE=scheduler`.
 
-1. ליצור את חמשת השירותים ולהגדיר משתנים.
-2. לפרוס את `api` ולחכות ל־healthcheck על `/up`.
-3. ליצור מפעיל ראשון מתוך השירות:
+## מה קורה בכל הפעלה של api
 
-```sh
-railway run --service api php artisan admin:operator you@example.com --no-interaction
-```
+1. cache של config, routes, views ו־events.
+2. migrations, עם עד עשרה ניסיונות, כי הרשת הפרטית לפעמים עונה אחרי כמה שניות.
+3. יצירת המפעיל מ־`BOOTSTRAP_OPERATOR_*`. משתמש קיים רק מקבל הרשאת מפעיל. הסיסמה שלו לא מתאפסת, ולכן אפשר להשאיר את המשתנים.
+4. `php artisan system:check`: מסד נתונים, migrations, pgvector, cache, Redis והגדרות production. התוצאה בשורות הראשונות של הלוג. כישלון לא עוצר את העלייה.
+5. Octane על FrankenPHP בפורט 8080.
 
-הסיסמה שנוצרה מודפסת פעם אחת.
+## כניסה ראשונה
 
-4. לפרוס את `worker` ו־`scheduler`.
+המפעיל נוצר אוטומטית. הסיסמה נמצאת במשתנה `BOOTSTRAP_OPERATOR_PASSWORD` של שירות api. אחרי הכניסה הראשונה מומלץ להחליף סיסמה במסך המשתמשים, ואז אפשר למחוק את המשתנה.
+
+## פריסה שוטפת
+
+push ל־`main` שמשנה משהו תחת `apps/api` בונה ופורס את שלושת שירותי האפליקציה. שינויים רק בתיעוד או ב־`packages` לא מפעילים בנייה.
 
 ## Cloudflare
 
-- DNS של `api.<domain>` בפרוקסי מול הדומיין ש־Railway נותן.
+- DNS של הדומיין הציבורי בפרוקסי מול הדומיין של Railway.
 - מהשלב שבו ה־widget וה־bank קיימים: cache rules ארוכים לנתיבים `/w/*` ו־`/bank/*`. יש גרסה בנתיב, ולכן אין צורך ב־purge.
 - להימנע מהמילים upsell ו־assistant בשם הדומיין הציבורי, כי חוסמי פרסומות מסננים אותן.
 
 ## החזרה לאחור
 
-ב־Railway: Deployments, בחירת הפריסה הקודמת, Redeploy. migration הרסנית דורשת migration הפוכה ולא rollback של image.
+בממשק של Railway: Deployments, בחירת הפריסה הקודמת, Redeploy. migration הרסנית דורשת migration הפוכה ולא rollback של image.
+
+## Redis בלי volume
+
+כרגע Redis משמש ל־cache, סשנים ותורים, ואין בו מידע שאסור לאבד. כשיהיו משימות רקע ארוכות, להוסיף volume ולהפעיל `--appendonly yes`.

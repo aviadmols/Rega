@@ -75,7 +75,6 @@ UPSELL/
 │  ├─ display-models/ סכמות JSON של מודלי התצוגה, משותפות ל־api ול־widget
 │  └─ event-spec/     סכמת האירועים
 ├─ infra/
-│  ├─ railway/        הגדרות שירותים, משתני סביבה לדוגמה
 │  └─ cloudflare/     cache rules, headers
 └─ docs/
    ├─ WORK-PLAN.md    המסמך הזה
