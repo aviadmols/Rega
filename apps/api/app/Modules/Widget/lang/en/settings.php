@@ -30,6 +30,10 @@ return [
         'label' => 'Float at the bottom when the element is missing',
         'description' => 'When no element matches, show a small button at the bottom of the screen instead of nothing.',
     ],
+    'common_highlight_products' => [
+        'label' => 'Highlight repeated across many products',
+        'description' => 'A highlight whose quote appears on at least this many products, such as a standing note about size tolerance, is shown last and never becomes the key sentence.',
+    ],
     'max_products' => [
         'label' => 'Products in each list',
         'description' => 'Most products shown under "goes well with it" and next to an article.',

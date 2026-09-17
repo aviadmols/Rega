@@ -16,6 +16,7 @@ use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Prompts\PromptLibrary;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /** Highlights: written from the product's text, checked by code, shown once a checker approves. */
@@ -88,6 +89,23 @@ final class HighlightsTest extends TestCase
         $section = collect($bank['sections'])->firstWhere('candidate', 'highlights');
         $this->assertSame('explainer', $section['model']);
         $this->assertSame([['key' => 'לחוץ ולפנים', 'text' => 'מתאים לשימוש חוץ ופנים.'], ['key' => 'להתקנה', 'text' => 'ברגים לעץ קשה ומרווחי התפשטות בין הלוחות.']], $section['items']);
-        $this->assertSame($short->external_id, '31539');
+
+        // The same sentence pasted on many products says little about this one: last, and never the key sentence.
+        foreach (range(1, 4) as $n) {
+            $other = $this->product('4000'.$n, 'לוח עץ '.$n, 'x', [$wood]);
+            $this->inShop(fn () => EnrichmentFact::query()->create([
+                'shop_id' => $this->shop->id, 'product_id' => $other->id, 'kind' => 'highlight', 'key' => 'לחוץ ולפנים',
+                'value_number' => 1, 'value_text' => 'מתאים לשימוש חוץ ופנים.', 'quote' => 'מתאים לשימוש חוץ ופנים',
+                'origin' => 'model', 'status' => 'approved', 'input_hash' => 'x',
+            ]));
+        }
+        Cache::flush();
+
+        $bank = $this->get('/api/v1/widget/'.SiteKeys::site(self::TOKEN).'/page?type=product&id=31538&locale=he', ['Origin' => 'https://store.test'])->assertOk()->json();
+        $items = collect($bank['sections'])->firstWhere('candidate', 'highlights')['items'];
+        $this->assertSame(['להתקנה', 'לחוץ ולפנים'], array_column($items, 'key'));
+        $this->assertTrue($items[1]['common']);
+        $this->assertArrayNotHasKey('common', $items[0]);
+        $this->assertSame('31539', $short->external_id);
     }
 }

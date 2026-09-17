@@ -85,12 +85,15 @@ final class BuildPageBank
 
     private string $locale = 'he';
 
+    private string $shopId = '';
+
     public function __construct(private readonly TenantContext $tenant) {}
 
     /** @return array<string, mixed> */
     public function handle(string $shopId, string $type, string $externalId, string $locale): array
     {
         $this->locale = in_array($locale, self::LOCALES, true) ? $locale : 'he';
+        $this->shopId = $shopId;
         $this->vocabularies = [];
         $this->categories = null;
 
@@ -187,8 +190,7 @@ final class BuildPageBank
         }
 
         // What a shopper should know, from the product's own text, in the order the writer chose.
-        $highlights = $facts->where('kind', FactKind::Highlight)->sortBy('value_number')->take(self::MAX_HIGHLIGHTS)
-            ->map(fn (EnrichmentFact $f): array => ['key' => $f->key, 'text' => (string) $f->value_text])->values()->all();
+        $highlights = $this->highlights($facts->where('kind', FactKind::Highlight)->sortBy('value_number')->take(self::MAX_HIGHLIGHTS)->values());
         if ($highlights !== []) {
             $sections[] = $this->section('highlights', ['items' => $highlights]);
         }
@@ -452,6 +454,40 @@ final class BuildPageBank
         usort($order, fn (int $a, int $b): int => [$rank($sections[$b]), $a] <=> [$rank($sections[$a]), $b]);
 
         return array_map(fn (int $i): array => $sections[$i], $order);
+    }
+
+    /**
+     * Highlights for the widget. One whose quote the store repeats on many products ("a deviation
+     * of 2-3 mm is possible") says little about this product: it goes last and is marked common,
+     * so the widget does not make it the key sentence.
+     *
+     * @param  Collection<int, EnrichmentFact>  $facts  in the writer's order
+     * @return list<array{key: string, text: string, common?: bool}>
+     */
+    private function highlights(Collection $facts): array
+    {
+        if ($facts->isEmpty()) {
+            return [];
+        }
+
+        $threshold = (int) Settings::get('widget.common_highlight_products', $this->shopId);
+        $shared = EnrichmentFact::query()
+            ->where('kind', FactKind::Highlight)
+            ->where('status', FactStatus::Approved)
+            ->whereIn('quote', $facts->pluck('quote')->filter()->all())
+            ->selectRaw('quote, count(distinct product_id) as products')
+            ->groupBy('quote')
+            ->pluck('products', 'quote');
+
+        $items = $facts->map(fn (EnrichmentFact $f): array => array_filter([
+            'key' => $f->key,
+            'text' => (string) $f->value_text,
+            'common' => (int) ($shared[$f->quote] ?? 0) >= $threshold ?: null,
+        ], fn ($v): bool => $v !== null))->all();
+
+        usort($items, fn (array $a, array $b): int => isset($a['common']) <=> isset($b['common']));
+
+        return $items;
     }
 
     /**

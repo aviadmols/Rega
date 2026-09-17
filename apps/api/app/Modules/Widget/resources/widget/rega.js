@@ -905,10 +905,16 @@
     }
 
     // The key sentence, readable without a click: the first superlative or highlight, as a quote.
+    // A highlight the store repeats on many products is never the key sentence.
     var quoteIndex = -1;
+    var quoteItem = null;
     for (var q = 0; q < rendered.length && quoteIndex === -1; q++) {
       var candidate = rendered[q].section;
-      if ((candidate.lines && candidate.lines.length) || (candidate.items && candidate.items.length)) {
+      var items = (candidate.items || []).filter(function (item) { return !item.common; });
+      if (items.length) {
+        quoteIndex = q;
+        quoteItem = items[0];
+      } else if (candidate.lines && candidate.lines.length) {
         quoteIndex = q;
       }
     }
@@ -921,9 +927,9 @@
       quote.setAttribute('aria-controls', 'rega-panel');
       quote.appendChild(el('span', 'mark', '”'));
       var words = el('span', 'quote-text');
-      if (source.items && source.items.length) {
-        words.appendChild(el('strong', null, source.items[0].key));
-        words.appendChild(document.createTextNode(' ' + source.items[0].text));
+      if (quoteItem) {
+        words.appendChild(el('strong', null, quoteItem.key));
+        words.appendChild(document.createTextNode(' ' + quoteItem.text));
       } else {
         words.textContent = source.lines[0].text;
       }
