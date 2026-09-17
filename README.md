@@ -9,6 +9,7 @@
 | תיקייה | מה יש בה |
 |---|---|
 | `apps/api` | Laravel 13: ליבה, מודולים, שני פאנלי ניהול ב־Filament 5, API, תורים |
+| `plugins/woocommerce` | התוסף לחנות: טוקן גישה ו־API לקריאה בלבד של הקטלוג והתוכן |
 | `packages/event-spec` | JSON Schema של האירועים שהרכיב שולח |
 | `docs/runbooks/deploy-railway.md` | איך השירותים ב־Railway מוגדרים ואיך פורסים |
 | `docs/ADR` | החלטות ארכיטקטורה |

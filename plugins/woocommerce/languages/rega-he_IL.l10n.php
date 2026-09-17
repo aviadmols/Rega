@@ -1,0 +1,47 @@
+<?php
+/**
+ * Hebrew translation. WordPress 6.5+ PHP translation file format.
+ * Checked by: php bin/i18n.php check
+ */
+return array(
+	'domain'       => 'rega',
+	'language'     => 'he_IL',
+	'plural-forms' => 'nplurals=2; plural=(n != 1);',
+	'messages'     => array(
+		'A token was created, but it can be shown only right after creation. If you did not copy it, replace it.' => 'נוצר טוקן, אבל אפשר להציג אותו רק מיד אחרי היצירה. אם לא העתקת אותו, צור טוקן חדש במקומו.',
+		'API address' => 'כתובת ה־API',
+		'Access token' => 'טוקן גישה',
+		'Active' => 'פעיל',
+		'An access token is required.' => 'נדרש טוקן גישה.',
+		'Content Rega may read' => 'תוכן ש־Rega רשאית לקרוא',
+		'Copied.' => 'הועתק.',
+		'Copy token' => 'העתקת הטוקן',
+		'Create token' => 'יצירת טוקן',
+		'Created %1$s. Last used %2$s.' => 'נוצר ב־%1$s. שימוש אחרון: %2$s.',
+		'Custom fields can be listed only for: %s.' => 'אפשר להציג שדות מותאמים רק עבור: %s.',
+		'Guides and articles Rega can show as related reading. Only published entries without a password are shared.' => 'מדריכים ומאמרים ש־Rega יכולה להציג כקריאה נוספת. רק תכנים שפורסמו ואינם מוגנים בסיסמה משותפים.',
+		'No token. Rega cannot read this store yet.' => 'אין טוקן. Rega עדיין לא יכולה לקרוא את החנות.',
+		'Product not found.' => 'המוצר לא נמצא.',
+		'Rega' => 'Rega',
+		'Rega needs WooCommerce. Activate WooCommerce so Rega can read the catalog.' => 'Rega צריכה את WooCommerce. יש להפעיל את WooCommerce כדי ש־Rega תוכל לקרוא את הקטלוג.',
+		'Rega reads this store\'s products, categories and content to build the shopping assistant. Access is read-only and needs the token below. Customers and orders are never shared.' => 'Rega קוראת את המוצרים, הקטגוריות והתוכן של החנות כדי לבנות את עוזר הקנייה. הגישה לקריאה בלבד ודורשת את הטוקן שלמטה. לקוחות והזמנות לעולם לא משותפים.',
+		'Rega will lose access to this store immediately. Continue?' => 'Rega תאבד מיד את הגישה לחנות. להמשיך?',
+		'Replace token' => 'החלפת טוקן',
+		'Revoke token' => 'ביטול טוקן',
+		'Save' => 'שמירה',
+		'Send the token in the %s header.' => 'יש לשלוח את הטוקן בכותרת %s.',
+		'Settings' => 'הגדרות',
+		'Settings saved.' => 'ההגדרות נשמרו.',
+		'Status' => 'מצב',
+		'The "since" parameter must be a date, for example 2026-09-17T00:00:00Z.' => 'הפרמטר "since" חייב להיות תאריך, למשל 2026-09-17T00:00:00Z.',
+		'The access token is not valid.' => 'טוקן הגישה אינו תקין.',
+		'The current token will stop working immediately. Continue?' => 'הטוקן הנוכחי יפסיק לעבוד מיד. להמשיך?',
+		'The token was revoked. Rega can no longer read this store.' => 'הטוקן בוטל. Rega כבר לא יכולה לקרוא את החנות.',
+		'This content type is not shared with Rega. Allowed types: %s. Change this in WooCommerce > Rega.' => 'סוג התוכן הזה לא משותף עם Rega. סוגים מותרים: %s. אפשר לשנות זאת ב־WooCommerce > Rega.',
+		'Too many failed attempts. Try again in a few minutes.' => 'יותר מדי ניסיונות כושלים. נסו שוב בעוד כמה דקות.',
+		'WooCommerce is not active on this site.' => 'WooCommerce לא פעיל באתר.',
+		'You do not have permission to manage Rega.' => 'אין לך הרשאה לנהל את Rega.',
+		'Your new token. Copy it now: it is shown only once.' => 'הטוקן החדש שלך. העתק אותו עכשיו, הוא מוצג פעם אחת בלבד.',
+		'never' => 'אף פעם',
+	),
+);

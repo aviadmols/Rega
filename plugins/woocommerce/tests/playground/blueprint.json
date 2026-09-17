@@ -1,0 +1,31 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/admin.php?page=rega",
+  "steps": [
+    {
+      "step": "setSiteLanguage",
+      "language": "he_IL"
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": { "resource": "wordpress.org/plugins", "slug": "woocommerce" },
+      "options": { "activate": true }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "rega/rega.php"
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "permalink_structure": "/%postname%/",
+        "woocommerce_currency": "ILS",
+        "woocommerce_onboarding_profile": { "skipped": true }
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require '/wordpress/wp-content/plugins/rega/tests/playground/fixtures.php';"
+    }
+  ]
+}

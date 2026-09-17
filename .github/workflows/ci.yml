@@ -105,6 +105,52 @@ jobs:
       - run: php artisan migrate --force
       - run: vendor/bin/phpunit
 
+  plugin:
+    name: WooCommerce plugin · PHP 8.1 lint, translations, zip
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/woocommerce
+    steps:
+      - uses: actions/checkout@v4
+
+      # The oldest PHP the plugin declares, so newer syntax cannot slip in.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: zip
+          coverage: none
+
+      - name: Lint every file on PHP 8.1
+        run: find . -name '*.php' -not -path './dist/*' -print0 | xargs -0 -n1 php -l
+
+      - name: Every string has a Hebrew translation
+        run: php bin/i18n.php check
+
+      - name: Build the installable zip
+        run: php bin/build.php
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rega-plugin
+          path: plugins/woocommerce/dist/*.zip
+          if-no-files-found: error
+
+  plugin-integration:
+    name: WooCommerce plugin · real WordPress and WooCommerce (Playground)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: plugins/woocommerce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Boot WordPress + WooCommerce + Rega on PHP 8.1 and run the API tests
+        run: node tests/playground/run.mjs
+
   packages:
     name: Shared specs
     runs-on: ubuntu-latest

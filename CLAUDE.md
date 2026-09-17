@@ -31,6 +31,17 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
   fails on a missing key and on a declared flag or setting without a label.
 - Business logic lives in single-purpose `Actions`. Controllers, commands and Filament call them.
 
+## WooCommerce plugin (plugins/woocommerce)
+
+- Plain WordPress PHP, no Composer runtime deps, minimum PHP 8.1 (CI lints on 8.1: no readonly
+  classes, no typed class constants). Namespace `Rega\`, text domain `rega`, REST `rega/v1`.
+- Read-only by design: no write routes, nothing about customers, orders or users. ADR 0005.
+- Translations: `languages/rega-he_IL.l10n.php` (WP 6.5+ PHP format). `php bin/i18n.php check`.
+- Integration tests boot real WordPress + WooCommerce in Playground:
+  `node tests/playground/run.mjs` (about 3-5 minutes; `REGA_KEEP=1` leaves the site running,
+  login admin / password). Zip: `php bin/build.php` -> `dist/rega-<version>.zip`.
+- From Git Bash, Playground VFS paths need `MSYS_NO_PATHCONV=1`; `run.mjs` avoids the issue.
+
 ## Commands (run from apps/api)
 
 ```sh
