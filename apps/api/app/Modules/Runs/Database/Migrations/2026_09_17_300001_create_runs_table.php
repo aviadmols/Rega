@@ -12,7 +12,9 @@ return new class extends Migration
             $table->ulid('id')->primary();
             // Null for system-wide work, such as checking an AI provider key.
             $table->foreignUlid('shop_id')->nullable()->constrained('shops')->cascadeOnDelete();
-            $table->foreignUlid('parent_id')->nullable()->constrained('runs')->nullOnDelete();
+            // Constrained below: Postgres adds foreign keys before the primary key within one
+            // create, so a key pointing at this same table fails there.
+            $table->ulid('parent_id')->nullable();
 
             // "{module}.{name}", e.g. connections.store_checker / connections.test
             $table->string('agent', 80)->index();
@@ -42,6 +44,10 @@ return new class extends Migration
 
             $table->index(['shop_id', 'created_at']);
             $table->index('created_at');
+        });
+
+        Schema::table('runs', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('runs')->nullOnDelete();
         });
     }
 
