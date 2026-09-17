@@ -22,7 +22,7 @@ final class ProviderTestNotifier
             ->title($succeeded ? __('ai::providers.notifications.connected') : __('ai::providers.notifications.failed'))
             ->body($run->summary());
 
-        $succeeded ? $notification->success() : $notification->danger()->persistent();
+        $succeeded ? $notification->success() : $notification->danger()->duration(10000);
 
         if (Route::has(self::RUN_ROUTE)) {
             $notification->actions([

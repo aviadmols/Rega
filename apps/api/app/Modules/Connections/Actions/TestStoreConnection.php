@@ -105,7 +105,10 @@ final class TestStoreConnection
         $url = $connection->site_url.'/wp-json/rega/v1/status';
         $response = $client->get($url);
 
-        if ($response->status() === 404 && ! str_starts_with((string) $response->json('code', ''), 'rega_')) {
+        // Retry only when the answer did not come from the WordPress REST API at all (an HTML
+        // 404 because pretty permalinks are off). A JSON "rest_no_route" already means the REST
+        // API works and the plugin is missing; asking again would only double the wait.
+        if ($response->status() === 404 && ! is_string($response->json('code'))) {
             $url = $connection->site_url.'/?rest_route=/rega/v1/status';
             $response = $client->get($url);
         }

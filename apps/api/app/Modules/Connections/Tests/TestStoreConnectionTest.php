@@ -84,6 +84,16 @@ final class TestStoreConnectionTest extends TestCase
         $this->assertStringContainsString('rest_route', $run->output['url']);
     }
 
+    public function test_a_wordpress_answer_that_the_route_is_missing_is_not_retried(): void
+    {
+        Http::fake(['guetaavigdor.test/*' => Http::response(['code' => 'rest_no_route', 'message' => 'No route'], 404)]);
+
+        $run = app(TestStoreConnection::class)->handle($this->connection);
+
+        Http::assertSentCount(1);
+        $this->assertSame('connections::runs.failures.plugin_missing', $run->summary_key);
+    }
+
     /**
      * Plain data: a data provider runs before the application boots, so it cannot build HTTP fakes.
      *

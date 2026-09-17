@@ -26,7 +26,7 @@ final class ConnectionTestNotifier
             ->title($run->status === RunStatus::Succeeded ? __('connections::connections.notifications.connected') : __('connections::connections.notifications.failed'))
             ->body($run->summary());
 
-        $run->status === RunStatus::Succeeded ? $notification->success() : $notification->danger()->persistent();
+        $run->status === RunStatus::Succeeded ? $notification->success() : $notification->danger()->duration(10000);
 
         if (Route::has(self::RUN_ROUTE)) {
             $notification->actions([

@@ -40,7 +40,9 @@ final class RunsTable
                     ->label(__('runs::runs.fields.summary'))
                     ->formatStateUsing(fn (Run $record): ?string => $record->summary())
                     ->wrap()
-                    ->limit(120),
+                    ->limit(160)
+                    // The result is the column people read; without a width it shrinks to a word per line.
+                    ->width('40%'),
                 TextColumn::make('duration_ms')
                     ->label(__('runs::runs.fields.duration'))
                     ->formatStateUsing(fn (Run $record): ?string => $record->durationForHumans())
