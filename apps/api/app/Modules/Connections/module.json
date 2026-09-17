@@ -1,0 +1,12 @@
+{
+    "name": "Connections",
+    "enabled": true,
+    "requires": [
+        "Tenancy",
+        "Runs",
+        "Admin"
+    ],
+    "provider": "ConnectionsServiceProvider",
+    "features": [],
+    "settings": []
+}

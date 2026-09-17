@@ -1,0 +1,57 @@
+<?php
+
+return [
+    'singular' => 'Store connection',
+    'plural' => 'Store connections',
+    'statuses' => [
+        'untested' => 'Not tested',
+        'connected' => 'Connected',
+        'failed' => 'Failed',
+    ],
+    'sections' => [
+        'connection' => 'Connection details',
+        'connection_help' => 'Rega reads the catalog through the Rega plugin installed in the store. The plugin issues the token; it is stored here encrypted.',
+        'site' => 'Site status',
+    ],
+    'fields' => [
+        'shop' => 'Shop',
+        'platform' => 'Platform',
+        'site_url' => 'Site address',
+        'site_url_help' => 'The site\'s main address, for example https://store.com',
+        'access_token' => 'Plugin token',
+        'access_token_help' => 'In WordPress: WooCommerce > Rega > Create token. Starts with rgt_.',
+        'access_token_keep' => 'Leave empty to keep the current token.',
+        'status' => 'Status',
+        'last_checked_at' => 'Last check',
+        'never' => 'Never checked',
+        'last_error' => 'Last error',
+        'token' => 'Token',
+        'site_name' => 'Site name',
+        'plugin_version' => 'Plugin version',
+        'published_products' => 'Published products',
+        'variations' => 'Variations',
+        'categories' => 'Categories',
+        'locale' => 'Site language',
+    ],
+    'errors' => [
+        'invalid_token' => 'Invalid token',
+        'locked_out' => 'Temporarily blocked',
+        'plugin_missing' => 'Plugin not found',
+        'woocommerce_inactive' => 'WooCommerce inactive',
+        'http_error' => 'Server error',
+        'unexpected_response' => 'Unexpected response',
+        'unreachable' => 'Site unreachable',
+    ],
+    'actions' => [
+        'test' => 'Test connection',
+    ],
+    'notifications' => [
+        'connected' => 'The store is connected',
+        'failed' => 'Connection failed',
+        'view_run' => 'View activity',
+    ],
+    'empty' => [
+        'heading' => 'No connected stores yet',
+        'description' => 'Install the Rega plugin in the store, create a token and add a connection here.',
+    ],
+];

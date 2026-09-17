@@ -70,6 +70,13 @@ final class PanelDefaults
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            // Livewire updates (saving a form, pressing an action) are separate requests that skip
+            // the panel's route middleware. Without these, a button press would run in the wrong
+            // language and, in the operator panel, without cross-shop access.
+            ->persistentMiddleware([
+                ApplyAdminLocale::class,
+                ...$extraMiddleware,
             ]);
 
         return self::discoverModuleComponents($panel, $moduleDirectory);

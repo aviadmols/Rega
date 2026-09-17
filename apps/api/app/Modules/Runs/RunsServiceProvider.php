@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Modules\Runs;
+
+use App\Core\Modules\ModuleServiceProvider;
+use App\Modules\Runs\Contracts\RecordsRuns;
+use App\Modules\Runs\Models\Run;
+use App\Modules\Runs\Support\RunRecorder;
+use Illuminate\Console\Scheduling\Schedule;
+
+final class RunsServiceProvider extends ModuleServiceProvider
+{
+    protected function registerModule(): void
+    {
+        $this->app->bind(RecordsRuns::class, RunRecorder::class);
+    }
+
+    protected function bootModule(): void
+    {
+        // Runs older than runs.retention_days are removed daily.
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('model:prune', ['--model' => [Run::class]])->dailyAt('03:30')->name('runs:prune');
+        });
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "name": "Ai",
+    "enabled": true,
+    "requires": [
+        "Runs",
+        "Admin"
+    ],
+    "provider": "AiServiceProvider",
+    "features": [],
+    "settings": []
+}
