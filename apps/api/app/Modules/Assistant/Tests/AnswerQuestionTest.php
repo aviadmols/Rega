@@ -106,7 +106,7 @@ final class AnswerQuestionTest extends TestCase
         $this->assertSame('no_info', $this->ask('מה הלחץ המרבי?')->json('data.outcome'));
         $this->assertCount($calls + 2, $this->model->calls);
 
-        // A question an older prompt could not answer is asked again.
+        // A question answered by an older prompt is asked again.
         $this->inShop(fn () => AssistantAnswer::query()->create([
             'shop_id' => $this->shop->id, 'product_id' => $this->inShop(fn () => CatalogProduct::query()->where('external_id', '31538')->value('id')),
             'question_key' => Question::key('איך שומרים עליו?'), 'question' => 'איך שומרים עליו?',

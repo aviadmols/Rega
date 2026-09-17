@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\RateLimiter;
 /**
  * Answers a shopper's question about one product.
  *
- * 1. The same question asked before about this product: the saved answer, no model. A "no answer"
+ * 1. The same question asked before about this product: the saved answer, no model. An answer
  *    saved by an older prompt version is asked again.
  * 2. Contact details, too short, over the visitor's or the shop's daily questions: refused in code.
  * 3. A small model decides whether the question is about the product. When it is not, a fixed
@@ -80,8 +80,8 @@ final class AnswerQuestion
 
             $saved = AssistantAnswer::query()->where('product_id', $product->id)->where('question_key', Question::key($question))->first();
 
-            // An older prompt that could not answer may answer now.
-            if ($saved !== null && $saved->outcome === AssistantAnswer::NO_INFO && $saved->prompt_version < self::PROMPT_VERSION) {
+            // An answer from an older prompt is asked again: the rules for what shoppers see changed.
+            if ($saved !== null && $saved->prompt_version < self::PROMPT_VERSION) {
                 $saved->delete();
                 $saved = null;
             }
