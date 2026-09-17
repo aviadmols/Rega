@@ -74,7 +74,7 @@ test('status describes the site, WooCommerce and active plugins', async () => {
   assert.equal(headers.get('cache-control'), 'no-store');
 
   const s = body.data;
-  assert.equal(s.plugin.version, '0.2.0');
+  assert.equal(s.plugin.version, '0.2.1');
   assert.equal(s.woocommerce.active, true);
   assert.equal(s.woocommerce.currency, 'ILS');
   assert.ok(s.plugins.some((p) => p.name === 'WooCommerce'));

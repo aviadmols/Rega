@@ -102,7 +102,9 @@ final class PageBankTest extends TestCase
             ['label' => 'מקור כוח', 'value' => 'נטען'],
             ['label' => 'משקל הכלי', 'value' => '1.6 ק״ג'],
             ['label' => 'מנוע ללא פחמים', 'value' => 'כן'],
-        ], $specs['specs'], 'approved facts only, in vocabulary order');
+        ], array_map(fn (array $row): array => ['label' => $row['label'], 'value' => $row['value']], $specs['specs']), 'approved facts only, in vocabulary order');
+        $this->assertSame('jigsaw', explode('|', $bank['compare']['key'])[1], 'kept for comparing with another jigsaw later');
+        $this->assertContains(['weight_kg', 'משקל הכלי', '1.6 ק״ג'], $bank['compare']['rows']);
 
         $this->assertSame(['12', '11'], array_column($complement['products'], 'id'), 'cross-sells in the merchant order, in stock, no upsells');
         $this->assertSame('https://store.test/battery.jpg', $complement['products'][1]['image']);

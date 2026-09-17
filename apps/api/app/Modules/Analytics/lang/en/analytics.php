@@ -35,5 +35,10 @@ return [
         'complement' => 'Goes well with',
         'guide_card' => 'Guides',
         'article_products' => 'Products for an article',
+        'family' => 'Other sizes',
+        'alternative' => 'Similar products',
+        'on_sale' => 'Similar on sale',
+        'good_for' => 'Good for',
+        'compare' => 'Comparison with a viewed product',
     ],
 ];

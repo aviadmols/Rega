@@ -35,5 +35,10 @@ return [
         'complement' => 'מתאים לקנות יחד',
         'guide_card' => 'מדריכים',
         'article_products' => 'מוצרים למאמר',
+        'family' => 'מידות נוספות',
+        'alternative' => 'מוצרים דומים',
+        'on_sale' => 'דומים במבצע',
+        'good_for' => 'טוב לעבודות',
+        'compare' => 'השוואה למוצר שנצפה',
     ],
 ];

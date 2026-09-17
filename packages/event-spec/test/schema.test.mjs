@@ -164,3 +164,19 @@ test('products shown for an article and a spec summary are display models', () =
     expectValid(beacon, model);
   }
 });
+
+test('circles for other sizes, sales and jobs are display models, and each circle has a slot', () => {
+  for (const model of ['family', 'on_sale', 'good_for', 'compare']) {
+    const beacon = base();
+    find(beacon, byType('open')).candidate.model = model;
+    expectValid(beacon, model);
+  }
+
+  const eighth = base();
+  find(eighth, byType('open')).candidate.slot = 'chip_8';
+  expectValid(eighth, 'the eighth circle');
+
+  const ninth = base();
+  find(ninth, byType('open')).candidate.slot = 'chip_9';
+  expectInvalid(ninth, 'there is no ninth circle');
+});

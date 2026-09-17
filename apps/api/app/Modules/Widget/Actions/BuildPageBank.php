@@ -9,19 +9,28 @@ use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Enums\FactKind;
 use App\Modules\Enrichment\Enums\FactStatus;
+use App\Modules\Enrichment\Enums\RelationKind;
+use App\Modules\Enrichment\Models\EnrichmentCodeReading;
 use App\Modules\Enrichment\Models\EnrichmentContentProduct;
 use App\Modules\Enrichment\Models\EnrichmentFact;
+use App\Modules\Enrichment\Models\EnrichmentProductRelation;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
+use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use Illuminate\Support\Collection;
 
 /**
  * Everything the storefront widget shows on one page, built from checked facts only. No model
- * runs here: sentences are templates filled with approved values.
+ * runs here: sentences are templates filled with approved values. Each section is one circle in
+ * the widget.
  *
- *   product page   position (superlatives), specs, complement (the merchant's cross-sells),
- *                  guides (articles this product was matched to)
+ *   product page   position (superlatives and level), specs, complement (relations: merchant
+ *                  links, matching battery, care products...), family (other sizes),
+ *                  alternatives, on_sale (alternatives on sale), good_for (jobs and guides)
  *   article        article_products (the products matched to the article)
+ *
+ * A product page also carries `compare`: its specs keyed for comparing with a product of the
+ * same type the shopper viewed before, which the widget keeps in the browser.
  *
  * Prices and stock in the result are from the last catalog sync. The widget replaces them
  * with live values from the store before showing anything.
@@ -37,15 +46,26 @@ final class BuildPageBank
         'position' => 'position',
         'specs' => 'specs',
         'complement' => 'complement',
+        'family' => 'family',
+        'alternatives' => 'alternative',
+        'on_sale' => 'on_sale',
+        'good_for' => 'good_for',
         'guides' => 'guide_card',
         'article_products' => 'article_products',
     ];
 
     private const MAX_POSITIONS = 3;
 
-    private const MAX_SPECS = 8;
+    private const MAX_SPECS = 10;
 
-    private const MAX_GUIDES = 2;
+    private const MAX_GUIDES = 3;
+
+    private const MAX_FAMILY = 8;
+
+    private const MIN_LEVEL_SET = 3;
+
+    /** A product in the best quarter of its set gets "among the highest". */
+    private const LEVEL_SHARE = 0.25;
 
     /** @var array<string, mixed> vocabulary definitions by key, per build */
     private array $vocabularies = [];
@@ -75,6 +95,7 @@ final class BuildPageBank
             'bank_version' => 1,
             'teaser' => null,
             'sections' => [],
+            'compare' => null,
             'labels' => $this->labels(),
         ];
 
@@ -84,30 +105,42 @@ final class BuildPageBank
 
         $maxProducts = (int) Settings::get('widget.max_products', $shopId);
 
-        [$sections, $version] = $this->tenant->run($shopId, fn (): array => $type === 'product'
+        [$sections, $version, $compare] = $this->tenant->run($shopId, fn (): array => $type === 'product'
             ? $this->productSections($externalId, $maxProducts)
-            : $this->contentSections($externalId, $maxProducts));
+            : [...$this->contentSections($externalId, $maxProducts), null]);
 
         $bank['enabled'] = true;
         $bank['sections'] = $sections;
         $bank['bank_version'] = max(1, $version);
         $bank['teaser'] = $sections === [] ? null : $this->teaser($sections[0]);
+        $bank['compare'] = $compare;
 
         return $bank;
     }
 
-    /** @return array{0: list<array<string, mixed>>, 1: int} */
+    /** @return array{0: list<array<string, mixed>>, 1: int, 2: array<string, mixed>|null} */
     private function productSections(string $externalId, int $maxProducts): array
     {
         $product = CatalogProduct::query()->active()->where('external_id', $externalId)->first();
 
         if ($product === null) {
-            return [[], 1];
+            return [[], 1, null];
         }
 
         $sections = [];
         $version = (int) $product->synced_at?->timestamp;
 
+        $facts = EnrichmentFact::query()
+            ->with('vocabulary')
+            ->where('product_id', $product->id)
+            ->where('status', FactStatus::Approved)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+        $definition = $facts->first(fn (EnrichmentFact $f): bool => $f->vocabulary !== null)?->vocabulary?->definition();
+        $reading = EnrichmentCodeReading::query()->where('product_id', $product->id)->value('reading');
+
+        // Why this model: superlatives, then "among the highest" levels, then a professional tag.
         $rankings = EnrichmentRanking::query()
             ->where('product_id', $product->id)
             ->where('rank', 1)
@@ -117,63 +150,82 @@ final class BuildPageBank
             ->limit(self::MAX_POSITIONS)
             ->get();
 
-        if ($rankings->isNotEmpty()) {
-            $version = max($version, (int) $rankings->max(fn (EnrichmentRanking $r): int => (int) $r->computed_at->timestamp));
-            $sections[] = $this->section('position', [
-                'lines' => $rankings->map(fn (EnrichmentRanking $r): array => array_filter([
-                    'text' => $this->positionText($r),
-                    'metric' => $r->metric,
-                    // The widget hides a price superlative when the live price is not this one.
-                    'price' => $r->metric === 'price' ? (float) $r->value : null,
-                ], fn ($v): bool => $v !== null))->values()->all(),
-            ]);
+        $lines = $rankings->map(fn (EnrichmentRanking $r): array => array_filter([
+            'text' => $this->positionText($r),
+            'metric' => $r->metric,
+            // The widget hides a price superlative when the live price is not this one.
+            'price' => $r->metric === 'price' ? (float) $r->value : null,
+        ], fn ($v): bool => $v !== null))->values()->all();
+
+        if ($definition !== null) {
+            $lines = [...$lines, ...$this->levelLines($product, $facts, $definition, $rankings->pluck('metric')->all())];
+
+            if ($facts->contains(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Tag && $f->value_text === 'for_professionals')) {
+                $lines[] = ['text' => __('widget::bank.position.professional', [], $this->locale), 'metric' => 'tag'];
+            }
         }
 
-        $specs = $this->specs($product->id);
+        if ($lines !== []) {
+            $version = max($version, (int) $rankings->max(fn (EnrichmentRanking $r): int => (int) $r->computed_at->timestamp));
+            $sections[] = $this->section('position', ['lines' => array_slice($lines, 0, self::MAX_POSITIONS + 2)]);
+        }
+
+        $specs = $this->specs($facts, $definition, (array) ($reading ?? []));
         if ($specs !== []) {
             $sections[] = $this->section('specs', ['specs' => $specs]);
         }
 
-        $crossSells = array_values(array_unique(array_column(array_filter(
-            $product->merchantRelations(),
-            fn (array $r): bool => $r['type'] === 'cross_sell',
-        ), 'target')));
+        // Products shown with this one, as ComputeProductRelations found them.
+        $relations = EnrichmentProductRelation::query()
+            ->with('related')
+            ->where('product_id', $product->id)
+            ->whereHas('related', fn ($q) => $q->whereNull('removed_at')->where('in_stock', true)->where('purchasable', true))
+            ->orderByDesc('score')
+            ->get()
+            ->groupBy(fn (EnrichmentProductRelation $r): string => $r->kind->value);
 
-        if ($crossSells !== []) {
-            $cards = $this->cards(
-                CatalogProduct::query()->active()->where('in_stock', true)->where('purchasable', true)
-                    ->whereIn('external_id', $crossSells)->get()
-                    ->sortBy(fn (CatalogProduct $p): int => (int) array_search($p->external_id, $crossSells, true))
-                    ->take($maxProducts),
-            );
+        $version = max($version, (int) collect($relations->flatten())->max(fn (EnrichmentProductRelation $r): int => (int) $r->computed_at->timestamp));
+        $ruleLabels = $this->ruleLabels();
 
-            if ($cards !== []) {
-                $sections[] = $this->section('complement', ['products' => $cards]);
+        $complements = $relations->get(RelationKind::Complement->value, collect())->take($maxProducts);
+        if ($complements->isNotEmpty()) {
+            $sections[] = $this->section('complement', ['products' => $this->cards(
+                $complements->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related),
+                $complements->mapWithKeys(fn (EnrichmentProductRelation $r): array => [$r->related_product_id => $this->relationReason($r, $ruleLabels)]),
+            )]);
+        } elseif (($crossSells = $this->merchantCrossSells($product, $maxProducts))->isNotEmpty()) {
+            // Relations not computed yet: the merchant's own cross-sells.
+            $sections[] = $this->section('complement', ['products' => $this->cards($crossSells)]);
+        }
+
+        $family = $relations->get(RelationKind::Family->value, collect())->take(self::MAX_FAMILY);
+        if ($family->isNotEmpty()) {
+            $sections[] = $this->section('family', ['products' => $this->cards($family->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related))]);
+        }
+
+        $alternatives = $relations->get(RelationKind::Alternative->value, collect());
+        if ($alternatives->isNotEmpty()) {
+            $sections[] = $this->section('alternatives', ['products' => $this->cards($alternatives->take($maxProducts)->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related))]);
+
+            // The widget checks "on sale" again with live prices.
+            $onSale = $alternatives->filter(fn (EnrichmentProductRelation $r): bool => $r->related->on_sale)->take($maxProducts);
+            if ($onSale->isNotEmpty()) {
+                $sections[] = $this->section('on_sale', ['products' => $this->cards($onSale->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related)), 'require_sale' => true]);
             }
         }
 
-        $guides = EnrichmentContentProduct::query()
-            ->with('content')
-            ->where('product_id', $product->id)
-            ->whereHas('content', fn ($q) => $q->whereNull('removed_at'))
-            ->orderByDesc('score')
-            ->orderBy('rank')
-            ->limit(self::MAX_GUIDES)
-            ->get();
+        // Good for: approved jobs, with guides matched to the product or to those jobs.
+        $uses = $facts->where('kind', FactKind::Use)->pluck('value_text')->unique()->values()->all();
+        $guides = $this->guides($product, $uses);
 
-        if ($guides->isNotEmpty()) {
-            $version = max($version, (int) $guides->max(fn (EnrichmentContentProduct $g): int => (int) $g->computed_at->timestamp));
-            $sections[] = $this->section('guides', [
-                'guides' => $guides->map(fn (EnrichmentContentProduct $g): array => [
-                    'id' => $g->content->external_id,
-                    'title' => $g->content->title,
-                    'url' => $g->content->url,
-                    'image' => $g->content->image_url,
-                ])->values()->all(),
-            ]);
+        if ($uses !== []) {
+            $labels = array_map(fn (string $use): string => $definition?->label('use', $use, $this->locale) ?? $use, $uses);
+            $sections[] = $this->section('good_for', ['uses' => $labels, 'guides' => $guides], ['uses' => implode(' · ', array_slice($labels, 0, 2))]);
+        } elseif ($guides !== []) {
+            $sections[] = $this->section('guides', ['guides' => $guides]);
         }
 
-        return [$sections, $version];
+        return [$sections, $version, $this->compare($facts, $definition, $specs)];
     }
 
     /** @return array{0: list<array<string, mixed>>, 1: int} */
@@ -213,13 +265,98 @@ final class BuildPageBank
     }
 
     /**
+     * "Among the highest power of 12 cordless angle grinders": the product is in the best quarter
+     * of products of its type and set, for a spec the vocabulary ranks. Skipped where a superlative
+     * already says more.
+     *
+     * @param  Collection<int, EnrichmentFact>  $facts
+     * @param  list<string>  $alreadyRanked
+     * @return list<array{text: string, metric: string}>
+     */
+    private function levelLines(CatalogProduct $product, Collection $facts, mixed $definition, array $alreadyRanked): array
+    {
+        $type = $facts->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Type)?->value_text;
+
+        if ($type === null) {
+            return [];
+        }
+
+        $facets = ['type' => $type];
+        foreach ($definition->setBy() as $key) {
+            $choice = $facts->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Choice && $f->key === $key)?->value_text;
+
+            if ($choice === null) {
+                return [];
+            }
+            $facets[$key] = $choice;
+        }
+
+        // Products of the same type and set, in stock.
+        $peers = EnrichmentFact::query()
+            ->where('status', FactStatus::Approved)->where('kind', FactKind::Type)->where('value_text', $type)
+            ->whereHas('product', fn ($q) => $q->whereNull('removed_at')->where('in_stock', true))
+            ->pluck('product_id')->unique();
+
+        foreach (array_slice($facets, 1, null, true) as $key => $value) {
+            $peers = $peers->intersect(EnrichmentFact::query()->where('status', FactStatus::Approved)->where('kind', FactKind::Choice)
+                ->where('key', $key)->where('value_text', $value)->pluck('product_id'));
+        }
+
+        if ($peers->count() < self::MIN_LEVEL_SET) {
+            return [];
+        }
+
+        $set = [];
+        foreach ($facets as $key => $value) {
+            $set[] = $key === 'type' ? $definition->label('type', $value, $this->locale) : $definition->label('attribute', $key, $this->locale, $value);
+        }
+
+        $lines = [];
+
+        foreach ($definition->attributes() as $attribute) {
+            $direction = $attribute['rank'] ?? null;
+            $own = $facts->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Spec && $f->key === $attribute['key']);
+
+            if ($direction === null || $own === null || in_array($attribute['key'], $alreadyRanked, true)) {
+                continue;
+            }
+
+            $values = EnrichmentFact::query()->where('status', FactStatus::Approved)->where('kind', FactKind::Spec)
+                ->where('key', $attribute['key'])->whereIn('product_id', $peers->all())
+                ->get(['product_id', 'value_number'])->unique('product_id')->pluck('value_number')->map(fn ($v): float => (float) $v);
+
+            if ($values->count() < self::MIN_LEVEL_SET) {
+                continue;
+            }
+
+            $mine = (float) $own->value_number;
+            $better = $values->filter(fn (float $v): bool => $direction === 'max' ? $v > $mine : $v < $mine)->count();
+
+            if ($better / $values->count() > self::LEVEL_SHARE) {
+                continue;
+            }
+
+            $lines[] = [
+                'text' => __('widget::bank.position.level_'.$direction, [
+                    'metric' => $definition->label('attribute', $attribute['key'], $this->locale),
+                    'size' => $values->count(),
+                    'set' => implode(' · ', $set),
+                ], $this->locale).' · '.$this->measure($mine, $own->unit),
+                'metric' => $attribute['key'],
+            ];
+        }
+
+        return $lines;
+    }
+
+    /**
      * @param  Collection<int, CatalogProduct>  $products
      * @param  Collection<string, string>|null  $reasons  product id => sentence
      * @return list<array<string, mixed>>
      */
     private function cards(Collection $products, ?Collection $reasons = null): array
     {
-        return $products->map(fn (CatalogProduct $p): array => array_filter([
+        return $products->values()->map(fn (CatalogProduct $p): array => array_filter([
             'id' => $p->external_id,
             'title' => $p->title,
             'url' => $p->url,
@@ -231,7 +368,187 @@ final class BuildPageBank
             'price_note' => self::priceNote($p),
             'needs_options' => self::needsOptions($p) ?: null,
             'reason' => $reasons?->get($p->id),
-        ], fn ($v): bool => $v !== null))->values()->all();
+        ], fn ($v): bool => $v !== null && $v !== ''))->all();
+    }
+
+    /** @return Collection<int, CatalogProduct> */
+    private function merchantCrossSells(CatalogProduct $product, int $limit): Collection
+    {
+        $targets = array_values(array_unique(array_column(array_filter($product->merchantRelations(), fn (array $r): bool => $r['type'] === 'cross_sell'), 'target')));
+
+        if ($targets === []) {
+            return collect();
+        }
+
+        return CatalogProduct::query()->active()->where('in_stock', true)->where('purchasable', true)
+            ->whereIn('external_id', $targets)->get()
+            ->sortBy(fn (CatalogProduct $p): int => (int) array_search($p->external_id, $targets, true))
+            ->take($limit)
+            ->values();
+    }
+
+    /** @param array<string, array<string, string>> $ruleLabels */
+    private function relationReason(EnrichmentProductRelation $relation, array $ruleLabels): ?string
+    {
+        $reasons = $relation->reasons;
+        $label = $ruleLabels[$relation->source][$this->locale] ?? null;
+
+        if ($label === null) {
+            return null;
+        }
+
+        $details = array_filter([
+            $reasons['brand'] ?? null,
+            isset($reasons['voltage_v']) ? $this->measure((float) $reasons['voltage_v'], 'V') : null,
+        ]);
+
+        return implode(' · ', [$label, ...$details]);
+    }
+
+    /** @return array<string, array<string, string>> rule key => labels */
+    private function ruleLabels(): array
+    {
+        $rules = EnrichmentRelationRules::query()->where('active', true)->orderByDesc('version')->value('definition');
+
+        return collect((array) ($rules['rules'] ?? []))->mapWithKeys(fn (array $rule): array => [$rule['key'] => (array) ($rule['label'] ?? [])])->all();
+    }
+
+    /**
+     * Guides matched to the product, then articles a checker approved for the same jobs.
+     *
+     * @param  list<string>  $uses
+     * @return list<array<string, mixed>>
+     */
+    private function guides(CatalogProduct $product, array $uses): array
+    {
+        $matched = EnrichmentContentProduct::query()
+            ->with('content')
+            ->where('product_id', $product->id)
+            ->whereHas('content', fn ($q) => $q->whereNull('removed_at'))
+            ->orderByDesc('score')
+            ->orderBy('rank')
+            ->limit(self::MAX_GUIDES)
+            ->get()
+            ->map(fn (EnrichmentContentProduct $g): CatalogContent => $g->content);
+
+        if ($uses !== [] && $matched->count() < self::MAX_GUIDES) {
+            $forJobs = EnrichmentFact::query()
+                ->with('content')
+                ->whereNotNull('content_id')
+                ->where('kind', FactKind::Use)
+                ->where('status', FactStatus::Approved)
+                ->whereIn('value_text', $uses)
+                ->whereHas('content', fn ($q) => $q->whereNull('removed_at'))
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn (EnrichmentFact $f): CatalogContent => $f->content);
+
+            $matched = $matched->concat($forJobs)->unique('id');
+        }
+
+        return $matched->take(self::MAX_GUIDES)->map(fn (CatalogContent $c): array => [
+            'id' => $c->external_id,
+            'title' => $c->title,
+            'url' => $c->url,
+            'image' => $c->image_url,
+        ])->values()->all();
+    }
+
+    /**
+     * Specs from approved facts, then what code read that a shopper should know: the brand, what
+     * to choose on the product page, the price unit, the pack size.
+     *
+     * @param  Collection<int, EnrichmentFact>  $facts
+     * @param  array<string, mixed>  $reading
+     * @return list<array{label: string, value: string, key?: string}>
+     */
+    private function specs(Collection $facts, mixed $definition, array $reading): array
+    {
+        $rows = [];
+        $byKey = $facts->whereIn('kind', [FactKind::Type, FactKind::Spec, FactKind::Choice, FactKind::Flag])
+            ->keyBy(fn (EnrichmentFact $f): string => $f->kind->value.'|'.$f->key);
+
+        if ($definition !== null && $byKey->isNotEmpty()) {
+            if (($type = $byKey->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Type)) !== null) {
+                $rows[] = ['key' => 'type', 'label' => __('widget::bank.type', [], $this->locale), 'value' => $definition->label('type', (string) $type->value_text, $this->locale)];
+            }
+
+            // What it is first (choices), then numbers, then yes/no features; each in vocabulary order.
+            $order = [FactKind::Choice->value => 0, FactKind::Spec->value => 1, FactKind::Flag->value => 2];
+            $attributes = $definition->attributes();
+            usort($attributes, function (array $a, array $b) use ($byKey, $order): int {
+                $kind = fn (array $attribute): int => $order[$byKey->first(fn (EnrichmentFact $f): bool => $f->key === $attribute['key'] && $f->kind !== FactKind::Type)?->kind->value] ?? 3;
+
+                return $kind($a) <=> $kind($b);
+            });
+
+            foreach ($attributes as $attribute) {
+                $fact = $byKey->first(fn (EnrichmentFact $f): bool => $f->key === $attribute['key'] && $f->kind !== FactKind::Type);
+
+                if ($fact === null) {
+                    continue;
+                }
+
+                $value = match ($fact->kind) {
+                    FactKind::Spec => $this->measure((float) $fact->value_number, $fact->unit),
+                    FactKind::Choice => $definition->label('attribute', $fact->key, $this->locale, (string) $fact->value_text),
+                    default => __('widget::bank.yes', [], $this->locale),
+                };
+
+                $rows[] = ['key' => $attribute['key'], 'label' => $definition->label('attribute', $fact->key, $this->locale), 'value' => $value];
+            }
+        }
+
+        if (isset($reading['brand']['brand'])) {
+            $rows[] = ['key' => 'brand', 'label' => __('widget::bank.brand', [], $this->locale), 'value' => (string) $reading['brand']['brand']];
+        }
+
+        foreach ((array) ($reading['choices'] ?? []) as $choice) {
+            $values = (array) $choice['values'];
+            $rows[] = [
+                'label' => __('widget::bank.to_choose', ['name' => $choice['name']], $this->locale),
+                'value' => count($values) > 4 ? reset($values).' – '.end($values) : implode(', ', $values),
+            ];
+        }
+
+        if (isset($reading['pack_count'])) {
+            $rows[] = ['key' => 'pack_count', 'label' => __('widget::bank.pack', [], $this->locale), 'value' => (string) $reading['pack_count']];
+        }
+
+        if (isset($reading['price_unit'])) {
+            $rows[] = ['label' => __('widget::bank.price_unit', [], $this->locale), 'value' => (string) $reading['price_unit']];
+        }
+
+        return array_slice($rows, 0, self::MAX_SPECS);
+    }
+
+    /**
+     * What the widget remembers to compare this product with another of the same type later.
+     *
+     * @param  Collection<int, EnrichmentFact>  $facts
+     * @param  list<array{label: string, value: string, key?: string}>  $specs
+     * @return array<string, mixed>|null
+     */
+    private function compare(Collection $facts, mixed $definition, array $specs): ?array
+    {
+        $type = $facts->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Type);
+
+        if ($definition === null || $type === null) {
+            return null;
+        }
+
+        $rows = [];
+        foreach ($specs as $row) {
+            if (isset($row['key']) && $row['key'] !== 'type') {
+                $rows[] = [$row['key'], $row['label'], $row['value']];
+            }
+        }
+
+        return $rows === [] ? null : [
+            'key' => $definition->key().'|'.$type->value_text,
+            'type' => $definition->label('type', (string) $type->value_text, $this->locale),
+            'rows' => $rows,
+        ];
     }
 
     /**
@@ -259,62 +576,6 @@ final class BuildPageBank
         $note = trim((string) ($product->payload['meta']['price_text'] ?? ''));
 
         return $note === '' ? null : mb_substr(strip_tags($note), 0, 40);
-    }
-
-    /** @return list<array{label: string, value: string}> */
-    private function specs(string $productId): array
-    {
-        $facts = EnrichmentFact::query()
-            ->with('vocabulary')
-            ->where('product_id', $productId)
-            ->where('status', FactStatus::Approved)
-            ->whereIn('kind', [FactKind::Type, FactKind::Spec, FactKind::Choice, FactKind::Flag])
-            ->orderBy('created_at')
-            ->get()
-            ->keyBy(fn (EnrichmentFact $f): string => $f->kind->value.'|'.$f->key);
-
-        if ($facts->isEmpty()) {
-            return [];
-        }
-
-        $definition = $facts->first()->vocabulary?->definition();
-
-        if ($definition === null) {
-            return [];
-        }
-
-        $rows = [];
-
-        if (($type = $facts->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Type)) !== null) {
-            $rows[] = ['label' => __('widget::bank.type', [], $this->locale), 'value' => $definition->label('type', (string) $type->value_text, $this->locale)];
-        }
-
-        // What it is first (choices), then numbers, then yes/no features; each in vocabulary order.
-        $order = [FactKind::Choice->value => 0, FactKind::Spec->value => 1, FactKind::Flag->value => 2];
-        $attributes = $definition->attributes();
-        usort($attributes, function (array $a, array $b) use ($facts, $order): int {
-            $kind = fn (array $attribute): int => $order[$facts->first(fn (EnrichmentFact $f): bool => $f->key === $attribute['key'])?->kind->value] ?? 3;
-
-            return $kind($a) <=> $kind($b);
-        });
-
-        foreach ($attributes as $attribute) {
-            $fact = $facts->first(fn (EnrichmentFact $f): bool => $f->key === $attribute['key'] && $f->kind !== FactKind::Type);
-
-            if ($fact === null) {
-                continue;
-            }
-
-            $value = match ($fact->kind) {
-                FactKind::Spec => $this->measure((float) $fact->value_number, $fact->unit),
-                FactKind::Choice => $definition->label('attribute', $fact->key, $this->locale, (string) $fact->value_text),
-                default => __('widget::bank.yes', [], $this->locale),
-            };
-
-            $rows[] = ['label' => $definition->label('attribute', $fact->key, $this->locale), 'value' => $value];
-        }
-
-        return array_slice($rows, 0, self::MAX_SPECS);
     }
 
     private function positionText(EnrichmentRanking $ranking): string
@@ -363,14 +624,16 @@ final class BuildPageBank
 
     /**
      * @param  array<string, mixed>  $content
+     * @param  array<string, string>  $chipReplace
      * @return array<string, mixed>
      */
-    private function section(string $candidate, array $content): array
+    private function section(string $candidate, array $content, array $chipReplace = []): array
     {
         return [
             'candidate' => $candidate,
             'model' => self::MODELS[$candidate],
-            'title' => __('widget::bank.titles.'.self::MODELS[$candidate], [], $this->locale),
+            'title' => __('widget::bank.titles.'.$candidate, [], $this->locale),
+            'chip' => __('widget::bank.chips.'.$candidate, $chipReplace, $this->locale),
         ] + $content;
     }
 
@@ -383,7 +646,7 @@ final class BuildPageBank
         $text = match ($section['candidate']) {
             'position' => $section['lines'][0]['text'],
             'article_products' => trans_choice('widget::bank.teasers.article_products', count($section['products']), ['count' => count($section['products'])], $this->locale),
-            default => __('widget::bank.teasers.'.$section['model'], [], $this->locale),
+            default => (string) $section['chip'],
         };
 
         return ['candidate' => $section['candidate'], 'model' => $section['model'], 'text' => $text];

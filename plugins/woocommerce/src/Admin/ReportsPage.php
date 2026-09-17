@@ -298,6 +298,11 @@ final class ReportsPage {
 			'complement'       => __( 'Goes well with it', 'rega' ),
 			'guide_card'       => __( 'Guides', 'rega' ),
 			'article_products' => __( 'Products for an article', 'rega' ),
+			'family'           => __( 'Other sizes', 'rega' ),
+			'alternative'      => __( 'Similar products', 'rega' ),
+			'on_sale'          => __( 'Similar on sale', 'rega' ),
+			'good_for'         => __( 'Good for jobs', 'rega' ),
+			'compare'          => __( 'Comparison with a viewed product', 'rega' ),
 		);
 
 		return $labels[ $model ] ?? $model;

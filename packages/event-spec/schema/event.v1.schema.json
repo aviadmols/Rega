@@ -324,15 +324,24 @@
         "objection",
         "chat",
         "specs",
-        "article_products"
+        "article_products",
+        "family",
+        "on_sale",
+        "good_for"
       ]
     },
     "slot": {
-      "description": "Where the candidate was shown: the collapsed pill's text, a chip in the open panel, or the panel body.",
+      "description": "Where the candidate was shown: the first circle (teaser), one of the other circles, or the open panel body.",
       "enum": [
         "teaser",
         "chip_1",
         "chip_2",
+        "chip_3",
+        "chip_4",
+        "chip_5",
+        "chip_6",
+        "chip_7",
+        "chip_8",
         "panel"
       ]
     },
