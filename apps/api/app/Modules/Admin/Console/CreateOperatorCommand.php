@@ -19,8 +19,6 @@ use function Laravel\Prompts\password;
  */
 final class CreateOperatorCommand extends Command
 {
-    private const MIN_PASSWORD_LENGTH = 12;
-
     protected $signature = 'admin:operator
         {email : The operator\'s email address}
         {--name= : Display name (defaults to the part of the email before @)}
@@ -66,15 +64,15 @@ final class CreateOperatorCommand extends Command
             // getenv, not env(): with the config cached, env() returns null outside config files.
             $secret = (string) getenv((string) $variable);
 
-            if (mb_strlen($secret) < self::MIN_PASSWORD_LENGTH) {
-                $this->components->error("Environment variable {$variable} must hold a password of at least ".self::MIN_PASSWORD_LENGTH.' characters.');
+            if (mb_strlen($secret) < User::MIN_PASSWORD_LENGTH) {
+                $this->components->error("Environment variable {$variable} must hold a password of at least ".User::MIN_PASSWORD_LENGTH.' characters.');
 
                 return self::FAILURE;
             }
         } elseif ($this->input->isInteractive()) {
             $secret = password(
                 label: 'Password (leave empty to generate one)',
-                validate: fn (string $v) => $v === '' || mb_strlen($v) >= self::MIN_PASSWORD_LENGTH ? null : 'At least '.self::MIN_PASSWORD_LENGTH.' characters.',
+                validate: fn (string $v) => $v === '' || mb_strlen($v) >= User::MIN_PASSWORD_LENGTH ? null : 'At least '.User::MIN_PASSWORD_LENGTH.' characters.',
             );
         } else {
             $secret = '';

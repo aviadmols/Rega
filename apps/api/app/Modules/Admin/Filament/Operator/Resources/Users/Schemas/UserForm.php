@@ -3,6 +3,7 @@
 namespace App\Modules\Admin\Filament\Operator\Resources\Users\Schemas;
 
 use App\Core\Localization\Locales;
+use App\Modules\Admin\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -35,7 +36,7 @@ final class UserForm
                             ->helperText(fn (string $operation): ?string => $operation === 'edit' ? __('admin::users.fields.password_keep') : null)
                             ->password()
                             ->revealable()
-                            ->minLength(12)
+                            ->minLength(User::MIN_PASSWORD_LENGTH)
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->dehydrateStateUsing(fn (string $state): string => Hash::make($state)),

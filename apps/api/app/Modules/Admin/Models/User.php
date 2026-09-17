@@ -42,6 +42,9 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public const MERCHANT_PANEL = 'merchant';
 
+    /** One rule for every place a password is set: the admin form and the operator command. */
+    public const MIN_PASSWORD_LENGTH = 8;
+
     protected $table = 'users';
 
     protected $fillable = [
