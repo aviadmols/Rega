@@ -84,10 +84,27 @@ final class ContentDigest
             }
         }
 
-        arsort($scores);
         $byId = $categories->keyBy('id');
+        $ids = array_keys($scores);
 
-        return array_values(array_map(fn (string $id): CatalogCategory => $byId->get($id), array_slice(array_keys($scores), 0, self::MAX_CATEGORIES)));
+        // A fixed order for equal scores: the more specific category first, then by name. Without
+        // it the order follows the database, and the same article gets a different request (and
+        // request ID) on SQLite and on Postgres.
+        usort($ids, function (string $a, string $b) use ($scores, $byId): int {
+            return [$scores[$b], count($byId->get($b)->path), $byId->get($a)->pathLabel(), $byId->get($a)->external_id]
+                <=> [$scores[$a], count($byId->get($a)->path), $byId->get($b)->pathLabel(), $byId->get($b)->external_id];
+        });
+
+        return array_values(array_map(fn (string $id): CatalogCategory => $byId->get($id), array_slice($ids, 0, self::MAX_CATEGORIES)));
+    }
+
+    /** Hebrew letters change shape at the end of a word: "עצ" is written "עץ". */
+    private static function withFinalLetter(string $word): string
+    {
+        $finals = ['כ' => 'ך', 'מ' => 'ם', 'נ' => 'ן', 'פ' => 'ף', 'צ' => 'ץ'];
+        $last = mb_substr($word, -1);
+
+        return isset($finals[$last]) ? mb_substr($word, 0, -1).$finals[$last] : $word;
     }
 
     /** @return list<string> the meaningful words of a category name, with plural endings dropped */
@@ -102,9 +119,18 @@ final class ContentDigest
 
             $words[] = $word;
 
-            // "דקים" also matches "דק", "פרגולות" also "פרגולה" through its stem.
-            if (mb_strlen($word) >= 5 && preg_match('~(ים|ות)$~u', $word)) {
-                $words[] = mb_substr($word, 0, -2);
+            // Plurals also match the singular: "דקים" matches "דק", "עצים" matches "עץ" (with its
+            // final letter), "פרגולות" matches "פרגולה".
+            if (mb_strlen($word) >= 4 && preg_match('~(ים|ות)$~u', $word, $suffix)) {
+                $stem = mb_substr($word, 0, -2);
+
+                if (mb_strlen($stem) >= 2) {
+                    $words[] = self::withFinalLetter($stem);
+
+                    if ($suffix[1] === 'ות') {
+                        $words[] = $stem.'ה';
+                    }
+                }
             }
         }
 

@@ -56,7 +56,8 @@ final class FactReviewTask implements AgentTask
             $facts = EnrichmentFact::query()
                 ->where($column, $subjectId)
                 ->where('status', self::waitingStatus($tier))
-                ->orderBy('kind')->orderBy('key')
+                // A full, fixed order: the claim list is part of the request ID on every database.
+                ->orderBy('kind')->orderBy('key')->orderBy('value_text')->orderBy('value_number')->orderBy('quote')
                 ->get();
 
             $subjectModel = $subject === 'content' ? CatalogContent::query()->find($subjectId) : CatalogProduct::query()->find($subjectId);
