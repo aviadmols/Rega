@@ -192,7 +192,10 @@ final class BuildPageBank
         $version = max($version, (int) collect($relations->flatten())->max(fn (EnrichmentProductRelation $r): int => (int) $r->computed_at->timestamp));
         $ruleLabels = $this->ruleLabels();
 
-        $complements = self::varied($relations->get(RelationKind::Complement->value, collect()), $maxProducts);
+        // Another size of this product is shown under other sizes, not again as a complement.
+        $sizes = $relations->get(RelationKind::Family->value, collect())->pluck('related_product_id')->all();
+        $complements = self::varied($relations->get(RelationKind::Complement->value, collect())
+            ->reject(fn (EnrichmentProductRelation $r): bool => in_array($r->related_product_id, $sizes, true)), $maxProducts);
         if ($complements->isNotEmpty()) {
             $sections[] = $this->section('complement', ['products' => $this->cards(
                 $complements->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related),

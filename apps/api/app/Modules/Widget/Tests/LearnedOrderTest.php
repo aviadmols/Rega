@@ -35,10 +35,17 @@ final class LearnedOrderTest extends TestCase
 
     public function test_without_scores_the_built_order_stands_with_the_product_limit(): void
     {
+        // A merchant link to another size of the same product, scored above every complement.
+        $this->inShop(fn () => EnrichmentProductRelation::query()->create([
+            'shop_id' => $this->shop->id, 'product_id' => $this->page->id,
+            'related_product_id' => CatalogProduct::query()->where('external_id', '41')->value('id'),
+            'kind' => 'complement', 'source' => 'merchant_cross_sell', 'score' => 500, 'reasons' => [], 'computed_at' => now(),
+        ]));
+
         $sections = $this->sections();
 
         $this->assertSame(['complement', 'family', 'alternatives'], array_column($sections, 'candidate'));
-        $this->assertSame(['21', '22', '23', '24'], array_column($sections[0]['products'], 'id'), 'spares are not shown');
+        $this->assertSame(['21', '22', '23', '24'], array_column($sections[0]['products'], 'id'), 'spares are not shown, and another size is not a complement');
     }
 
     public function test_what_worked_comes_first_and_what_was_never_clicked_makes_room(): void

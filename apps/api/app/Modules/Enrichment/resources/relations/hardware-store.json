@@ -101,6 +101,48 @@
             "limit": 4
         },
         {
+            "key": "supports_for_shelves",
+            "label": {
+                "he": "תומכי מדף",
+                "en": "Shelf supports"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "types": [
+                    "shelf"
+                ]
+            },
+            "to": {
+                "categories": [
+                    "2834"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "wall_fixings_for_shelves",
+            "label": {
+                "he": "דיבלים וברגים לתלייה בקיר",
+                "en": "Wall anchors and screws"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "types": [
+                    "shelf"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "anchor",
+                    "wood_screw"
+                ]
+            },
+            "limit": 2
+        },
+        {
             "key": "care_for_outdoor_wood",
             "label": {
                 "he": "שמן והגנה לעץ בחוץ",
@@ -278,48 +320,6 @@
                 "vocabulary": "fasteners",
                 "types": [
                     "anchor"
-                ]
-            },
-            "limit": 2
-        },
-        {
-            "key": "supports_for_shelves",
-            "label": {
-                "he": "תומכי מדף",
-                "en": "Shelf supports"
-            },
-            "kind": "complement",
-            "from": {
-                "vocabulary": "wood",
-                "types": [
-                    "shelf"
-                ]
-            },
-            "to": {
-                "categories": [
-                    "2834"
-                ]
-            },
-            "limit": 3
-        },
-        {
-            "key": "wall_fixings_for_shelves",
-            "label": {
-                "he": "דיבלים וברגים לתלייה בקיר",
-                "en": "Wall anchors and screws"
-            },
-            "kind": "complement",
-            "from": {
-                "vocabulary": "wood",
-                "types": [
-                    "shelf"
-                ]
-            },
-            "to": {
-                "vocabulary": "fasteners",
-                "types": [
-                    "anchor",
-                    "wood_screw"
                 ]
             },
             "limit": 2
