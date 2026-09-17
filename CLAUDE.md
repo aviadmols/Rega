@@ -45,6 +45,9 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - Prompts are versioned files in `Enrichment/Prompts`. Never edit a released version; add a new
   one and raise `PromptLibrary::CURRENT`.
 - Superlatives are computed in code only, from approved facts (`ComputeRankings`).
+- Any call to a model with the keys saved in the panel asks `Ai\Contracts\SpendGuard::assertCanSpend()`
+  first and records its cost with `RunContext::usage()`. The cap is `ai.monthly_spend_cap_usd`
+  (default 6 USD a month, all shops). Answer files from agents outside the platform cost nothing.
 - `ReadProductsInCode` runs before any model: brand (`BrandResolver`), size families, a type the
   category stands for, title sizes. Its facts have origin `code`; model readings never supersede
   them and receive them as `known`. `ComputeProductRelations` builds complements, families and

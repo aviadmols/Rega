@@ -7,5 +7,7 @@
     ],
     "provider": "AiServiceProvider",
     "features": [],
-    "settings": []
+    "settings": [
+        { "name": "monthly_spend_cap_usd", "type": "float", "default": 6, "min": 0, "max": 10000, "scope": "global", "unit": "usd" }
+    ]
 }
