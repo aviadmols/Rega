@@ -28,6 +28,7 @@ final class SettingsPage {
 		add_action( 'admin_post_rega_generate_token', array( self::class, 'generate_token' ) );
 		add_action( 'admin_post_rega_revoke_token', array( self::class, 'revoke_token' ) );
 		add_action( 'admin_post_rega_save_settings', array( self::class, 'save_settings' ) );
+		add_action( 'admin_post_rega_save_widget', array( self::class, 'save_widget' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( REGA_FILE ), array( self::class, 'action_links' ) );
 		add_action( 'admin_notices', array( self::class, 'woocommerce_missing_notice' ) );
 	}
@@ -87,6 +88,15 @@ final class SettingsPage {
 		exit;
 	}
 
+	public static function save_widget(): void {
+		self::authorize( 'rega_save_widget' );
+
+		Settings::save_widget_mode( isset( $_POST['widget_mode'] ) ? sanitize_key( wp_unslash( $_POST['widget_mode'] ) ) : 'preview' );
+
+		wp_safe_redirect( self::url( array( 'rega_notice' => 'saved' ) ) );
+		exit;
+	}
+
 	public static function render(): void {
 		if ( ! current_user_can( self::capability() ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage Rega.', 'rega' ) );
@@ -101,7 +111,7 @@ final class SettingsPage {
 		?>
 		<div class="wrap rega-settings">
 			<h1><?php esc_html_e( 'Rega', 'rega' ); ?></h1>
-			<p><?php esc_html_e( 'Rega reads this store\'s products, categories and content to build the shopping assistant. Access is read-only and needs the token below. Customers and orders are never shared.', 'rega' ); ?></p>
+			<p><?php esc_html_e( 'Rega reads this store\'s products, categories and content to build the shopping assistant. Access is read-only and needs the token below. Customer details are never shared: for reports, Rega gets only order totals and product IDs.', 'rega' ); ?></p>
 
 			<?php self::render_notice( $notice, is_string( $new_token ) ); ?>
 
@@ -187,6 +197,33 @@ final class SettingsPage {
 					<?php submit_button( __( 'Revoke token', 'rega' ), 'delete', 'submit', false, array( 'onclick' => 'return confirm(' . wp_json_encode( __( 'Rega will lose access to this store immediately. Continue?', 'rega' ) ) . ');' ) ); ?>
 				</form>
 			<?php endif; ?>
+
+			<h2><?php esc_html_e( 'Widget on the store', 'rega' ); ?></h2>
+			<p><?php esc_html_e( 'Where the widget shows on product pages and articles is set in Rega, by a CSS class or selector of your theme.', 'rega' ); ?></p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="rega_save_widget" />
+				<?php wp_nonce_field( 'rega_save_widget' ); ?>
+				<?php
+				$mode  = Settings::widget_mode();
+				$modes = array(
+					'off'     => array( __( 'Off', 'rega' ), __( 'Nothing is added to the store.', 'rega' ) ),
+					'preview' => array( __( 'Preview', 'rega' ), __( 'Only the store team sees the widget: managers logged in to WordPress, or a browser that opened a preview link from Rega. Visitors are counted in the reports but see nothing.', 'rega' ) ),
+					'live'    => array( __( 'Live', 'rega' ), __( 'Every visitor sees the widget.', 'rega' ) ),
+				);
+				?>
+				<fieldset>
+					<?php foreach ( $modes as $value => $text ) : ?>
+						<label style="display:block;margin-block:6px">
+							<input type="radio" name="widget_mode" value="<?php echo esc_attr( $value ); ?>" <?php checked( $mode, $value ); ?> />
+							<strong><?php echo esc_html( $text[0] ); ?></strong> — <?php echo esc_html( $text[1] ); ?>
+						</label>
+					<?php endforeach; ?>
+				</fieldset>
+				<?php if ( null === $token ) : ?>
+					<p class="description"><?php esc_html_e( 'The widget loads only after a token is created and connected in Rega.', 'rega' ); ?></p>
+				<?php endif; ?>
+				<?php submit_button( __( 'Save', 'rega' ) ); ?>
+			</form>
 
 			<h2><?php esc_html_e( 'Content Rega may read', 'rega' ); ?></h2>
 			<p><?php esc_html_e( 'Guides and articles Rega can show as related reading. Only published entries without a password are shared.', 'rega' ); ?></p>

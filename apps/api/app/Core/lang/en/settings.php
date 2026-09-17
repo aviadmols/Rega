@@ -22,6 +22,7 @@ return [
         'items' => 'items',
         'characters' => 'characters',
         'kilobytes' => 'KB',
+        'seconds' => 'seconds',
     ],
     'errors' => [
         'not_integer' => 'Enter a whole number.',

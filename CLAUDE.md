@@ -48,11 +48,25 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - Hebrew text: never `trim($s, '•…')` with multibyte characters (PHP trims bytes and cuts letters);
   use a `/u` regex. Hebrew final letters (ן ם ך ף ץ) differ from their regular forms in patterns.
 
+## Storefront widget and analytics (apps/api)
+
+- `Widget` serves `/api/v1/widget/rega.js` (source: `Widget/resources/widget/rega.js`, plain ES5-ish JS,
+  no build step) and `/api/v1/widget/{site}/page`, built in code from approved facts only. Placement
+  is a per-shop CSS selector setting. Shopper-facing sentences are templates in `widget::bank`.
+- `Analytics` stores beacons validated against `packages/event-spec` (copied to
+  `resources/event-spec` in the image) and plugin order summaries; `BuildShopReport` is the one
+  report for the plugin, the operator panel and later the merchant panel.
+- A route under `api/*` gets `Access-Control-Allow-Origin: *` from Laravel's CORS config; origin
+  checks for the widget are done in the controllers with `StoreConnection::allowsOrigin`.
+
 ## WooCommerce plugin (plugins/woocommerce)
 
 - Plain WordPress PHP, no Composer runtime deps, minimum PHP 8.1 (CI lints on 8.1: no readonly
   classes, no typed class constants). Namespace `Rega\`, text domain `rega`, REST `rega/v1`.
-- Read-only by design: no write routes, nothing about customers, orders or users. ADR 0005.
+- Read-only toward the store: no write routes, nothing about customers or users. ADR 0005.
+  Outgoing only: order summaries without customer data and signed report requests (ADR 0006).
+- Keys the plugin and the API share are derived from the token hash, never stored twice:
+  `RegaStorefrontSiteKeys` must stay identical to `ConnectionsSupportSiteKeys`.
 - Translations: `languages/rega-he_IL.l10n.php` (WP 6.5+ PHP format). `php bin/i18n.php check`.
 - Integration tests boot real WordPress + WooCommerce in Playground:
   `node tests/playground/run.mjs` (about 3-5 minutes; `REGA_KEEP=1` leaves the site running,

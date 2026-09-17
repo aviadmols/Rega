@@ -30,6 +30,9 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-in
 
 COPY apps/api/ .
 
+# The event spec the beacon endpoint validates against (Analytics\Support\BeaconSchema).
+COPY packages/event-spec/schema resources/event-spec
+
 RUN composer dump-autoload --optimize --no-dev \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache

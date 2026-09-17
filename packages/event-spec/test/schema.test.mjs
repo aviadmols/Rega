@@ -145,3 +145,22 @@ test('open and click carry no data payload', () => {
   find(beacon, byType('open')).data = { anything: true };
   expectInvalid(beacon, 'data on open');
 });
+
+test('a page view carries only the page, and article pages say which article', () => {
+  const beacon = base();
+  beacon.preview = true;
+  beacon.events = [{ id: 'e-pageview0000000001', type: 'page_view', ts: 1758040120000, page: { type: 'content', path: '/how-to-choose-a-deck', content_id: '5146' } }];
+  expectValid(beacon, 'page view on an article in preview');
+
+  const withCandidate = structuredClone(beacon);
+  withCandidate.events[0].candidate = { id: 'position_x', version: 1, model: 'position', slot: 'teaser' };
+  expectInvalid(withCandidate, 'page view with a candidate');
+});
+
+test('products shown for an article and a spec summary are display models', () => {
+  for (const model of ['article_products', 'specs']) {
+    const beacon = base();
+    find(beacon, byType('open')).candidate.model = model;
+    expectValid(beacon, model);
+  }
+});

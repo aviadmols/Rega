@@ -5,69 +5,275 @@
   "description": "One thing a visitor did with the widget, or that the widget did for a visitor. Carries no free text, no query strings and no personal data: see packages/event-spec/README.md.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "type", "ts", "page"],
+  "required": [
+    "id",
+    "type",
+    "ts",
+    "page"
+  ],
   "properties": {
-    "id": { "$ref": "#/$defs/eventId" },
-    "type": { "$ref": "#/$defs/eventType" },
-    "ts": { "$ref": "#/$defs/timestampMs" },
-    "page": { "$ref": "#/$defs/pageContext" },
-    "candidate": { "$ref": "#/$defs/candidateRef" },
-    "bank_version": { "type": "integer", "minimum": 1 },
+    "id": {
+      "$ref": "#/$defs/eventId"
+    },
+    "type": {
+      "$ref": "#/$defs/eventType"
+    },
+    "ts": {
+      "$ref": "#/$defs/timestampMs"
+    },
+    "page": {
+      "$ref": "#/$defs/pageContext"
+    },
+    "candidate": {
+      "$ref": "#/$defs/candidateRef"
+    },
+    "bank_version": {
+      "type": "integer",
+      "minimum": 1
+    },
     "eligible": {
       "description": "Every candidate that was eligible when this one was chosen. Needed to evaluate another selection policy later.",
       "type": "array",
-      "items": { "$ref": "#/$defs/candidateId" },
+      "items": {
+        "$ref": "#/$defs/candidateId"
+      },
       "minItems": 1,
       "maxItems": 12,
       "uniqueItems": true
     },
-    "bucket": { "$ref": "#/$defs/bucket" },
-    "data": { "type": "object" }
+    "bucket": {
+      "$ref": "#/$defs/bucket"
+    },
+    "data": {
+      "type": "object"
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "type": { "enum": ["exposure", "open", "click", "dismiss"] } }, "required": ["type"] },
-      "then": { "required": ["candidate", "bank_version", "eligible", "bucket"] }
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "exposure",
+              "open",
+              "click",
+              "dismiss"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "candidate",
+          "bank_version",
+          "eligible",
+          "bucket"
+        ]
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "exposure" } }, "required": ["type"] },
-      "then": { "properties": { "data": { "$ref": "#/$defs/exposureData" } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "exposure"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/exposureData"
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "dismiss" } }, "required": ["type"] },
-      "then": { "properties": { "data": { "$ref": "#/$defs/dismissData" } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "dismiss"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/dismissData"
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "answer" } }, "required": ["type"] },
-      "then": { "required": ["data"], "properties": { "data": { "$ref": "#/$defs/answerData" } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "answer"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/answerData"
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "add_to_cart" } }, "required": ["type"] },
-      "then": { "required": ["data"], "properties": { "data": { "$ref": "#/$defs/addToCartData" } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "add_to_cart"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/addToCartData"
+          }
+        }
+      }
     },
     {
       "description": "An add to cart from inside the widget must say which suggestion it came from.",
       "if": {
         "properties": {
-          "type": { "const": "add_to_cart" },
-          "data": { "properties": { "source": { "const": "widget" } }, "required": ["source"] }
+          "type": {
+            "const": "add_to_cart"
+          },
+          "data": {
+            "properties": {
+              "source": {
+                "const": "widget"
+              }
+            },
+            "required": [
+              "source"
+            ]
+          }
         },
-        "required": ["type", "data"]
+        "required": [
+          "type",
+          "data"
+        ]
       },
-      "then": { "required": ["candidate", "bank_version", "eligible", "bucket"] }
+      "then": {
+        "required": [
+          "candidate",
+          "bank_version",
+          "eligible",
+          "bucket"
+        ]
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "chat_question" } }, "required": ["type"] },
-      "then": { "required": ["data"], "properties": { "data": { "$ref": "#/$defs/chatQuestionData" } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "chat_question"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/chatQuestionData"
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "enum": ["open", "click"] } }, "required": ["type"] },
-      "then": { "not": { "required": ["data"] } }
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "open",
+              "click"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "data"
+          ]
+        }
+      }
+    },
+    {
+      "description": "A page view says only which page was seen.",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "page_view"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "candidate"
+              ]
+            },
+            {
+              "required": [
+                "data"
+              ]
+            }
+          ]
+        }
+      }
     }
   ],
   "$defs": {
     "eventType": {
-      "enum": ["exposure", "open", "click", "dismiss", "answer", "add_to_cart", "chat_question"]
+      "enum": [
+        "page_view",
+        "exposure",
+        "open",
+        "click",
+        "dismiss",
+        "answer",
+        "add_to_cart",
+        "chat_question"
+      ]
     },
     "eventId": {
       "description": "Generated by the widget. The server drops a second event with the same id.",
@@ -116,12 +322,19 @@
         "project_checklist",
         "hesitation",
         "objection",
-        "chat"
+        "chat",
+        "specs",
+        "article_products"
       ]
     },
     "slot": {
       "description": "Where the candidate was shown: the collapsed pill's text, a chip in the open panel, or the panel body.",
-      "enum": ["teaser", "chip_1", "chip_2", "panel"]
+      "enum": [
+        "teaser",
+        "chip_1",
+        "chip_2",
+        "panel"
+      ]
     },
     "bucket": {
       "description": "The context bucket the learning statistics for this event belong to.",
@@ -131,74 +344,174 @@
     "pageContext": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "path"],
+      "required": [
+        "type",
+        "path"
+      ],
       "properties": {
-        "type": { "enum": ["product", "category", "cart", "checkout", "search", "content", "home", "other"] },
+        "type": {
+          "enum": [
+            "product",
+            "category",
+            "cart",
+            "checkout",
+            "search",
+            "content",
+            "home",
+            "other"
+          ]
+        },
         "path": {
           "description": "URL path only. No query string or fragment, which is where emails and tracking ids leak.",
           "type": "string",
           "pattern": "^/[^?#]{0,511}$"
         },
-        "product_id": { "$ref": "#/$defs/catalogId" },
-        "group_id": { "$ref": "#/$defs/catalogId" },
+        "product_id": {
+          "$ref": "#/$defs/catalogId"
+        },
+        "group_id": {
+          "$ref": "#/$defs/catalogId"
+        },
         "category_path": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
           "maxItems": 8
+        },
+        "content_id": {
+          "$ref": "#/$defs/catalogId"
         }
       }
     },
     "candidateRef": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "model", "slot"],
+      "required": [
+        "id",
+        "version",
+        "model",
+        "slot"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/candidateId" },
-        "version": { "type": "integer", "minimum": 1 },
-        "model": { "$ref": "#/$defs/displayModel" },
-        "slot": { "$ref": "#/$defs/slot" }
+        "id": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "model": {
+          "$ref": "#/$defs/displayModel"
+        },
+        "slot": {
+          "$ref": "#/$defs/slot"
+        }
       }
     },
     "exposureData": {
       "description": "An exposure counts only once the widget was really visible.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["visible_ms", "ratio"],
+      "required": [
+        "visible_ms",
+        "ratio"
+      ],
       "properties": {
-        "visible_ms": { "type": "integer", "minimum": 0, "maximum": 3600000 },
-        "ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+        "visible_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600000
+        },
+        "ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
       }
     },
     "dismissData": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["reason"],
+      "required": [
+        "reason"
+      ],
       "properties": {
-        "reason": { "enum": ["closed", "escape", "outside_click", "not_relevant"] }
+        "reason": {
+          "enum": [
+            "closed",
+            "escape",
+            "outside_click",
+            "not_relevant"
+          ]
+        }
       }
     },
     "answerData": {
       "description": "A one-tap answer. Free text from the survey goes to the chat endpoint, never into events.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["question", "answer", "product_id"],
+      "required": [
+        "question",
+        "answer",
+        "product_id"
+      ],
       "properties": {
-        "question": { "const": "why_not" },
-        "answer": { "enum": ["price", "fit", "shipping", "just_looking", "other"] },
-        "product_id": { "$ref": "#/$defs/catalogId" }
+        "question": {
+          "const": "why_not"
+        },
+        "answer": {
+          "enum": [
+            "price",
+            "fit",
+            "shipping",
+            "just_looking",
+            "other"
+          ]
+        },
+        "product_id": {
+          "$ref": "#/$defs/catalogId"
+        }
       }
     },
     "addToCartData": {
       "description": "source: page when the visitor used the store's own button, widget when they used a button inside the widget. result records failed attempts too, so broken add-to-cart shows up in reports.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["source", "product_id", "quantity", "result"],
+      "required": [
+        "source",
+        "product_id",
+        "quantity",
+        "result"
+      ],
       "properties": {
-        "source": { "enum": ["page", "widget"] },
-        "product_id": { "$ref": "#/$defs/catalogId" },
-        "variant_id": { "$ref": "#/$defs/catalogId" },
-        "quantity": { "type": "integer", "minimum": 1, "maximum": 999 },
-        "result": { "enum": ["added", "needs_options", "out_of_stock", "error"] },
+        "source": {
+          "enum": [
+            "page",
+            "widget"
+          ]
+        },
+        "product_id": {
+          "$ref": "#/$defs/catalogId"
+        },
+        "variant_id": {
+          "$ref": "#/$defs/catalogId"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 999
+        },
+        "result": {
+          "enum": [
+            "added",
+            "needs_options",
+            "out_of_stock",
+            "error"
+          ]
+        },
         "batch": {
           "description": "Set when a project checklist adds several products at once: the same id on every line.",
           "type": "string",
@@ -210,10 +523,22 @@
       "description": "Metadata only. The question text goes to the chat endpoint.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["length"],
+      "required": [
+        "length"
+      ],
       "properties": {
-        "length": { "type": "integer", "minimum": 1, "maximum": 2000 },
-        "answered_from": { "enum": ["bank", "rag", "none"] }
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "answered_from": {
+          "enum": [
+            "bank",
+            "rag",
+            "none"
+          ]
+        }
       }
     }
   }

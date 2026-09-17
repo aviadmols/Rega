@@ -12,6 +12,42 @@ final class Settings {
 
 	public const OPTION = 'rega_settings';
 
+	public const MODES = array( 'off', 'preview', 'live' );
+
+	/** The Rega server. A site can point elsewhere with the REGA_API_URL constant in wp-config.php. */
+	public const DEFAULT_API_URL = 'https://api-production-dfb8a.up.railway.app/api/v1';
+
+	/** Whether the storefront widget loads, and for whom. New installs start in preview. */
+	public static function widget_mode(): string {
+		$stored = get_option( self::OPTION, array() );
+		$mode   = is_array( $stored ) && isset( $stored['widget_mode'] ) ? (string) $stored['widget_mode'] : 'preview';
+
+		return in_array( $mode, self::MODES, true ) ? $mode : 'preview';
+	}
+
+	public static function save_widget_mode( string $mode ): void {
+		$stored                = get_option( self::OPTION, array() );
+		$stored                = is_array( $stored ) ? $stored : array();
+		$stored['widget_mode'] = in_array( $mode, self::MODES, true ) ? $mode : 'preview';
+
+		update_option( self::OPTION, $stored, false );
+	}
+
+	/** Base URL of the Rega API, without a trailing slash. HTTPS only, except on this machine. */
+	public static function api_url(): string {
+		$url = defined( 'REGA_API_URL' ) ? (string) constant( 'REGA_API_URL' ) : self::DEFAULT_API_URL;
+		$url = untrailingslashit( esc_url_raw( $url ) );
+
+		$scheme = wp_parse_url( $url, PHP_URL_SCHEME );
+		$host   = wp_parse_url( $url, PHP_URL_HOST );
+
+		if ( 'https' === $scheme || ( 'http' === $scheme && in_array( $host, array( 'localhost', '127.0.0.1' ), true ) ) ) {
+			return $url;
+		}
+
+		return self::DEFAULT_API_URL;
+	}
+
 	/**
 	 * Post types whose published entries Rega may read as guides and articles.
 	 *

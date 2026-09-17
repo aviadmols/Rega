@@ -22,6 +22,7 @@ return [
         'items' => 'פריטים',
         'characters' => 'תווים',
         'kilobytes' => 'קילובייט',
+        'seconds' => 'שניות',
     ],
     'errors' => [
         'not_integer' => 'יש להזין מספר שלם.',

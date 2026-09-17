@@ -2,6 +2,7 @@
 //   REGA_BASE_URL=http://127.0.0.1:9400 REGA_FIXTURES=/path/fixtures.json node --test tests/playground/smoke.test.mjs
 import { before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 
 const base = process.env.REGA_BASE_URL ?? 'http://127.0.0.1:9400';
@@ -73,7 +74,7 @@ test('status describes the site, WooCommerce and active plugins', async () => {
   assert.equal(headers.get('cache-control'), 'no-store');
 
   const s = body.data;
-  assert.equal(s.plugin.version, '0.1.1');
+  assert.equal(s.plugin.version, '0.2.0');
   assert.equal(s.woocommerce.active, true);
   assert.equal(s.woocommerce.currency, 'ILS');
   assert.ok(s.plugins.some((p) => p.name === 'WooCommerce'));
@@ -252,6 +253,41 @@ test('the manifest gives counts and a fingerprint', async () => {
 
   const again = await authed('/feed/manifest');
   assert.equal(again.body.data.fingerprint, body.data.fingerprint, 'stable while nothing changes');
+});
+
+const pageHtml = async (query) => {
+  const res = await fetch(`${base}/?${new URLSearchParams(query)}`, { redirect: 'follow' });
+  assert.equal(res.status, 200, `page ${JSON.stringify(query)}`);
+  return res.text();
+};
+
+const regaContext = (html) => {
+  // WordPress appends "//# sourceURL=..." to inline scripts, so match the JSON line only.
+  const match = html.match(/window\.RegaContext = (\{.*\});\n/);
+  return match ? JSON.parse(match[1]) : null;
+};
+
+test('product pages and shared articles load the widget, with a site key derived from the token', async () => {
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const site = crypto.createHash('sha256').update(`rega-site|${hash}`).digest('hex').slice(0, 24);
+
+  const html = await pageHtml({ post_type: 'product', p: String(P.drill) });
+  const product = regaContext(html);
+  assert.ok(product, 'RegaContext on a product page');
+  assert.equal(product.site, site, 'the same formula as the Rega server');
+  assert.equal(product.mode, 'preview', 'new installs start in preview');
+  assert.equal(product.preview, null, 'visitors never get the preview key');
+  assert.deepEqual(product.page, { type: 'product', id: String(P.drill) });
+  assert.match(product.script, /^https:\/\/.+\/api\/v1\/widget\/rega\.js$/);
+  assert.match(product.storeApi, /wc\/store\/v1\/$/);
+  const tag = html.match(/<script[^>]*src="https:\/\/[^"]+\/widget\/rega\.js"[^>]*>/);
+  assert.ok(tag, 'the widget script is loaded from Rega');
+  assert.match(tag[0], /\sdefer[\s>=]/, 'deferred, so it never blocks the page');
+
+  const guide = regaContext(await pageHtml({ p: String(fixtures.guide) }));
+  assert.deepEqual(guide.page, { type: 'content', id: String(fixtures.guide) });
+
+  assert.equal(regaContext(await pageHtml({})), null, 'not on the home page');
 });
 
 // Last: it locks this address out for ten minutes.

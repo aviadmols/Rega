@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Rega
  * Plugin URI:        https://github.com/aviadmols/Rega
- * Description:       Connects this WooCommerce store to Rega, the smart shopping assistant. Gives Rega read-only access to the catalog and content through a token you create.
- * Version:           0.1.1
+ * Description:       Connects this WooCommerce store to Rega, the smart shopping assistant. Gives Rega read-only access to the catalog and content, shows the Rega widget on product pages and articles, and adds a reports page.
+ * Version:           0.2.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Rega
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'REGA_VERSION', '0.1.1' );
+define( 'REGA_VERSION', '0.2.0' );
 define( 'REGA_FILE', __FILE__ );
 define( 'REGA_DIR', __DIR__ );
 
@@ -34,7 +34,7 @@ spl_autoload_register(
 	}
 );
 
-// Rega reads products and never touches orders, so it is compatible with HPOS and block checkout.
+// Rega reads order totals only through the WC_Order API and never writes orders, so it is compatible with HPOS and block checkout.
 add_action(
 	'before_woocommerce_init',
 	static function (): void {

@@ -1,0 +1,39 @@
+<?php
+
+return [
+    'title' => 'Analytics',
+    'last_days' => 'Last :days days',
+    'no_shop' => 'No shop yet.',
+    'empty' => 'No data yet.',
+    'preview_note' => 'Includes :count events from preview visits by the store team.',
+    'totals' => [
+        'page_views' => 'Page views',
+        'visitors' => 'Visitors',
+        'impressions' => 'Widget seen',
+        'opens' => 'Widget opened',
+        'widget_add_to_cart' => 'Added to cart from Rega',
+        'orders' => 'Orders',
+        'assisted_orders' => 'Orders after using Rega',
+        'attributed_revenue' => 'Revenue from products added via Rega',
+    ],
+    'sections' => [
+        'hot_pages' => 'Hot pages',
+        'hot_models' => 'Hot display models',
+    ],
+    'columns' => [
+        'page' => 'Page',
+        'views' => 'Views',
+        'impressions' => 'Seen',
+        'opens' => 'Opened',
+        'clicks' => 'Clicks',
+        'add_to_cart' => 'Added to cart',
+        'model' => 'Display model',
+    ],
+    'models' => [
+        'position' => 'Superlatives',
+        'specs' => 'Specs in brief',
+        'complement' => 'Goes well with',
+        'guide_card' => 'Guides',
+        'article_products' => 'Products for an article',
+    ],
+];
