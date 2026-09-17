@@ -6,4 +6,5 @@ return [
     'content_mapper' => 'Article reader',
     'ranker' => 'Superlatives calculator',
     'planner' => 'Vocabulary planner',
+    'matcher' => 'Article product matcher',
 ];

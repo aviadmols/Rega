@@ -20,7 +20,7 @@ final class AgentPrompts extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static ?int $navigationSort = 23;
+    protected static ?int $navigationSort = 24;
 
     protected static ?string $slug = 'enrichment/prompts';
 

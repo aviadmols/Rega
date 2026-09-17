@@ -46,6 +46,19 @@ return [
             'max' => 'Highest',
         ],
     ],
+    'article_products' => [
+        'singular' => 'Product for an article',
+        'plural' => 'Products for articles',
+        'subheading' => 'What a guide or post page can show, chosen in code from checked facts: linked products first, then products from approved categories. In stock only.',
+        'empty_heading' => 'No products matched yet',
+        'empty_description' => 'Match after articles are read and checked.',
+        'reasons' => [
+            'mentioned' => 'Linked in the article',
+            'category' => 'Category: :category',
+            'shared_words' => ':count shared words',
+            'superlatives' => ':count superlatives',
+        ],
+    ],
     'prompts' => [
         'title' => 'Agent prompts',
         'subheading' => 'The instructions each agent receives. A prompt changes through a new versioned file, so every task knows exactly what it sent.',
@@ -101,6 +114,9 @@ return [
         'tied' => 'Tied',
         'value' => 'Value',
         'set' => 'Comparison set',
+        'article' => 'Article',
+        'product' => 'Product',
+        'why' => 'Why',
     ],
     'subjects' => [
         'product' => 'Product facts',
@@ -122,6 +138,7 @@ return [
         'reject_selected' => 'Reject selected',
         'add_vocabulary' => 'Add vocabulary',
         'compute_rankings' => 'Compute superlatives',
+        'match_article_products' => 'Match products to articles',
     ],
     'reasons' => [
         'no_hint' => 'Code found no type in the title',

@@ -9,6 +9,10 @@ return [
         'label' => 'Product text sent to a model',
         'description' => 'Code shortens each product to this many characters, keeping lines with numbers and specs first. Measurements are found before shortening is applied to prose.',
     ],
+    'max_products_per_article' => [
+        'label' => 'Products shown next to an article',
+        'description' => 'The most products chosen for one article or guide. Linked products come first, then products from the categories a checker approved.',
+    ],
     'min_set_size' => [
         'label' => 'Smallest set for a superlative',
         'description' => 'No "lightest" or "cheapest" among fewer comparable products in stock than this.',

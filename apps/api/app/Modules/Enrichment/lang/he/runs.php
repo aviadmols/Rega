@@ -9,5 +9,6 @@ return [
     'other_batch' => 'אף תשובה בקובץ לא מתאימה לבקשה במשימה הזו. הוא נוצר למוצרים, טקסט או פרומפט אחרים.',
     'rankings_computed' => ':rankings מיקומים ל־:products מוצרים, ב־:sets קבוצות השוואה (לפחות :min מוצרים בכל אחת).',
     'vocabulary_saved' => 'נשמר אוצר המילים ״:name״ גרסה :version: :types סוגי מוצרים, :attributes מפרטים ובחירות, :tags תגיות.',
+    'article_products_matched' => 'נבחרו :links מוצרים ל־:articles מאמרים. :skipped מאמרים לא קיבלו מוצרים: דפי חנות, בלי ערך לקונה, או שעוד לא נבדקו.',
     'vocabulary_invalid' => 'אוצר המילים לא נשמר: :count בעיות.',
 ];

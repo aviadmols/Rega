@@ -22,6 +22,7 @@ recorded in Agent activity.
    `claude-sonnet-5`. What tier 2 is unsure about waits for a person in Product facts.
 8. **Read articles** any time after the sync. Then check their facts as in steps 6 and 7.
 9. **Compute superlatives.** Superlatives, "Compute superlatives".
+10. **Match products to articles.** Products for articles, "Match products to articles". Linked products first, then in-stock products from the categories a checker approved. Store pages get none.
 
 The same steps from the command line:
 
