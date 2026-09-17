@@ -1,0 +1,28 @@
+# Docker builds use the repository root as context (docker build -f apps/api/Dockerfile .).
+.git
+.github
+.playwright-mcp
+**/node_modules
+docs
+packages
+
+# API
+apps/api/vendor
+apps/api/.env
+apps/api/.env.*
+!apps/api/.env.example
+apps/api/.phpunit.cache
+apps/api/storage/logs/*
+apps/api/storage/framework/cache/*
+apps/api/storage/framework/sessions/*
+apps/api/storage/framework/views/*
+apps/api/bootstrap/cache/*.php
+apps/api/database/*.sqlite
+apps/api/public/css/filament
+apps/api/public/fonts/filament
+apps/api/public/js/filament
+apps/api/resources/plugins
+
+# Plugin: only the sources the build script packs
+plugins/woocommerce/dist
+plugins/woocommerce/tests

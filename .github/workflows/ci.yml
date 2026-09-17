@@ -171,7 +171,8 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
-          context: apps/api
+          context: .
+          file: apps/api/Dockerfile
           push: false
           load: true
           tags: rega-api:ci
@@ -192,4 +193,5 @@ jobs:
               php artisan event:cache
               php artisan module:list
               test -f public/js/filament/filament/app.js
+              ls resources/plugins/rega-*.zip
             '

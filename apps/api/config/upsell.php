@@ -22,4 +22,12 @@ return [
     */
     'rtl_locales' => ['he', 'ar', 'fa', 'ur'],
 
+    /*
+    | Where the downloadable store plugin zip lives. The Docker build puts it here; locally run
+    | "php artisan connections:bundle-plugin".
+    */
+    'plugin' => [
+        'path' => resource_path('plugins'),
+    ],
+
 ];

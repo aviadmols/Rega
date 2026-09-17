@@ -1,5 +1,8 @@
 # One image, three roles on Railway: web (Octane on FrankenPHP), worker (queues), scheduler.
 # The role comes from the APP_ROLE variable each Railway service sets. See docs/runbooks/deploy-railway.md.
+#
+# Build context is the repository root, so the image can also pack the store plugin:
+#   docker build -f apps/api/Dockerfile .
 
 FROM dunglas/frankenphp:1-php8.4-bookworm
 
@@ -22,17 +25,24 @@ ENV APP_ENV=production \
     COMPOSER_ALLOW_SUPERUSER=1
 
 # Dependencies first, so a code-only change reuses this layer.
-COPY composer.json composer.lock ./
+COPY apps/api/composer.json apps/api/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction --no-progress
 
-COPY . .
+COPY apps/api/ .
 
 RUN composer dump-autoload --optimize --no-dev \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-upsell.ini"
-COPY docker/entrypoint.sh /usr/local/bin/upsell-entrypoint
+# The downloadable WooCommerce plugin, built from the same commit as the app that serves it.
+COPY plugins/woocommerce /tmp/rega-plugin
+RUN php /tmp/rega-plugin/bin/build.php \
+    && mkdir -p resources/plugins \
+    && cp /tmp/rega-plugin/dist/rega-*.zip resources/plugins/ \
+    && rm -rf /tmp/rega-plugin
+
+COPY apps/api/docker/php.ini "$PHP_INI_DIR/conf.d/zz-upsell.ini"
+COPY apps/api/docker/entrypoint.sh /usr/local/bin/upsell-entrypoint
 RUN chmod +x /usr/local/bin/upsell-entrypoint
 
 EXPOSE 8080

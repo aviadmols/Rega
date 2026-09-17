@@ -31,3 +31,6 @@ Thumbs.db
 /public/fonts/filament
 /public/js/filament
 /database/*.sqlite
+
+# The store plugin zip is built into the image (see Dockerfile) or by connections:bundle-plugin.
+/resources/plugins/*.zip

@@ -3,16 +3,14 @@
 namespace App\Modules\Connections;
 
 use App\Core\Modules\ModuleServiceProvider;
+use App\Modules\Connections\Console\BundlePluginCommand;
 
 final class ConnectionsServiceProvider extends ModuleServiceProvider
 {
-    protected function registerModule(): void
+    protected function moduleCommands(): array
     {
-        //
-    }
-
-    protected function bootModule(): void
-    {
-        //
+        return [
+            BundlePluginCommand::class,
+        ];
     }
 }
