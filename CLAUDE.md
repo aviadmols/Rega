@@ -45,6 +45,11 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - Prompts are versioned files in `Enrichment/Prompts`. Never edit a released version; add a new
   one and raise `PromptLibrary::CURRENT`.
 - Superlatives are computed in code only, from approved facts (`ComputeRankings`).
+- `ReadProductsInCode` runs before any model: brand (`BrandResolver`), size families, a type the
+  category stands for, title sizes. Its facts have origin `code`; model readings never supersede
+  them and receive them as `known`. `ComputeProductRelations` builds complements, families and
+  alternatives from approved facts, merchant links and a shop's versioned rules
+  (`resources/relations`), each with reasons. The Scan log page shows one product's whole trail.
 - Hebrew text: never `trim($s, '•…')` with multibyte characters (PHP trims bytes and cuts letters);
   use a `/u` regex. Hebrew final letters (ן ם ך ף ץ) differ from their regular forms in patterns.
 

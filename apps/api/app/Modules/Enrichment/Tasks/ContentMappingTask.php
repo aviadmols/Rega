@@ -96,7 +96,7 @@ final class ContentMappingTask implements AgentTask
         $problems = [];
         $saved = 0;
 
-        $this->facts->supersedePrevious('content_id', $item->subject_id, [FactKind::ContentKind, FactKind::ShopperValue, FactKind::Category]);
+        $this->facts->supersedePrevious('content_id', $item->subject_id, [FactKind::ContentKind, FactKind::ShopperValue, FactKind::Category, FactKind::Use]);
 
         foreach ([[FactKind::ContentKind, 'content_kind', $kind], [FactKind::ShopperValue, 'shopper_value', $value]] as [$factKind, $key, $text]) {
             $this->facts->write($batch, $item, 'content_id', $model, [
@@ -129,6 +129,27 @@ final class ContentMappingTask implements AgentTask
                 'origin' => FactOrigin::CodeAndModel,
                 'status' => FactStatus::AwaitingReview,
                 'status_reason' => 'model_only',
+            ]);
+            $saved++;
+        }
+
+        $allowedUses = (array) ($batch->scope['uses'] ?? []);
+
+        foreach (array_slice(array_values(array_unique(array_filter(is_array($output['uses'] ?? null) ? $output['uses'] : [], 'is_string'))), 0, 4) as $use) {
+            if (! in_array($use, $allowedUses, true)) {
+                $problems[] = "unknown_use:{$use}";
+
+                continue;
+            }
+
+            $this->facts->write($batch, $item, 'content_id', $model, [
+                'kind' => FactKind::Use,
+                'key' => 'use',
+                'value_text' => $use,
+                'quote' => $item->request['title'] ?? null,
+                'origin' => FactOrigin::Model,
+                'status' => FactStatus::AwaitingReview,
+                'status_reason' => 'use',
             ]);
             $saved++;
         }

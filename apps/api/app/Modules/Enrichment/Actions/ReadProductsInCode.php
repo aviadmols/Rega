@@ -1,0 +1,179 @@
+<?php
+
+namespace App\Modules\Enrichment\Actions;
+
+use App\Core\Facades\Features;
+use App\Core\Tenancy\TenantContext;
+use App\Modules\Catalog\Models\CatalogProduct;
+use App\Modules\Enrichment\Enums\FactKind;
+use App\Modules\Enrichment\Enums\FactOrigin;
+use App\Modules\Enrichment\Enums\FactStatus;
+use App\Modules\Enrichment\Models\EnrichmentCodeReading;
+use App\Modules\Enrichment\Models\EnrichmentFact;
+use App\Modules\Enrichment\Models\EnrichmentVocabulary;
+use App\Modules\Enrichment\Scanning\BrandResolver;
+use App\Modules\Enrichment\Scanning\CodeReading;
+use App\Modules\Enrichment\Support\VocabularyBranch;
+use App\Modules\Runs\Contracts\RecordsRuns;
+use App\Modules\Runs\Contracts\RunContext;
+use App\Modules\Runs\Models\Run;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * The first pass over the whole catalog, in code only: no model, no cost, same result every
+ * time. Every product gets a reading (see CodeReading), kept whole for the log. What code can
+ * settle on its own becomes approved facts with origin "code": the brand, a type the category
+ * stands for, sizes in the title. Model readings later answer only the rest.
+ *
+ * A product whose reading did not change is left alone, so running this again is cheap.
+ */
+final class ReadProductsInCode
+{
+    public const AGENT = 'enrichment.code_reader';
+
+    public const ACTION = 'enrichment.read_in_code';
+
+    private const SAMPLES = 20;
+
+    public function __construct(
+        private readonly RecordsRuns $runs,
+        private readonly TenantContext $tenant,
+    ) {}
+
+    public function handle(string $shopId): Run
+    {
+        return $this->runs->track(
+            agent: self::AGENT,
+            action: self::ACTION,
+            shopId: $shopId,
+            work: fn (RunContext $run) => $this->tenant->run($shopId, fn () => $this->read($run, $shopId)),
+        );
+    }
+
+    private function read(RunContext $run, string $shopId): void
+    {
+        $vocabularies = EnrichmentVocabulary::query()->where('active', true)->orderBy('key')->get();
+        $branchOf = [];
+        $overlaps = 0;
+
+        foreach ($vocabularies as $vocabulary) {
+            foreach (VocabularyBranch::products($vocabulary->definition())->pluck('id') as $productId) {
+                if (isset($branchOf[$productId])) {
+                    $overlaps++;
+
+                    continue;
+                }
+
+                $branchOf[$productId] = $vocabulary;
+            }
+        }
+
+        $brands = BrandResolver::forCatalog(CatalogProduct::query()->whereNull('removed_at')->lazyById(200));
+        $autoApprove = Features::enabled('enrichment.auto_approve', $shopId);
+        $now = now();
+
+        $counts = ['products' => 0, 'changed' => 0, 'unchanged' => 0, 'facts' => 0, 'with_brand' => 0, 'types_from_category' => 0, 'title_specs' => 0, 'with_choices' => 0, 'rentals' => 0];
+        $brandSources = [];
+        $families = [];
+        $samples = [];
+
+        foreach (CatalogProduct::query()->whereNull('removed_at')->lazyById(200) as $product) {
+            $counts['products']++;
+            $vocabulary = $branchOf[$product->id] ?? null;
+            $reading = CodeReading::read($product, $brands, $vocabulary?->definition());
+            $hash = hash('sha256', ($vocabulary?->id ?? '-').'|'.json_encode($reading, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+            $counts['with_brand'] += isset($reading['brand']) ? 1 : 0;
+            $counts['types_from_category'] += isset($reading['type']) ? 1 : 0;
+            $counts['title_specs'] += count($reading['specs'] ?? []);
+            $counts['with_choices'] += isset($reading['choices']) ? 1 : 0;
+            $counts['rentals'] += isset($reading['rental']) ? 1 : 0;
+            $source = $reading['brand']['source'] ?? 'none';
+            $brandSources[$source] = ($brandSources[$source] ?? 0) + 1;
+
+            if (isset($reading['family'])) {
+                $families[$reading['family']['key']] = ($families[$reading['family']['key']] ?? 0) + 1;
+            }
+
+            $existing = EnrichmentCodeReading::query()->where('product_id', $product->id)->first();
+
+            if ($existing !== null && $existing->reading_hash === $hash) {
+                $counts['unchanged']++;
+
+                continue;
+            }
+
+            $counts['changed']++;
+
+            if (count($samples) < self::SAMPLES && (isset($reading['type']) || isset($reading['specs']) || ($source !== 'none' && $source !== 'store_field'))) {
+                $samples[] = ['product' => $product->external_id, 'title' => mb_substr($product->title, 0, 80)] + array_intersect_key($reading, array_flip(['brand', 'type', 'specs', 'family']));
+            }
+
+            DB::transaction(function () use ($shopId, $product, $vocabulary, $reading, $hash, $autoApprove, $now, &$counts): void {
+                EnrichmentCodeReading::query()->updateOrCreate(['product_id' => $product->id], [
+                    'shop_id' => $shopId,
+                    'vocabulary_id' => $vocabulary?->id,
+                    'family_key' => $reading['family']['key'] ?? null,
+                    'brand' => isset($reading['brand']) ? mb_substr($reading['brand']['brand'], 0, 120) : null,
+                    'reading' => $reading,
+                    'reading_hash' => $hash,
+                    'read_at' => $now,
+                ]);
+
+                // Code's earlier facts about this product, unless a person decided on them.
+                EnrichmentFact::query()
+                    ->where('product_id', $product->id)
+                    ->where('origin', FactOrigin::Code)
+                    ->where('status', '!=', FactStatus::Superseded)
+                    ->whereNull('decided_by')
+                    ->update(['status' => FactStatus::Superseded, 'updated_at' => $now]);
+
+                $status = $autoApprove ? FactStatus::Approved : FactStatus::NeedsPerson;
+                $write = function (array $values) use ($shopId, $product, $hash, $status, &$counts): void {
+                    EnrichmentFact::query()->create($values + [
+                        'shop_id' => $shopId,
+                        'product_id' => $product->id,
+                        'origin' => FactOrigin::Code,
+                        'status' => $status,
+                        'input_hash' => $hash,
+                        'model' => 'code',
+                    ]);
+                    $counts['facts']++;
+                };
+
+                if (isset($reading['brand'])) {
+                    $write(['kind' => FactKind::Brand, 'key' => 'brand', 'value_text' => mb_substr($reading['brand']['brand'], 0, 255), 'quote' => $reading['brand']['quote'], 'status_reason' => 'code_'.$reading['brand']['source']]);
+                }
+
+                if (isset($reading['type'])) {
+                    $write(['kind' => FactKind::Type, 'key' => 'type', 'value_text' => $reading['type']['key'], 'quote' => $product->title, 'vocabulary_id' => $vocabulary?->id, 'status_reason' => 'code_category']);
+                }
+
+                foreach ((array) ($reading['specs'] ?? []) as $key => $spec) {
+                    $write(['kind' => FactKind::Spec, 'key' => $key, 'value_number' => $spec['value'], 'unit' => $spec['unit'], 'quote' => $spec['quote'], 'vocabulary_id' => $vocabulary?->id, 'status_reason' => 'code_title']);
+                }
+            });
+        }
+
+        // Readings of products the store no longer publishes.
+        EnrichmentCodeReading::query()->whereHas('product', fn ($q) => $q->whereNotNull('removed_at'))->delete();
+
+        $familyCount = count(array_filter($families, fn (int $size): bool => $size >= 2));
+
+        $run->output($counts + [
+            'brand_sources' => $brandSources,
+            'families' => $familyCount,
+            'products_in_families' => array_sum(array_filter($families, fn (int $size): bool => $size >= 2)),
+            'vocabularies' => $vocabularies->map(fn (EnrichmentVocabulary $v): string => $v->key.' v'.$v->version)->all(),
+            'products_in_two_branches' => $overlaps,
+            'samples' => $samples,
+        ])->summary('enrichment::runs.read_in_code', [
+            'products' => number_format($counts['products']),
+            'changed' => number_format($counts['changed']),
+            'brands' => number_format($counts['with_brand']),
+            'families' => number_format($familyCount),
+            'types' => number_format($counts['types_from_category']),
+            'specs' => number_format($counts['title_specs']),
+        ]);
+    }
+}

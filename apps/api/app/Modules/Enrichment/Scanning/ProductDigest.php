@@ -12,6 +12,7 @@ use App\Modules\Enrichment\Vocabulary\VocabularyDefinition;
  *   measurements   every number with a unit, converted: ["m3", 13, "mm", "קוטר פוטר: 13 מ"מ"]
  *   candidates     choices and tags whose patterns matched: ["c2", "kit", "body_only", "גוף בלבד"]
  *   type_hints     product types whose patterns matched the title
+ *   known          what code already settled: brand, a type the category stands for, title sizes
  *
  * The model answers with IDs from these lists, so it never retypes a value or a quote, and
  * every answer can be checked against what code found.
@@ -28,15 +29,18 @@ final class ProductDigest
         public readonly string $inputHash,
     ) {}
 
-    /** @param list<string> $boilerplate normalized lines repeated across the catalog, dropped */
-    public static function build(CatalogProduct $product, VocabularyDefinition $vocabulary, int $maxTextChars, string $promptHash, array $boilerplate = []): self
+    /**
+     * @param  list<string>  $boilerplate  normalized lines repeated across the catalog, dropped
+     * @param  array<string, mixed>  $known  facts code already wrote (see ReadProductsInCode)
+     */
+    public static function build(CatalogProduct $product, VocabularyDefinition $vocabulary, int $maxTextChars, string $promptHash, array $boilerplate = [], array $known = []): self
     {
         $condensed = (new TextCondenser)->condense(self::sections($product), $maxTextChars, $boilerplate);
         $text = $condensed['text'];
 
         $measurements = (new MeasurementScanner)->scan($text);
         $candidates = self::candidates($text, $vocabulary);
-        $typeHints = self::typeHints($product->title, $vocabulary);
+        $typeHints = isset($known['type']) ? [] : self::typeHints($product->title, $vocabulary);
 
         $request = array_filter([
             'id' => $product->external_id,
@@ -47,6 +51,7 @@ final class ProductDigest
             'measurements' => array_map(fn (Measurement $m): array => array_values($m->forAgent()), $measurements),
             'candidates' => array_map(fn (array $c): array => [$c['id'], $c['key'], $c['value'], $c['quote']], $candidates),
             'type_hints' => $typeHints,
+            'known' => $known,
         ], fn ($value): bool => $value !== null && $value !== '' && $value !== []);
 
         $context = [
@@ -104,6 +109,14 @@ final class ProductDigest
         foreach ($vocabulary->tags() as $tag) {
             if (($quote = self::firstMatch($text, (array) ($tag['patterns'] ?? []))) !== null) {
                 $found[] = ['kind' => 'tag', 'key' => 'tag', 'value' => $tag['key'], 'quote' => $quote];
+            }
+        }
+
+        // Jobs named in the text ("לבניית פרגולות"). Jobs only implied by the product type are
+        // offered by the prompt's list, not as candidates.
+        foreach ($vocabulary->uses() as $use) {
+            if (($quote = self::firstMatch($text, (array) ($use['patterns'] ?? []))) !== null) {
+                $found[] = ['kind' => 'use', 'key' => 'use', 'value' => $use['key'], 'quote' => $quote];
             }
         }
 

@@ -68,7 +68,13 @@ final class CreateTaskFile
             return null;
         }
 
-        $system = PromptLibrary::render($type, $needsVocabulary ? $vocabulary?->definition() : null);
+        // Articles are read against the jobs of every active vocabulary, so "good for" can link them to products.
+        $uses = $type === TaskType::ContentMapping
+            ? PromptLibrary::uses(EnrichmentVocabulary::query()->where('active', true)->orderBy('key')->get()->map(fn (EnrichmentVocabulary $v) => $v->definition()))
+            : [];
+        $scope += $uses === [] ? [] : ['uses' => array_column($uses, 'key')];
+
+        $system = PromptLibrary::render($type, $needsVocabulary ? $vocabulary?->definition() : null, $uses);
 
         return DB::transaction(function () use ($run, $shopId, $type, $vocabulary, $needsVocabulary, $reviewTier, $scope, $limit, $system): ?EnrichmentBatch {
             $batch = EnrichmentBatch::query()->create([

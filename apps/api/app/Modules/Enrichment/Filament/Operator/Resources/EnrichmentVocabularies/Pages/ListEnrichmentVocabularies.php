@@ -3,6 +3,7 @@
 namespace App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies\Pages;
 
 use App\Modules\Enrichment\Actions\ImportVocabulary;
+use App\Modules\Enrichment\Actions\ReadProductsInCode;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies\EnrichmentVocabularyResource;
 use App\Modules\Runs\Enums\RunStatus;
 use App\Modules\Tenancy\Models\Shop;
@@ -29,6 +30,26 @@ final class ListEnrichmentVocabularies extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('read_in_code')
+                ->label(__('enrichment::ui.actions.read_in_code'))
+                ->icon(Heroicon::OutlinedCodeBracket)
+                ->color('gray')
+                ->modalDescription(__('enrichment::ui.actions.read_in_code_help'))
+                ->schema([
+                    Select::make('shop_id')
+                        ->label(__('enrichment::ui.fields.shop'))
+                        ->options(fn (): array => Shop::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $run = app(ReadProductsInCode::class)->handle((string) $data['shop_id']);
+
+                    Notification::make()
+                        ->title((string) $run->summary())
+                        ->body($run->error)
+                        ->{$run->status === RunStatus::Succeeded ? 'success' : 'danger'}()
+                        ->send();
+                }),
             Action::make('add_vocabulary')
                 ->label(__('enrichment::ui.actions.add_vocabulary'))
                 ->icon(Heroicon::OutlinedPlus)

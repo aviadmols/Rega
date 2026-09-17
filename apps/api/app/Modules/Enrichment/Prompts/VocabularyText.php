@@ -54,6 +54,17 @@ final class VocabularyText
         $lines[] = '## Tags (`yes`, from candidates with key `tag`)';
         $lines[] = implode(', ', array_map(fn (array $t): string => '`'.$t['key'].'` '.$t['label']['he'], $vocabulary->tags()));
 
+        if ($vocabulary->uses() !== []) {
+            $lines[] = '';
+            $lines[] = '## Jobs and projects (`uses`)';
+
+            foreach ($vocabulary->uses() as $use) {
+                $types = (array) ($use['types'] ?? []);
+                $lines[] = '- `'.$use['key'].'`: '.$use['label']['he'].self::hint($use)
+                    .($types === [] ? '' : '. Usually: '.implode(', ', $types));
+            }
+        }
+
         return implode("\n", $lines);
     }
 

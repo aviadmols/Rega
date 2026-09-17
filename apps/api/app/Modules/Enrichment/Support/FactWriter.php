@@ -18,6 +18,7 @@ final class FactWriter
 {
     /**
      * Earlier facts about the same subject that no person decided are replaced by a new reading.
+     * Facts code wrote on its own stay: a model reading never replaces them.
      */
     public function supersedePrevious(string $column, string $subjectId, array $kinds): void
     {
@@ -25,6 +26,7 @@ final class FactWriter
             ->where($column, $subjectId)
             ->whereIn('kind', array_map(fn (FactKind $k): string => $k->value, $kinds))
             ->where('status', '!=', FactStatus::Superseded)
+            ->where('origin', '!=', FactOrigin::Code)
             ->whereNull('decided_by')
             ->update(['status' => FactStatus::Superseded, 'updated_at' => now()]);
     }

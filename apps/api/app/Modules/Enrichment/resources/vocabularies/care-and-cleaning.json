@@ -1,0 +1,164 @@
+{
+    "schema_version": 1,
+    "key": "care_and_cleaning",
+    "name": {
+        "he": "תחזוקה, ניקיון ושמנים",
+        "en": "Care, cleaning and oils"
+    },
+    "root_category_external_id": "1750",
+    "excluded_category_external_ids": [],
+    "product_types": [
+        {
+            "key": "deck_oil",
+            "label": { "he": "שמן או מגן לדק ועץ חיצוני", "en": "Deck and exterior wood oil" },
+            "hint": "שמן, צבע שקוף או מגן לעץ בחוץ: דק, פרגולה, גדר, ריהוט גן",
+            "patterns": ["שמן.{0,20}(?:לדק|דק |חיצוני|לעץ חיצוני|טרופי)", "דק גארד", "מגן במבוק", "Pullex", "שקוף לדק", "שמן אקולוגי לדק", "AQUATECH"]
+        },
+        {
+            "key": "furniture_oil",
+            "label": { "he": "שמן לרהיטים ועץ בבית", "en": "Furniture and interior wood oil" },
+            "patterns": ["שמן דני", "שמן טאנג", "בוצ['׳’]ר בלוק", "שמן טיק (?:לחידוש|אקזוטי|לעץ)"]
+        },
+        {
+            "key": "wood_wax",
+            "label": { "he": "ווקס ומשחה לעץ", "en": "Wood wax" },
+            "patterns": ["ווקס", "משחת"]
+        },
+        {
+            "key": "varnish",
+            "label": { "he": "לכה וציפוי שקוף", "en": "Varnish and clear coat" },
+            "patterns": ["הידרו קליר", "פוליטורה", "לכה"]
+        },
+        {
+            "key": "wood_primer",
+            "label": { "he": "יסוד לעץ", "en": "Wood primer" },
+            "patterns": ["הידרו גרונג", "יסוד לעץ"]
+        },
+        {
+            "key": "wood_cleaner_stripper",
+            "label": { "he": "מנקה עץ ומסיר גימור", "en": "Wood cleaner and stripper" },
+            "patterns": ["מנקה עץ", "Wood Cleaner", "סטריפר", "מסיר גימורים", "מסיר כל צבע"]
+        },
+        {
+            "key": "wood_filler",
+            "label": { "he": "מרק ומילוי לעץ", "en": "Wood filler" },
+            "patterns": ["מרק לעץ", "מילוי לעץ"]
+        },
+        {
+            "key": "floor_care",
+            "label": { "he": "תחזוקת פרקט ורצפות", "en": "Parquet and floor care" },
+            "patterns": ["פרקט", "למינציה", "לימנציה"]
+        },
+        {
+            "key": "lubricant_spray",
+            "label": { "he": "תרסיס שימון, סיכוך והגנה", "en": "Lubricant and protective spray" },
+            "patterns": ["WD-40", "גריז", "שימון", "סיכוך", "שחרור ברגים", "ספריי סיליקון", "גילוון"]
+        },
+        {
+            "key": "cleaner",
+            "label": { "he": "חומר ניקוי", "en": "Cleaner" },
+            "patterns": ["מסיר אבנית", "מנקה רובה", "מלרוד", "פותח סתימות", "חומר חיטוי", "עובש", "שטיפת ריצפה", "ניקוי (?:למכונת|והסרת|מגעים)", "להסרת (?:וניקוי|חומרי)"]
+        },
+        {
+            "key": "cleaning_tool",
+            "label": { "he": "כלי ניקוי", "en": "Cleaning tool" },
+            "patterns": ["מגב", "ספוג", "מטלית", "מטליות", "ג['׳’]ילדה", "כפפות", "קפיץ (?:צינור|ספירלי)"]
+        },
+        {
+            "key": "wall_repair",
+            "label": { "he": "שפכטל ותיקון קירות", "en": "Wall filler and repair" },
+            "patterns": ["שפכטל", "קליסימו", "תיקון חורים"]
+        },
+        {
+            "key": "rental",
+            "label": { "he": "השכרת ציוד", "en": "Equipment rental" },
+            "patterns": ["^השכרת"]
+        },
+        {
+            "key": "equipment",
+            "label": { "he": "מכונה או מרסס", "en": "Machine or sprayer" },
+            "patterns": ["^מכונת", "^איירלס", "^מרסס", "^אקדח"]
+        },
+        {
+            "key": "consumable",
+            "label": { "he": "חומרי עזר לעבודה", "en": "Work consumables" },
+            "patterns": ["ניילון", "שקי", "בלה ריקה", "גליל קרטון", "שטיח הפלא", "נייר ליטוש", "סקוטש"]
+        },
+        {
+            "key": "air_freshener",
+            "label": { "he": "מבשם ומטהר אוויר", "en": "Air freshener" },
+            "patterns": ["מבשם", "מטהר אוויר"]
+        },
+        {
+            "key": "other",
+            "label": { "he": "אחר", "en": "Other" }
+        }
+    ],
+    "attributes": [
+        {
+            "key": "volume_l",
+            "label": { "he": "נפח", "en": "Volume" },
+            "type": "number",
+            "dimension": "volume",
+            "min": 0.05,
+            "max": 50,
+            "hint": "נפח האריזה. כשיש כמה נפחים לבחירה, השאירו ריק",
+            "title_capture": { "pattern": "(?<![\\d.,/])(?<!/ )(\\d+(?:[.,]\\d+)?)\\s*ליטר(?![\\p{L}])(?!\\s*/)", "group": 1 }
+        },
+        {
+            "key": "area",
+            "label": { "he": "איפה משתמשים", "en": "Where to use" },
+            "type": "enum",
+            "values": [
+                { "key": "outdoor", "label": { "he": "בחוץ", "en": "Outdoor" }, "patterns": ["חיצוני", "לחוץ", "רהיטי גן", "לדק"] },
+                { "key": "indoor", "label": { "he": "בבית", "en": "Indoor" }, "patterns": ["לשימוש (?:ב)?פנים(?! ובחוץ)", "לרהיטי עץ", "פרקט"] },
+                { "key": "both", "label": { "he": "בבית ובחוץ", "en": "Indoor and outdoor" }, "patterns": ["בפנים ובחוץ", "פנים וחוץ"] }
+            ]
+        },
+        {
+            "key": "base",
+            "label": { "he": "בסיס", "en": "Base" },
+            "type": "enum",
+            "values": [
+                { "key": "water", "label": { "he": "על בסיס מים", "en": "Water based" }, "patterns": ["בסיס מים", "הידרו", "AQUATECH"] },
+                { "key": "oil", "label": { "he": "על בסיס שמן", "en": "Oil based" }, "patterns": ["בסיס שמן"] }
+            ]
+        },
+        {
+            "key": "finish",
+            "label": { "he": "גימור", "en": "Finish" },
+            "type": "enum",
+            "values": [
+                { "key": "matte", "label": { "he": "מט", "en": "Matte" }, "patterns": ["(?<![\\p{L}])מט(?![\\p{L}])(?! משי)"] },
+                { "key": "satin", "label": { "he": "מט משי", "en": "Satin" }, "patterns": ["מט משי", "משי"] },
+                { "key": "gloss", "label": { "he": "מבריק", "en": "Gloss" }, "patterns": ["מבריק"] }
+            ]
+        },
+        {
+            "key": "food_safe",
+            "label": { "he": "מתאים למגע עם מזון", "en": "Food safe" },
+            "type": "boolean",
+            "patterns": ["תקן למזון", "מגע (?:עם|במזון)"]
+        }
+    ],
+    "tags": [
+        { "key": "eco", "label": { "he": "אקולוגי או טבעי", "en": "Eco or natural" }, "patterns": ["אקולוגי", "טבעי"] },
+        { "key": "uv_protection", "label": { "he": "הגנה מקרינת שמש", "en": "UV protection" }, "patterns": ["UV", "קרינ"] },
+        { "key": "for_professionals", "label": { "he": "לאנשי מקצוע", "en": "For professionals" }, "patterns": ["מקצועי"] }
+    ],
+    "uses": [
+        { "key": "deck", "label": { "he": "בניית דק", "en": "Deck" }, "patterns": ["לדק", "דק "], "types": ["deck_oil", "wood_cleaner_stripper", "rental"] },
+        { "key": "pergola", "label": { "he": "פרגולה", "en": "Pergola" }, "patterns": ["פרגול"], "types": ["deck_oil"] },
+        { "key": "fence", "label": { "he": "גדר", "en": "Fence" }, "patterns": ["גדר"], "types": ["deck_oil"] },
+        { "key": "garden_furniture", "label": { "he": "ריהוט גן", "en": "Garden furniture" }, "patterns": ["ריהוט גן", "רהיטי גן"], "types": ["deck_oil", "furniture_oil"] },
+        { "key": "furniture", "label": { "he": "נגרות ובניית רהיטים", "en": "Furniture making" }, "patterns": ["רהיט"], "types": ["furniture_oil", "wood_wax", "varnish", "wood_primer", "wood_filler"] },
+        { "key": "furniture_restoration", "label": { "he": "חידוש רהיטי עץ", "en": "Furniture restoration" }, "patterns": ["חידוש", "לחידוש"], "types": ["furniture_oil", "wood_wax", "varnish", "wood_filler", "wood_cleaner_stripper"] },
+        { "key": "stairs", "label": { "he": "מדרגות", "en": "Stairs" }, "patterns": ["מדרגות"], "types": ["varnish"] },
+        { "key": "parquet_care", "label": { "he": "תחזוקת פרקט", "en": "Parquet care" }, "patterns": ["פרקט"], "types": ["floor_care"] },
+        { "key": "house_cleaning", "label": { "he": "ניקיון הבית", "en": "House cleaning" }, "patterns": ["לניקוי", "ניקיון"], "types": ["cleaner", "cleaning_tool"] },
+        { "key": "lubrication", "label": { "he": "שימון, סיכוך והגנה מחלודה", "en": "Lubrication and rust protection" }, "patterns": ["שימון", "סיכוך", "חלודה"], "types": ["lubricant_spray"] },
+        { "key": "wall_repair", "label": { "he": "תיקון קירות", "en": "Wall repair" }, "patterns": ["קירות", "סדקים"], "types": ["wall_repair"] },
+        { "key": "painting", "label": { "he": "צביעה", "en": "Painting" }, "patterns": ["צביעה", "צבע"], "types": ["equipment", "consumable"] },
+        { "key": "renovation_cleanup", "label": { "he": "ניקיון אחרי שיפוץ", "en": "Post-renovation cleanup" }, "patterns": ["שיפוץ", "פסולת בניין"], "types": ["cleaner", "consumable"] }
+    ]
+}

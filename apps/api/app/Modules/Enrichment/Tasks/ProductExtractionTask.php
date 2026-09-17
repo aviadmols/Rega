@@ -3,7 +3,6 @@
 namespace App\Modules\Enrichment\Tasks;
 
 use App\Core\Facades\Settings;
-use App\Modules\Catalog\Models\CatalogCategory;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Enums\FactKind;
 use App\Modules\Enrichment\Enums\FactOrigin;
@@ -12,21 +11,26 @@ use App\Modules\Enrichment\Enums\ItemStatus;
 use App\Modules\Enrichment\Enums\TaskType;
 use App\Modules\Enrichment\Models\EnrichmentBatch;
 use App\Modules\Enrichment\Models\EnrichmentBatchItem;
+use App\Modules\Enrichment\Models\EnrichmentCodeReading;
 use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Scanning\Boilerplate;
 use App\Modules\Enrichment\Scanning\ProductDigest;
 use App\Modules\Enrichment\Scanning\TextNormalizer;
 use App\Modules\Enrichment\Support\FactWriter;
+use App\Modules\Enrichment\Support\VocabularyBranch;
 use App\Modules\Enrichment\Vocabulary\VocabularyDefinition;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * Reads products in one vocabulary's branch of the catalog.
  *
+ * Code reads first (ReadProductsInCode): brand, a type the category stands for, sizes in the
+ * title. The request carries those as `known`, and the model answers only the rest.
+ *
  * What gets approved without review: a claim code and the model agree on, and nothing else
  * could have meant. A single product-type hint the model chose; a candidate phrase the model
  * accepted; a measurement whose unit can only mean one spec for this type and that appears with
- * one value. Everything else waits for the reviewer.
+ * one value. Everything else waits for the reviewer, and "good for" jobs always do.
  */
 final class ProductExtractionTask implements AgentTask
 {
@@ -34,8 +38,13 @@ final class ProductExtractionTask implements AgentTask
 
     private const MAX_QUOTE_CHARS = 200;
 
+    private const MAX_USES = 6;
+
     /** Wording that says a number belongs to something optional or other. Such specs are always checked. */
     private const OPTIONAL_MENTION = '~בנפרד|לרכוש|לרכישה|אופציונ|להשכרה|תואם ל|מתאים ל|separately|optional|compatible~iu';
+
+    /** @var Collection<string, array<string, mixed>>|null code readings by product ID, per batch */
+    private ?Collection $readings = null;
 
     public function __construct(private readonly FactWriter $facts) {}
 
@@ -55,19 +64,20 @@ final class ProductExtractionTask implements AgentTask
         $maxChars = (int) Settings::get('enrichment.max_agent_text_chars', $batch->shop_id);
         $includeDone = (bool) ($batch->scope['include_done'] ?? false);
         $count = 0;
+        $this->readings = null;
 
         // Text pasted into many products of this branch is found first and kept with the batch,
         // so checking an answer later removes exactly the same lines.
         $boilerplate = Boilerplate::find((function () use ($vocabulary) {
-            foreach ($this->products($vocabulary)->lazyById(200) as $product) {
+            foreach (VocabularyBranch::products($vocabulary)->lazyById(200) as $product) {
                 yield ProductDigest::sections($product);
             }
         })());
 
         $batch->forceFill(['scope' => ($batch->scope ?? []) + ['boilerplate' => $boilerplate]])->save();
 
-        foreach ($this->products($vocabulary)->lazyById(200) as $product) {
-            $digest = ProductDigest::build($product, $vocabulary, $maxChars, $batch->prompt_hash, $boilerplate);
+        foreach (VocabularyBranch::products($vocabulary)->lazyById(200) as $product) {
+            $digest = ProductDigest::build($product, $vocabulary, $maxChars, $batch->prompt_hash, $boilerplate, $this->known($product->id, $vocabulary));
 
             if (! $includeDone && $this->alreadyRead($product->id, $digest->inputHash)) {
                 continue;
@@ -98,8 +108,9 @@ final class ProductExtractionTask implements AgentTask
         }
 
         $maxChars = (int) Settings::get('enrichment.max_agent_text_chars', $batch->shop_id);
+        $digest = ProductDigest::build($product, $vocabulary, $maxChars, $batch->prompt_hash, (array) ($batch->scope['boilerplate'] ?? []), $this->known($product->id, $vocabulary));
 
-        return ProductDigest::build($product, $vocabulary, $maxChars, $batch->prompt_hash, (array) ($batch->scope['boilerplate'] ?? []))->inputHash !== $item->input_hash;
+        return $digest->inputHash !== $item->input_hash;
     }
 
     public function apply(EnrichmentBatch $batch, EnrichmentBatchItem $item, array $output, string $model): ItemOutcome
@@ -117,14 +128,20 @@ final class ProductExtractionTask implements AgentTask
         $problems = [];
         $saved = [];
         $context = $item->context;
+        $known = (array) ($item->request['known'] ?? []);
 
-        $this->facts->supersedePrevious('product_id', $item->subject_id, [FactKind::Type, FactKind::Spec, FactKind::Choice, FactKind::Flag, FactKind::Tag]);
+        // Code's own facts are not replaced by a model reading; see ReadProductsInCode.
+        $this->facts->supersedePrevious('product_id', $item->subject_id, [FactKind::Type, FactKind::Spec, FactKind::Choice, FactKind::Flag, FactKind::Tag, FactKind::Use]);
 
-        // Type.
+        // Type. When the category already says what the product is, code's type stands.
         $type = $output['type'] ?? null;
-        $typeKey = null;
+        $typeKey = isset($known['type']) ? (string) $known['type'] : null;
 
-        if (is_string($type) && $type !== '') {
+        if ($typeKey !== null) {
+            if (is_string($type) && $type !== '' && $type !== $typeKey) {
+                $problems[] = "type_differs_from_code:{$type}";
+            }
+        } elseif (is_string($type) && $type !== '') {
             if (! $vocabulary->hasProductType($type)) {
                 $problems[] = "unknown_type:{$type}";
             } else {
@@ -144,12 +161,17 @@ final class ProductExtractionTask implements AgentTask
             }
         }
 
-        // Specs: a spec key mapped to a measurement code found.
+        // Specs: a spec key mapped to a measurement code found. Specs code read from the title stand.
         $measurements = collect((array) ($context['measurements'] ?? []))->keyBy('id');
         $specs = is_array($output['specs'] ?? null) ? $output['specs'] : [];
 
         foreach ($specs as $key => $measurementId) {
             $key = (string) $key;
+
+            if (isset($known['specs'][$key])) {
+                continue;
+            }
+
             $attribute = $vocabulary->attribute($key);
             $measurement = is_string($measurementId) ? $measurements->get($measurementId) : null;
 
@@ -185,7 +207,7 @@ final class ProductExtractionTask implements AgentTask
             ]);
         }
 
-        // Candidates the model accepted: choices, yes/no specs, tags.
+        // Candidates the model accepted: choices, yes/no specs, tags. Job candidates join the uses below.
         $candidates = collect((array) ($context['candidates'] ?? []))->keyBy('id');
         $accepted = collect(is_array($output['yes'] ?? null) ? $output['yes'] : [])
             ->filter(fn ($id): bool => is_string($id))
@@ -202,8 +224,9 @@ final class ProductExtractionTask implements AgentTask
             ->values();
 
         $choiceCounts = $accepted->where('kind', 'enum')->countBy('key');
+        $uses = $accepted->where('kind', 'use')->pluck('value')->all();
 
-        foreach ($accepted as $candidate) {
+        foreach ($accepted->where('kind', '!=', 'use') as $candidate) {
             $conflict = $candidate['kind'] === 'enum' && $choiceCounts->get($candidate['key'], 0) > 1;
             // Tag wording is loose ("professional" also describes a result or a brand), and a tag
             // is something a shopper reads. Tags are always checked by a second model.
@@ -213,6 +236,36 @@ final class ProductExtractionTask implements AgentTask
                 'origin' => FactOrigin::CodeAndModel,
                 'status' => $conflict || $isTag ? FactStatus::AwaitingReview : FactStatus::Approved,
                 'status_reason' => $conflict ? 'conflicting_choices' : ($isTag ? 'tag' : null),
+            ]);
+        }
+
+        // Jobs the product is good for, from the vocabulary's list. Often not written in the text
+        // ("pressure-treated pine" says nothing about pergolas), so every one goes to the reviewer.
+        foreach (array_slice(array_values(array_unique([...$uses, ...array_filter(is_array($output['uses'] ?? null) ? $output['uses'] : [], 'is_string')])), 0, self::MAX_USES) as $use) {
+            $definition = collect($vocabulary->uses())->firstWhere('key', $use);
+
+            if ($definition === null) {
+                $problems[] = "unknown_use:{$use}";
+
+                continue;
+            }
+
+            if (($definition['types'] ?? []) !== [] && $typeKey !== null && ! in_array($typeKey, (array) $definition['types'], true)) {
+                $problems[] = "use_not_for_type:{$use}";
+
+                continue;
+            }
+
+            $evidence = $candidates->first(fn (array $c): bool => $c['kind'] === 'use' && $c['value'] === $use && $c['quote'] !== '');
+
+            $saved[] = $this->facts->write($batch, $item, 'product_id', $model, [
+                'kind' => FactKind::Use,
+                'key' => 'use',
+                'value_text' => $use,
+                'quote' => $evidence['quote'] ?? null,
+                'origin' => $evidence === null ? FactOrigin::Model : FactOrigin::CodeAndModel,
+                'status' => FactStatus::AwaitingReview,
+                'status_reason' => 'use',
             ]);
         }
 
@@ -242,26 +295,25 @@ final class ProductExtractionTask implements AgentTask
         return new ItemOutcome(ItemStatus::Applied, count($saved), count($problems), $problems);
     }
 
-    /** @return Builder<CatalogProduct> products in the vocabulary's branch, outside its excluded categories */
-    private function products(VocabularyDefinition $vocabulary): Builder
+    /**
+     * What code already knows about a product, sent with the request so the model does not
+     * answer it again: brand, a type the category stands for, sizes read from the title.
+     *
+     * @return array<string, mixed>
+     */
+    private function known(string $productId, VocabularyDefinition $vocabulary): array
     {
-        $categories = CatalogCategory::query()->whereNull('removed_at')->get();
-        $root = $categories->firstWhere('external_id', $vocabulary->rootCategoryExternalId());
+        $this->readings ??= EnrichmentCodeReading::query()->get(['product_id', 'reading'])->pluck('reading', 'product_id');
+        $reading = (array) ($this->readings->get($productId) ?? []);
 
-        if ($root === null) {
-            return CatalogProduct::query()->whereRaw('1 = 0');
+        $known = ['brand' => $reading['brand']['brand'] ?? null];
+
+        if (($reading['vocabulary'] ?? null) === $vocabulary->key()) {
+            $known['type'] = $reading['type']['key'] ?? null;
+            $known['specs'] = array_map(fn (array $spec): array => [$spec['value'], $spec['unit']], (array) ($reading['specs'] ?? []));
         }
 
-        $excluded = [];
-        foreach ($vocabulary->excludedCategoryExternalIds() as $externalId) {
-            $category = $categories->firstWhere('external_id', $externalId);
-            $excluded = [...$excluded, ...($category?->branchExternalIds($categories) ?? [$externalId])];
-        }
-
-        return CatalogProduct::query()
-            ->whereNull('removed_at')
-            ->inCategories(array_values(array_diff($root->branchExternalIds($categories), $excluded)))
-            ->when($excluded !== [], fn (Builder $q) => $q->whereDoesntHave('categories', fn (Builder $c) => $c->whereIn('catalog_categories.external_id', $excluded)));
+        return array_filter($known, fn ($value): bool => $value !== null && $value !== []);
     }
 
     private function alreadyRead(string $productId, string $inputHash): bool

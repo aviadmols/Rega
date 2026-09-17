@@ -16,9 +16,9 @@ final class PromptLibrary
 {
     /** @var array<string, int> task => current version */
     public const CURRENT = [
-        'product_extraction' => 1,
-        'fact_review' => 1,
-        'content_mapping' => 1,
+        'product_extraction' => 2,
+        'fact_review' => 2,
+        'content_mapping' => 2,
     ];
 
     public static function version(TaskType $task): int
@@ -38,12 +38,42 @@ final class PromptLibrary
         return (string) file_get_contents($path);
     }
 
-    /** The instructions with the vocabulary filled in, exactly as a model receives them. */
-    public static function render(TaskType $task, ?VocabularyDefinition $vocabulary): string
+    /**
+     * The instructions with the vocabulary and the job list filled in, exactly as a model receives them.
+     *
+     * @param  list<array{key: string, label: array<string, string>}>  $uses  jobs from every active vocabulary
+     */
+    public static function render(TaskType $task, ?VocabularyDefinition $vocabulary, array $uses = []): string
     {
         $text = self::template($task);
+        $useLines = implode("\n", array_map(fn (array $use): string => '- `'.$use['key'].'`: '.$use['label']['he'], $uses));
 
-        return trim(str_replace('{{vocabulary}}', $vocabulary === null ? '' : VocabularyText::render($vocabulary), $text))."\n";
+        return trim(str_replace(
+            ['{{vocabulary}}', '{{uses}}'],
+            [$vocabulary === null ? '' : VocabularyText::render($vocabulary), $useLines === '' ? '(none yet)' : $useLines],
+            $text,
+        ))."\n";
+    }
+
+    /**
+     * Every job named in the shop's active vocabularies, once per key, in a fixed order.
+     *
+     * @param  iterable<VocabularyDefinition>  $vocabularies
+     * @return list<array{key: string, label: array<string, string>}>
+     */
+    public static function uses(iterable $vocabularies): array
+    {
+        $uses = [];
+
+        foreach ($vocabularies as $vocabulary) {
+            foreach ($vocabulary->uses() as $use) {
+                $uses[$use['key']] ??= ['key' => $use['key'], 'label' => $use['label']];
+            }
+        }
+
+        ksort($uses);
+
+        return array_values($uses);
     }
 
     public static function hash(string $renderedPrompt): string

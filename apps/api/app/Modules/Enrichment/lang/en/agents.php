@@ -7,4 +7,6 @@ return [
     'ranker' => 'Superlatives calculator',
     'planner' => 'Vocabulary planner',
     'matcher' => 'Article product matcher',
+    'code_reader' => 'Code reader',
+    'relator' => 'Product relations calculator',
 ];

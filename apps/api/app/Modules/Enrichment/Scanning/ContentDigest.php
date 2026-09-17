@@ -119,6 +119,11 @@ final class ContentDigest
 
             $words[] = $word;
 
+            // Construct state: "תחזוקה" is written "תחזוקת" in "מוצרי תחזוקת עץ".
+            if (mb_strlen($word) >= 4 && mb_substr($word, -1) === 'ה') {
+                $words[] = mb_substr($word, 0, -1).'ת';
+            }
+
             // Plurals also match the singular: "דקים" matches "דק", "עצים" matches "עץ" (with its
             // final letter), "פרגולות" matches "פרגולה".
             if (mb_strlen($word) >= 4 && preg_match('~(ים|ות)$~u', $word, $suffix)) {

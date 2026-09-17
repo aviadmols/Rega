@@ -10,6 +10,9 @@ enum FactOrigin: string
     /** A model said it with a quote code could verify, but code did not find it on its own. */
     case Model = 'model';
 
+    /** Code alone: a store field, the category, or a pattern in the title. No model involved. */
+    case Code = 'code';
+
     /** A person entered or corrected it. */
     case Person = 'person';
 

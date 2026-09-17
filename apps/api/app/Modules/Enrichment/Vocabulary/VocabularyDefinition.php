@@ -70,6 +70,18 @@ final class VocabularyDefinition
                 if (! is_numeric($attribute['min'] ?? null) || ! is_numeric($attribute['max'] ?? null) || (float) $attribute['min'] > (float) $attribute['max']) {
                     $problems[] = "{$at} needs numeric min <= max";
                 }
+                if (isset($attribute['title_capture'])) {
+                    $capture = $attribute['title_capture'];
+                    $valid = is_array($capture)
+                        && is_string($capture['pattern'] ?? null)
+                        && @preg_match('~'.$capture['pattern'].'~iu', '') !== false
+                        && is_int($capture['group'] ?? null) && $capture['group'] >= 1
+                        && (! isset($capture['factor']) || (is_numeric($capture['factor']) && $capture['factor'] > 0));
+
+                    if (! $valid) {
+                        $problems[] = "{$at}.title_capture needs a valid pattern, a group number and an optional positive factor";
+                    }
+                }
             }
 
             if ($type === 'enum') {
@@ -94,6 +106,27 @@ final class VocabularyDefinition
         $tagKeys = [];
         foreach ((array) ($data['tags'] ?? []) as $i => $tag) {
             $problems = [...$problems, ...self::checkEntry("tags[{$i}]", $tag, $tagKeys)];
+        }
+
+        $typeKeys = array_map(fn ($t): string => (string) ($t['key'] ?? ''), (array) ($data['product_types'] ?? []));
+
+        foreach ((array) ($data['product_types'] ?? []) as $i => $type) {
+            foreach ((array) ($type['categories'] ?? []) as $j => $category) {
+                if (! is_string($category) || trim($category) === '') {
+                    $problems[] = "product_types[{$i}].categories[{$j}] must be a category external id";
+                }
+            }
+        }
+
+        $useKeys = [];
+        foreach ((array) ($data['uses'] ?? []) as $i => $use) {
+            $problems = [...$problems, ...self::checkEntry("uses[{$i}]", $use, $useKeys)];
+
+            foreach ((array) ($use['types'] ?? []) as $type) {
+                if (! in_array($type, $typeKeys, true)) {
+                    $problems[] = "uses[{$i}].types: unknown product type {$type}";
+                }
+            }
         }
 
         $attributeKeys = array_map(fn ($a): string => (string) ($a['key'] ?? ''), (array) ($data['attributes'] ?? []));
@@ -171,6 +204,85 @@ final class VocabularyDefinition
         return array_values((array) ($this->data['tags'] ?? []));
     }
 
+    /**
+     * Jobs and projects a product can be good for ("deck", "pergola"). `types` lists the product
+     * types usually used for the job, which code offers to the model as candidates to confirm.
+     *
+     * @return list<array{key: string, label: array<string, string>, patterns?: list<string>, types?: list<string>, hint?: string}>
+     */
+    public function uses(): array
+    {
+        return array_values((array) ($this->data['uses'] ?? []));
+    }
+
+    public function hasUse(string $key): bool
+    {
+        return in_array($key, array_column($this->uses(), 'key'), true);
+    }
+
+    /**
+     * The product type a store category stands for, when the vocabulary maps categories to types.
+     * Categories are tried most specific first; the first one that maps to exactly one type wins.
+     *
+     * @param  list<string>  $categoryExternalIds  most specific first
+     */
+    public function typeForCategories(array $categoryExternalIds): ?string
+    {
+        foreach ($categoryExternalIds as $categoryId) {
+            $types = [];
+
+            foreach ($this->productTypes() as $type) {
+                if (in_array((string) $categoryId, array_map('strval', (array) ($type['categories'] ?? [])), true)) {
+                    $types[] = $type['key'];
+                }
+            }
+
+            if (count($types) === 1) {
+                return $types[0];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Number specs code reads from the title with a pattern, such as the 20 and 45 of
+     * "עץ אורן מוקצע בפרופיל 20X45 מ"מ".
+     *
+     * @return array<string, array{value: float, unit: string, quote: string}>
+     */
+    public function titleSpecs(string $title, ?string $type): array
+    {
+        $specs = [];
+
+        foreach ($this->attributes() as $attribute) {
+            $capture = $attribute['title_capture'] ?? null;
+
+            if (($attribute['type'] ?? 'number') !== 'number' || ! is_array($capture) || ! $this->appliesTo($attribute['key'], $type)) {
+                continue;
+            }
+
+            if (@preg_match('~'.$capture['pattern'].'~iu', $title, $match) !== 1 || ! isset($match[$capture['group']])) {
+                continue;
+            }
+
+            $number = (float) str_replace(',', '.', $match[$capture['group']]);
+            $value = $number * (float) ($capture['factor'] ?? 1);
+
+            if ($value < (float) $attribute['min'] || $value > (float) $attribute['max']) {
+                continue;
+            }
+
+            $specs[$attribute['key']] = [
+                'value' => round($value, 6),
+                'unit' => Units::CANONICAL[$attribute['dimension']],
+                'quote' => $match[0],
+            ];
+        }
+
+        return $specs;
+    }
+
     public function hasProductType(string $key): bool
     {
         return in_array($key, array_column($this->productTypes(), 'key'), true);
@@ -206,6 +318,7 @@ final class VocabularyDefinition
         $entries = match ($kind) {
             'type' => $this->productTypes(),
             'tag' => $this->tags(),
+            'use' => $this->uses(),
             default => $this->attributes(),
         };
 

@@ -17,6 +17,8 @@ return [
         'choice' => 'בחירה',
         'flag' => 'מפרט כן/לא',
         'tag' => 'תגית',
+        'use' => 'מתאים לעבודה',
+        'brand' => 'מותג',
         'content_kind' => 'סוג מאמר',
         'shopper_value' => 'ערך לקונה',
         'category' => 'קטגוריה',
@@ -30,9 +32,15 @@ return [
         'superseded' => 'הוחלף',
     ],
     'origins' => [
+        'code' => 'קוד',
         'code_model' => 'קוד ומודל',
         'model' => 'מודל',
         'person' => 'אדם',
+    ],
+    'relation_kinds' => [
+        'complement' => 'משלים',
+        'family' => 'מידה או גרסה אחרת',
+        'alternative' => 'חלופה',
     ],
     'verdicts' => [
         'ok' => 'נכון',

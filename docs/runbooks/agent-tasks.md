@@ -7,31 +7,53 @@ recorded in Agent activity.
 
 1. **Sync the catalog.** Operator panel, Catalog, "Sync catalog". Runs on the worker. Or
    `php artisan catalog:sync <shop-slug>`.
-2. **Add a vocabulary** for a branch of the catalog. Vocabularies, "Add vocabulary", from the
-   `power-tools` template or a JSON file. A vocabulary lists product types, specs with units and
-   ranges, fixed choices and tags, each with the patterns code matches first.
-3. **Read products.** Agent tasks, "Create task file", task "Read products". Download the file.
-4. **Run the file with a model.** Suggested: `claude-haiku-4-5`. The first line of the file holds
+2. **Add a vocabulary** for a branch of the catalog. Vocabularies, "Add vocabulary", from a
+   template (`power-tools`, `wood`, `care-and-cleaning`, `fasteners`) or a JSON file. A
+   vocabulary lists product types (optionally the store categories each stands for), specs with
+   units and ranges (optionally read from the title with a pattern), fixed choices, tags and jobs
+   ("good for"), each with the patterns code matches first.
+3. **Read products in code.** Vocabularies, "Read products in code". No model and no cost: brand,
+   size families, a type the category stands for, sizes in titles, what a shopper must choose, the
+   price unit. What code settles is saved as approved facts with origin "code" and sent to the
+   model as `known`, so the model answers only the rest. Run it again after every catalog sync;
+   unchanged products are skipped.
+4. **Read products.** Agent tasks, "Create task file", task "Read products". Download the file.
+5. **Run the file with a model.** Suggested: `claude-haiku-4-5`. The first line of the file holds
    the instructions (`system`). Every other line is one request. Produce one line per request:
    `{"custom_id": "...", "output": {...}}`.
-5. **Upload the answers** on the task. Answers can come in several files. Code checks every answer
+6. **Upload the answers** on the task. Answers can come in several files. Code checks every answer
    before anything is saved.
-6. **Check facts, tier 1.** Create a "Check facts" file, tier 1, for products and again for
+7. **Check facts, tier 1.** Create a "Check facts" file, tier 1, for products and again for
    articles. Suggested model: `claude-haiku-4-5`.
-7. **Check facts, tier 2.** Same, tier 2. Only what tier 1 was unsure about. Suggested model:
+8. **Check facts, tier 2.** Same, tier 2. Only what tier 1 was unsure about. Suggested model:
    `claude-sonnet-5`. What tier 2 is unsure about waits for a person in Product facts.
-8. **Read articles** any time after the sync. Then check their facts as in steps 6 and 7.
-9. **Compute superlatives.** Superlatives, "Compute superlatives".
-10. **Match products to articles.** Products for articles, "Match products to articles". Linked products first, then in-stock products from the categories a checker approved. Store pages get none.
+9. **Read articles** any time after the sync. Then check their facts as in steps 6 and 7.
+10. **Compute superlatives.** Superlatives, "Compute superlatives".
+11. **Match products to articles.** Products for articles, "Match products to articles". Linked products first, then in-stock products from the categories a checker approved. Store pages get none.
+12. **Compute relations.** Product relations, "Save matching rules" (template `hardware-store` or
+    a JSON file), then "Compute relations": the merchant's cross-sells, merchant links pointing to
+    the product, the rules (a battery of the same brand and voltage for a body-only tool, oil for
+    wood meant for outdoor jobs), other sizes of the same product, and alternatives of the same type
+    at a similar price. Every relation keeps its reasons.
+
+## The log
+
+Scan and check log shows one product's whole story: the code reading, every fact with origin,
+status, reason and checker verdict, every request sent to a model with the answer and the
+problems code found in it, and the relations built. Its quality section counts the most common
+answer problems across the shop, which is where to look before changing a vocabulary or a prompt.
 
 The same steps from the command line:
 
 ```sh
-php artisan enrichment vocabulary <shop> --template=power-tools --author="..."
+php artisan enrichment vocabulary <shop> --template=wood --author="..."
+php artisan enrichment code <shop>
 php artisan enrichment tasks <shop> product_extraction --out=tasks.jsonl
 php artisan enrichment results <batch-id> answers.jsonl --model=claude-haiku-4-5
 php artisan enrichment tasks <shop> fact_review --tier=1 --subject=product --out=review.jsonl
 php artisan enrichment rankings <shop>
+php artisan enrichment rules <shop> --template=hardware-store
+php artisan enrichment relations <shop>
 ```
 
 ## What code does before a model sees anything

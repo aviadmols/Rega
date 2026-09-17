@@ -16,6 +16,12 @@ enum FactKind: string
     /** A yes/no spec that is true, such as brushless. */
     case Flag = 'flag';
 
+    /** A job or project the product is good for, such as deck or pergola. Shown as "good for". */
+    case Use = 'use';
+
+    /** The maker, normalized: Makita, Stanley, Blanchon. Read by code from store fields and text. */
+    case Brand = 'brand';
+
     /** A tag from the vocabulary, such as compact. */
     case Tag = 'tag';
 

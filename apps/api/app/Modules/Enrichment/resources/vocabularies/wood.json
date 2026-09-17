@@ -1,0 +1,173 @@
+{
+    "schema_version": 1,
+    "key": "wood",
+    "name": {
+        "he": "עצים ולוחות",
+        "en": "Wood and boards"
+    },
+    "root_category_external_id": "2212",
+    "excluded_category_external_ids": [],
+    "product_types": [
+        {
+            "key": "planed_board",
+            "label": { "he": "עץ מוקצע (לוח או קורה)", "en": "Planed board or beam" },
+            "hint": "עץ אורן או אשוח מוקצע בפרופיל, מחוטא או לא",
+            "categories": ["2339", "2330", "2651"],
+            "patterns": ["מוקצע(?:\\s?ומחוטא)?\\s?בפרופיל", "אורן פיני מוקצע", "עץ אשוח(?:\\s?מחוטא)?\\s?בפרופיל", "עץ אורן בפרופיל"]
+        },
+        {
+            "key": "laminated_beam",
+            "label": { "he": "קורה דו/תלת שכבתית", "en": "Laminated beam" },
+            "categories": ["2336", "2755"],
+            "patterns": ["דו\\s?שכבתי", "תלת/רב\\s?שכבתי", "רב\\s?שכבתי"]
+        },
+        {
+            "key": "half_log",
+            "label": { "he": "חצי לוג", "en": "Half log" },
+            "patterns": ["חצי לוג"]
+        },
+        {
+            "key": "gallery_board",
+            "label": { "he": "עץ גלריה / נוטפדר", "en": "Tongue and groove board" },
+            "categories": ["2329"],
+            "patterns": ["גלריה", "נוטפדר", "מרועף"]
+        },
+        {
+            "key": "trim",
+            "label": { "he": "זוויות, פינות ושלבניות", "en": "Trim and slats" },
+            "categories": ["2335"],
+            "patterns": ["שלבניה", "זוית עץ", "פינה מסוגננת", "מסגרת U"]
+        },
+        {
+            "key": "shading_slat",
+            "label": { "he": "סרגל הצללה", "en": "Shading slat" },
+            "patterns": ["הצללה"]
+        },
+        {
+            "key": "round_dowel",
+            "label": { "he": "עץ עגול", "en": "Round dowel" },
+            "patterns": ["מוקצע עגול"]
+        },
+        {
+            "key": "decking_board",
+            "label": { "he": "לוח דק מעץ קשה", "en": "Hardwood decking board" },
+            "hint": "איפאה, סוקופירה, גראפה, ג׳טובה, טיק",
+            "categories": ["2326", "2328", "2649", "2989", "2442"],
+            "patterns": ["איפאה", "סוקופירה", "גראפה", "ג['׳’]טובה", "(?<!שמן )טיק (?:בורמזי|ברומזי|ברזילאי)"]
+        },
+        {
+            "key": "sheet_panel",
+            "label": { "he": "פלטה / לביד / OSB / MDF", "en": "Sheet panel" },
+            "patterns": ["לביד", "OSB", "MDF"]
+        },
+        {
+            "key": "solid_slab",
+            "label": { "he": "פלטת עץ מלא (לאמי, בוצ׳ר)", "en": "Solid wood slab" },
+            "categories": ["2332", "2333"],
+            "patterns": ["לאמי", "בוצ['׳’]ר", "וריו"]
+        },
+        {
+            "key": "shelf",
+            "label": { "he": "מדף", "en": "Shelf" },
+            "categories": ["2676"],
+            "patterns": ["^מדף", "מדפים צפים"]
+        },
+        {
+            "key": "wall_cladding",
+            "label": { "he": "חיפוי קיר", "en": "Wall cladding" },
+            "patterns": ["חיפוי קיר"]
+        },
+        {
+            "key": "lattice",
+            "label": { "he": "רשת עץ", "en": "Wood lattice" },
+            "patterns": ["רשת עץ"]
+        },
+        {
+            "key": "other",
+            "label": { "he": "אחר", "en": "Other" }
+        }
+    ],
+    "attributes": [
+        {
+            "key": "thickness_mm",
+            "label": { "he": "עובי", "en": "Thickness" },
+            "type": "number",
+            "dimension": "length",
+            "min": 3,
+            "max": 300,
+            "hint": "המספר הראשון בפרופיל 20X45 מ\"מ",
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*[xX×]\\s*\\d+(?:[.,]\\d+)?\\s*מ[\"״”]מ", "group": 1 }
+        },
+        {
+            "key": "width_mm",
+            "label": { "he": "רוחב", "en": "Width" },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 400,
+            "hint": "המספר השני בפרופיל 20X45 מ\"מ",
+            "title_capture": { "pattern": "\\d+(?:[.,]\\d+)?\\s*[xX×]\\s*(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]מ", "group": 1 }
+        },
+        {
+            "key": "diameter_mm",
+            "label": { "he": "קוטר", "en": "Diameter" },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 300,
+            "applies_to": ["round_dowel"],
+            "title_capture": { "pattern": "עגול\\s*(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]מ", "group": 1 }
+        },
+        {
+            "key": "species",
+            "label": { "he": "סוג העץ", "en": "Wood" },
+            "type": "enum",
+            "values": [
+                { "key": "pine", "label": { "he": "אורן", "en": "Pine" }, "patterns": ["אורן", "פיני"] },
+                { "key": "spruce", "label": { "he": "אשוח", "en": "Spruce" }, "patterns": ["אשוח"] },
+                { "key": "ipe", "label": { "he": "איפאה", "en": "Ipe" }, "patterns": ["איפאה"] },
+                { "key": "sucupira", "label": { "he": "סוקופירה", "en": "Sucupira" }, "patterns": ["סוקופירה"] },
+                { "key": "garapa", "label": { "he": "גראפה", "en": "Garapa" }, "patterns": ["גראפה"] },
+                { "key": "jatoba", "label": { "he": "ג׳טובה", "en": "Jatoba" }, "patterns": ["ג['׳’]טובה"] },
+                { "key": "teak", "label": { "he": "טיק", "en": "Teak" }, "patterns": ["(?<!שמן )טיק"] },
+                { "key": "oak", "label": { "he": "אלון", "en": "Oak" }, "patterns": ["אלון"] },
+                { "key": "walnut", "label": { "he": "אגוז", "en": "Walnut" }, "patterns": ["אגוז"] },
+                { "key": "birch", "label": { "he": "ליבנה (בירץ׳)", "en": "Birch" }, "patterns": ["בירץ"] }
+            ]
+        },
+        {
+            "key": "treatment",
+            "label": { "he": "חיטוי", "en": "Treatment" },
+            "type": "enum",
+            "hint": "מחוטא הוא עץ שעבר חיטוי בלחץ ומתאים לחוץ",
+            "values": [
+                { "key": "treated", "label": { "he": "מחוטא", "en": "Pressure treated" }, "patterns": ["(?<!לא )מחוטא", "אימפרגנציה"] },
+                { "key": "untreated", "label": { "he": "לא מחוטא", "en": "Untreated" }, "patterns": ["לא מחוטא"] }
+            ]
+        },
+        {
+            "key": "grooved",
+            "label": { "he": "מחורץ", "en": "Grooved" },
+            "type": "boolean",
+            "patterns": ["מחורץ"]
+        }
+    ],
+    "tags": [
+        { "key": "premium", "label": { "he": "עץ פרימיום", "en": "Premium wood" }, "patterns": ["פרימיום", "יוקרתי"] },
+        { "key": "in_stock_fast", "label": { "he": "אספקה מהירה מהמלאי", "en": "Fast delivery from stock" }, "patterns": ["אספקה מהירה"] }
+    ],
+    "uses": [
+        { "key": "deck", "label": { "he": "בניית דק", "en": "Deck" }, "patterns": ["לדקים", "לדק(?![\\p{L}])", "^דק "], "types": ["decking_board", "planed_board"] },
+        { "key": "pergola", "label": { "he": "פרגולה", "en": "Pergola" }, "patterns": ["פרגול"], "types": ["laminated_beam", "planed_board", "shading_slat", "half_log"] },
+        { "key": "fence", "label": { "he": "גדר", "en": "Fence" }, "patterns": ["גדר"], "types": ["planed_board", "half_log", "lattice", "decking_board"] },
+        { "key": "outdoor_cladding", "label": { "he": "חיפוי חיצוני", "en": "Outdoor cladding" }, "patterns": ["חיפוי חיצוני"], "types": ["half_log", "gallery_board", "decking_board", "planed_board"] },
+        { "key": "indoor_cladding", "label": { "he": "חיפוי קירות בבית", "en": "Indoor wall cladding" }, "patterns": ["חיפוי קיר", "חיפויי קיר"], "types": ["wall_cladding", "gallery_board", "solid_slab", "sheet_panel"] },
+        { "key": "shading", "label": { "he": "הצללה", "en": "Shading" }, "patterns": ["הצללה"], "types": ["shading_slat", "planed_board", "lattice"] },
+        { "key": "furniture", "label": { "he": "נגרות ובניית רהיטים", "en": "Furniture making" }, "patterns": ["רהיט", "שולחנות"], "types": ["solid_slab", "sheet_panel", "planed_board"] },
+        { "key": "garden_furniture", "label": { "he": "ריהוט גן", "en": "Garden furniture" }, "patterns": ["ריהוט גן", "רהיטי גן"], "types": ["planed_board", "decking_board"] },
+        { "key": "shelving", "label": { "he": "מדפים ואחסון", "en": "Shelving" }, "patterns": ["מדף", "מדפים"], "types": ["shelf", "solid_slab", "sheet_panel"] },
+        { "key": "stairs", "label": { "he": "מדרגות", "en": "Stairs" }, "patterns": ["מדרגות"], "types": ["solid_slab", "laminated_beam"] },
+        { "key": "construction", "label": { "he": "בנייה, שלד וטפסנות", "en": "Construction and framing" }, "patterns": ["לבניין", "טפסנות", "שלד"], "types": ["planed_board", "laminated_beam", "sheet_panel"] },
+        { "key": "decorative", "label": { "he": "עיצוב ודקורציה", "en": "Decoration" }, "patterns": ["דקורטיבי", "מסוגנ"], "types": ["lattice", "trim", "wall_cladding"] }
+    ]
+}

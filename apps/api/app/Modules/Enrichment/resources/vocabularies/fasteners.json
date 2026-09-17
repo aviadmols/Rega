@@ -1,0 +1,151 @@
+{
+    "schema_version": 1,
+    "key": "fasteners",
+    "name": {
+        "he": "ברגים, דיבלים ומחברים",
+        "en": "Screws, anchors and connectors"
+    },
+    "root_category_external_id": "1848",
+    "excluded_category_external_ids": [],
+    "product_types": [
+        {
+            "key": "deck_screw",
+            "label": { "he": "בורג לדק", "en": "Deck screw" },
+            "patterns": ["Camo", "Protec-Kote", "ברגי דק", "לאיפאה"]
+        },
+        {
+            "key": "hidden_deck_clip",
+            "label": { "he": "מחבר נסתר לדק", "en": "Hidden deck fastener" },
+            "patterns": ["מחבר(?:ים)? נסתר", "Clip"]
+        },
+        {
+            "key": "pocket_screw",
+            "label": { "he": "בורג לחיבור נסתר (Kreg)", "en": "Pocket-hole screw" },
+            "patterns": ["של קרג", "Kreg"]
+        },
+        {
+            "key": "wood_screw",
+            "label": { "he": "בורג לעץ וסיבית", "en": "Wood screw" },
+            "patterns": ["סיבית"]
+        },
+        {
+            "key": "drywall_screw",
+            "label": { "he": "בורג גבס", "en": "Drywall screw" },
+            "patterns": ["בורג גבס"]
+        },
+        {
+            "key": "metal_screw",
+            "label": { "he": "בורג פח", "en": "Sheet metal screw" },
+            "patterns": ["פח-פח", "פרפר"]
+        },
+        {
+            "key": "roofing_screw",
+            "label": { "he": "בורג לגג ואיסכורית", "en": "Roofing screw" },
+            "patterns": ["איסכורית", "לסנטף"]
+        },
+        {
+            "key": "anchor",
+            "label": { "he": "דיבל ועוגן", "en": "Wall anchor" },
+            "patterns": ["דיבל", "עוגן"]
+        },
+        {
+            "key": "concrete_bolt",
+            "label": { "he": "בורג עדש ומיתד", "en": "Anchor bolt" },
+            "patterns": ["עדש", "מיתד"]
+        },
+        {
+            "key": "nail",
+            "label": { "he": "מסמר", "en": "Nail" },
+            "patterns": ["מסמר"]
+        },
+        {
+            "key": "drill_bit",
+            "label": { "he": "מקדח", "en": "Drill bit" },
+            "patterns": ["^מקדח"]
+        },
+        {
+            "key": "seal_washer",
+            "label": { "he": "אטם", "en": "Seal washer" },
+            "patterns": ["^אטם"]
+        },
+        {
+            "key": "strap",
+            "label": { "he": "סרט חובק", "en": "Perforated strap" },
+            "patterns": ["סרט חובק"]
+        },
+        {
+            "key": "other",
+            "label": { "he": "אחר", "en": "Other" }
+        }
+    ],
+    "attributes": [
+        {
+            "key": "pack_count",
+            "label": { "he": "כמות באריזה", "en": "Pieces in the pack" },
+            "type": "number",
+            "dimension": "count",
+            "min": 1,
+            "max": 5000,
+            "title_capture": { "pattern": "(\\d+)\\s*(?:יח['׳’]|יחידות|ברגים)", "group": 1 }
+        },
+        {
+            "key": "length_mm",
+            "label": { "he": "אורך", "en": "Length" },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 500,
+            "applies_to": ["deck_screw", "pocket_screw", "wood_screw", "drywall_screw", "metal_screw", "roofing_screw", "anchor", "concrete_bolt", "nail", "drill_bit"],
+            "title_capture": { "pattern": "הברגה (?:גסה|עדינה)\\s*(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]מ", "group": 1 }
+        },
+        {
+            "key": "diameter_mm",
+            "label": { "he": "קוטר", "en": "Diameter" },
+            "type": "number",
+            "dimension": "length",
+            "min": 1,
+            "max": 40,
+            "applies_to": ["deck_screw", "wood_screw", "drywall_screw", "metal_screw", "roofing_screw", "anchor", "concrete_bolt", "drill_bit"]
+        },
+        {
+            "key": "coating",
+            "label": { "he": "ציפוי", "en": "Coating" },
+            "type": "enum",
+            "values": [
+                { "key": "galvanized", "label": { "he": "מגולבן", "en": "Galvanized" }, "patterns": ["מגולבן", "מגולוון", "גלוונ"] },
+                { "key": "black", "label": { "he": "שחור", "en": "Black" }, "patterns": ["שחור"] },
+                { "key": "ceramic", "label": { "he": "ציפוי קרמי", "en": "Ceramic coated" }, "patterns": ["קרמי"] },
+                { "key": "stainless", "label": { "he": "נירוסטה", "en": "Stainless steel" }, "patterns": ["נירוסטה"] },
+                { "key": "yellow_zinc", "label": { "he": "צהוב", "en": "Yellow zinc" }, "patterns": ["צהוב"] }
+            ]
+        },
+        {
+            "key": "thread",
+            "label": { "he": "הברגה", "en": "Thread" },
+            "type": "enum",
+            "values": [
+                { "key": "coarse", "label": { "he": "גסה", "en": "Coarse" }, "patterns": ["הברגה גסה"] },
+                { "key": "fine", "label": { "he": "עדינה", "en": "Fine" }, "patterns": ["הברגה עדינה"] }
+            ]
+        },
+        {
+            "key": "self_drilling",
+            "label": { "he": "קודח", "en": "Self-drilling" },
+            "type": "boolean",
+            "patterns": ["(?<!לא )קודח(?! ולא)(?! / לא)"]
+        }
+    ],
+    "tags": [
+        { "key": "marine_grade", "label": { "he": "מתאים לסביבה ימית", "en": "Marine grade" }, "patterns": ["ימית"] }
+    ],
+    "uses": [
+        { "key": "deck", "label": { "he": "בניית דק", "en": "Deck" }, "patterns": ["לדק", "דק "], "types": ["deck_screw", "hidden_deck_clip"] },
+        { "key": "pergola", "label": { "he": "פרגולה", "en": "Pergola" }, "patterns": ["פרגול"], "types": ["wood_screw", "concrete_bolt", "strap"] },
+        { "key": "fence", "label": { "he": "גדר", "en": "Fence" }, "patterns": ["גדר"], "types": ["wood_screw", "deck_screw", "concrete_bolt"] },
+        { "key": "furniture", "label": { "he": "נגרות ובניית רהיטים", "en": "Furniture making" }, "patterns": ["רהיט", "ארונות"], "types": ["pocket_screw", "wood_screw"] },
+        { "key": "drywall", "label": { "he": "עבודות גבס", "en": "Drywall" }, "patterns": ["גבס"], "types": ["drywall_screw", "anchor"] },
+        { "key": "roofing", "label": { "he": "גגות וסנטף", "en": "Roofing" }, "patterns": ["גג", "סנטף", "איסכורית"], "types": ["roofing_screw", "seal_washer"] },
+        { "key": "concrete_anchoring", "label": { "he": "עיגון בקיר ובבטון", "en": "Anchoring in walls and concrete" }, "patterns": ["בטון", "עיגון", "לקיר"], "types": ["anchor", "concrete_bolt", "drill_bit"] },
+        { "key": "shelving", "label": { "he": "מדפים ואחסון", "en": "Shelving" }, "patterns": ["מדף", "מדפים"], "types": ["anchor", "wood_screw"] }
+    ]
+}

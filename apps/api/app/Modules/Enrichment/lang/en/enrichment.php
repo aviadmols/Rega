@@ -17,6 +17,8 @@ return [
         'choice' => 'Choice',
         'flag' => 'Yes/no spec',
         'tag' => 'Tag',
+        'use' => 'Good for',
+        'brand' => 'Brand',
         'content_kind' => 'Article kind',
         'shopper_value' => 'Value to shoppers',
         'category' => 'Category',
@@ -30,9 +32,15 @@ return [
         'superseded' => 'Replaced',
     ],
     'origins' => [
+        'code' => 'Code',
         'code_model' => 'Code and model',
         'model' => 'Model',
         'person' => 'Person',
+    ],
+    'relation_kinds' => [
+        'complement' => 'Goes with it',
+        'family' => 'Other size or version',
+        'alternative' => 'Alternative',
     ],
     'verdicts' => [
         'ok' => 'Correct',

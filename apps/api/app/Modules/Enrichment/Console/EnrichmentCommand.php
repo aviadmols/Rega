@@ -3,14 +3,18 @@
 namespace App\Modules\Enrichment\Console;
 
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Enrichment\Actions\ComputeProductRelations;
 use App\Modules\Enrichment\Actions\ComputeRankings;
 use App\Modules\Enrichment\Actions\CreateTaskFile;
+use App\Modules\Enrichment\Actions\ImportRelationRules;
 use App\Modules\Enrichment\Actions\ImportTaskResults;
 use App\Modules\Enrichment\Actions\ImportVocabulary;
+use App\Modules\Enrichment\Actions\ReadProductsInCode;
 use App\Modules\Enrichment\Enums\TaskType;
 use App\Modules\Enrichment\Models\EnrichmentBatch;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Enrichment\Support\TaskFile;
+use App\Modules\Runs\Models\Run;
 use App\Modules\Tenancy\Models\Shop;
 use Illuminate\Console\Command;
 
@@ -18,14 +22,17 @@ use Illuminate\Console\Command;
  * The same actions the operator panel runs, for scripts and local work:
  *
  *   enrichment vocabulary gueta-avigdor --template=power-tools
- *   enrichment tasks gueta-avigdor product_extraction --limit=20 --out=tasks.jsonl
+ *   enrichment code gueta-avigdor
+ *   enrichment tasks gueta-avigdor product_extraction --vocabulary=wood --limit=20 --out=tasks.jsonl
  *   enrichment results <batch id> answers.jsonl --model=claude-haiku-4-5
  *   enrichment rankings gueta-avigdor
+ *   enrichment rules gueta-avigdor --template=hardware-store
+ *   enrichment relations gueta-avigdor
  */
 final class EnrichmentCommand extends Command
 {
     protected $signature = 'enrichment
-        {step : vocabulary, tasks, results or rankings}
+        {step : vocabulary, code, tasks, results, rankings, rules or relations}
         {target : shop slug, or batch ID for results}
         {argument? : task type for tasks, results file for results}
         {--template= : vocabulary template name}
@@ -47,6 +54,9 @@ final class EnrichmentCommand extends Command
             'tasks' => $this->tasks(),
             'results' => $this->results(),
             'rankings' => $this->rankings(),
+            'code' => $this->shopStep(fn (Shop $shop): Run => app(ReadProductsInCode::class)->handle($shop->id)),
+            'relations' => $this->shopStep(fn (Shop $shop): Run => app(ComputeProductRelations::class)->handle($shop->id)),
+            'rules' => $this->rules(),
             default => $this->failWith('Unknown step.'),
         });
     }
@@ -130,6 +140,38 @@ final class EnrichmentCommand extends Command
         $this->line((string) app(ComputeRankings::class)->handle($shop->id)->summary());
 
         return self::SUCCESS;
+    }
+
+    /** @param callable(Shop): Run $step */
+    private function shopStep(callable $step): int
+    {
+        $shop = $this->shop();
+
+        if (! $shop) {
+            return $this->failWith('Shop not found.');
+        }
+
+        $run = $step($shop);
+        $this->line((string) $run->summary());
+
+        return $run->status->value === 'succeeded' ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function rules(): int
+    {
+        $shop = $this->shop();
+        $data = $this->option('template')
+            ? ImportRelationRules::template((string) $this->option('template'))
+            : json_decode((string) @file_get_contents((string) $this->option('file')), true);
+
+        if (! $shop || ! is_array($data)) {
+            return $this->failWith('Shop or rules not found.');
+        }
+
+        $result = app(ImportRelationRules::class)->handle($shop->id, $data, $this->option('author'));
+        $this->line((string) $result['run']->summary());
+
+        return $result['rules'] ? self::SUCCESS : self::FAILURE;
     }
 
     private function shop(): ?Shop

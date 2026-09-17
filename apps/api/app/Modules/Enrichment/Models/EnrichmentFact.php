@@ -85,6 +85,12 @@ class EnrichmentFact extends Model
         return $this->belongsTo(EnrichmentVocabulary::class, 'vocabulary_id');
     }
 
+    /** @return BelongsTo<EnrichmentBatch, $this> */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(EnrichmentBatch::class, 'batch_id');
+    }
+
     /** @param Builder<EnrichmentFact> $query */
     public function scopeCurrent(Builder $query): void
     {
