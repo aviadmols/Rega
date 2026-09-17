@@ -14,9 +14,11 @@ final class TextCondenser
     /**
      * @param  list<string>  $sections  title first, then the rest in order of trust
      * @param  list<string>  $boilerplate  normalized lines repeated across the catalog (see Boilerplate)
+     * @param  bool  $headingsWithContent  past the budget, keep a heading ("שימושים:") only with the line after it,
+     *                                     so short headings do not take the place of what they introduce
      * @return array{text: string, truncated: bool, source_chars: int}
      */
-    public function condense(array $sections, int $maxChars, array $boilerplate = []): array
+    public function condense(array $sections, int $maxChars, array $boilerplate = [], bool $headingsWithContent = false): array
     {
         $lines = [];
         $seen = [];
@@ -57,7 +59,7 @@ final class TextCondenser
 
         foreach ([true, false] as $informative) {
             foreach ($lines as $i => $line) {
-                if (isset($keep[$i]) || $this->isInformative($line) !== $informative) {
+                if (isset($keep[$i]) || $this->isInformative($line) !== $informative || ($headingsWithContent && self::isHeading($line))) {
                     continue;
                 }
 
@@ -69,6 +71,15 @@ final class TextCondenser
 
                 $keep[$i] = true;
                 $used += $length;
+            }
+        }
+
+        if ($headingsWithContent) {
+            foreach ($lines as $i => $line) {
+                if (! isset($keep[$i]) && self::isHeading($line) && isset($keep[$i + 1]) && $used + mb_strlen($line) + 1 <= $maxChars) {
+                    $keep[$i] = true;
+                    $used += mb_strlen($line) + 1;
+                }
             }
         }
 
@@ -104,6 +115,12 @@ final class TextCondenser
     private static function trimBullets(string $line): string
     {
         return (string) preg_replace('/^[\s•·\-*]+|[\s•·\-*]+$/u', '', $line);
+    }
+
+    /** A short line that only introduces what follows: "יתרונות המוצר:". */
+    private static function isHeading(string $line): bool
+    {
+        return mb_strlen($line) <= 60 && (bool) preg_match('~:\s*$~u', $line);
     }
 
     private function isInformative(string $line): bool

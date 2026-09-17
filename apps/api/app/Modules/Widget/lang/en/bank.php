@@ -79,5 +79,9 @@ return [
         'price' => 'Price',
         'on_sale' => 'Sale',
         'browse' => 'More in :name',
+        'differences' => 'What differs',
+        'same_in_both' => 'Same in both:',
+        'this_cheaper' => 'This product costs :amount less',
+        'before_cheaper' => 'The product you viewed costs :amount less',
     ],
 ];

@@ -19,7 +19,7 @@ final class PromptLibrary
         'product_extraction' => 3,
         'fact_review' => 3,
         'content_mapping' => 2,
-        'product_highlights' => 1,
+        'product_highlights' => 2,
     ];
 
     public static function version(TaskType $task): int

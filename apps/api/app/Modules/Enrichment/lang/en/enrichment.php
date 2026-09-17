@@ -12,6 +12,7 @@ return [
         'completed' => 'Done',
         'cancelled' => 'Cancelled',
     ],
+    'known_choice' => 'Chosen on the page: :name',
     'fact_kinds' => [
         'type' => 'Product type',
         'spec' => 'Spec',

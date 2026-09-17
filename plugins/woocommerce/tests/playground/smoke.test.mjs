@@ -74,7 +74,7 @@ test('status describes the site, WooCommerce and active plugins', async () => {
   assert.equal(headers.get('cache-control'), 'no-store');
 
   const s = body.data;
-  assert.equal(s.plugin.version, '0.2.1');
+  assert.equal(s.plugin.version, '0.2.2');
   assert.equal(s.woocommerce.active, true);
   assert.equal(s.woocommerce.currency, 'ILS');
   assert.ok(s.plugins.some((p) => p.name === 'WooCommerce'));
@@ -114,6 +114,7 @@ test('a product carries clean text, category path, attributes, public meta, rela
   assert.equal(d.sku, 'DR-550');
   assert.match(d.description, /550W/);
   assert.match(d.description, /מהירות משתנה\nראש 13 מ"מ/);
+  assert.match(d.description, /שימושים:\nקידוח בבטון\nקידוח בעץ/, 'accordion titles and breaks with attributes end lines');
   for (const leak of ['<', 'alert', '[gallery', 'wp:paragraph']) assert.equal(d.description.includes(leak), false, `description leaks ${leak}`);
 
   assert.deepEqual(d.category_path, ['כלי עבודה', 'כלי עבודה חשמליים', 'מקדחות']);

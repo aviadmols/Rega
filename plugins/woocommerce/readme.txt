@@ -4,7 +4,7 @@ Tags: woocommerce, shopping assistant, product recommendations
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,9 @@ WooCommerce > Rega reports shows page views, visitors, hot pages, hot display mo
 3. Copy the token. It is shown only once.
 
 == Changelog ==
+
+= 0.2.2 =
+* Product text keeps its line breaks when the store's HTML uses breaks with attributes or accordions, so list items no longer run together.
 
 = 0.2.1 =
 * Reports name the new widget circles: other sizes, similar products, similar on sale, good for jobs, and comparison with a viewed product.

@@ -67,7 +67,8 @@ $drill->set_manage_stock( true );
 $drill->set_stock_quantity( 7 );
 $drill->set_weight( '1.8' );
 $drill->set_category_ids( array( $drills ) );
-$drill->set_description( "<!-- wp:paragraph --><p>מקדחה רוטטת בהספק <strong>550W</strong>.</p><!-- /wp:paragraph -->\n<script>alert(1)</script><ul><li>מהירות משתנה</li><li>ראש 13 מ&quot;מ</li></ul>[gallery ids=\"1\"]" );
+$drill->set_description( "<!-- wp:paragraph --><p>מקדחה רוטטת בהספק <strong>550W</strong>.</p><!-- /wp:paragraph -->\n<script>alert(1)</script><ul><li>מהירות משתנה</li><li>ראש 13 מ&quot;מ</li></ul>[gallery ids=\"1\"]"
+	. '<details><summary><span>שימושים:</span></summary><div><p data-start="1">קידוח בבטון<br data-start="2" data-end="3">קידוח בעץ</p></div></details>' );
 $custom = new WC_Product_Attribute();
 $custom->set_name( 'הספק' );
 $custom->set_options( array( '550W' ) );

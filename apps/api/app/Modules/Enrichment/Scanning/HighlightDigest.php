@@ -30,7 +30,7 @@ final class HighlightDigest
      */
     public static function build(CatalogProduct $product, int $maxTextChars, string $promptHash, array $boilerplate, array $known): self
     {
-        $text = (new TextCondenser)->condense(ProductDigest::sections($product), $maxTextChars, $boilerplate)['text'];
+        $text = (new TextCondenser)->condense(ProductDigest::sections($product), $maxTextChars, $boilerplate, headingsWithContent: true)['text'];
 
         $request = array_filter([
             'id' => $product->external_id,
@@ -48,14 +48,24 @@ final class HighlightDigest
     }
 
     /**
-     * Approved facts as "label: value" lines, in a fixed order.
+     * Approved facts and what code read (the price note, what the shopper chooses) as short lines,
+     * in a fixed order: everything the product page and the widget already show.
      *
      * @param  Collection<int, EnrichmentFact>  $facts
+     * @param  array<string, mixed>  $reading  the product's code reading
      * @return list<string>
      */
-    public static function known(Collection $facts, VocabularyDefinition $vocabulary, string $locale = 'he'): array
+    public static function known(Collection $facts, VocabularyDefinition $vocabulary, array $reading = [], string $locale = 'he'): array
     {
         $lines = [];
+
+        if (isset($reading['price_unit'])) {
+            $lines[] = (string) $reading['price_unit'];
+        }
+
+        foreach ((array) ($reading['choices'] ?? []) as $choice) {
+            $lines[] = __('enrichment::enrichment.known_choice', ['name' => $choice['name'] ?? ''], $locale);
+        }
 
         foreach ($facts as $fact) {
             $line = match ($fact->kind) {

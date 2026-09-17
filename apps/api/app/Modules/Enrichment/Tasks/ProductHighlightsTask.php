@@ -11,6 +11,7 @@ use App\Modules\Enrichment\Enums\ItemStatus;
 use App\Modules\Enrichment\Enums\TaskType;
 use App\Modules\Enrichment\Models\EnrichmentBatch;
 use App\Modules\Enrichment\Models\EnrichmentBatchItem;
+use App\Modules\Enrichment\Models\EnrichmentCodeReading;
 use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Scanning\Boilerplate;
 use App\Modules\Enrichment\Scanning\HighlightDigest;
@@ -62,7 +63,7 @@ final class ProductHighlightsTask implements AgentTask
             return;
         }
 
-        $maxChars = (int) Settings::get('enrichment.max_agent_text_chars', $batch->shop_id);
+        $maxChars = (int) Settings::get('enrichment.max_highlight_text_chars', $batch->shop_id);
         $includeDone = (bool) ($batch->scope['include_done'] ?? false);
         $count = 0;
 
@@ -75,7 +76,8 @@ final class ProductHighlightsTask implements AgentTask
         $batch->forceFill(['scope' => ($batch->scope ?? []) + ['boilerplate' => $boilerplate]])->save();
 
         foreach (VocabularyBranch::products($vocabulary)->lazyById(200) as $product) {
-            $digest = HighlightDigest::build($product, $maxChars, $batch->prompt_hash, $boilerplate, HighlightDigest::known($this->approvedFacts($product->id), $vocabulary));
+            $reading = (array) (EnrichmentCodeReading::query()->where('product_id', $product->id)->value('reading') ?? []);
+            $digest = HighlightDigest::build($product, $maxChars, $batch->prompt_hash, $boilerplate, HighlightDigest::known($this->approvedFacts($product->id), $vocabulary, $reading));
 
             if (mb_strlen((string) $digest->context['text']) - mb_strlen($product->title) < self::MIN_TEXT_CHARS) {
                 continue;
@@ -108,7 +110,7 @@ final class ProductHighlightsTask implements AgentTask
             return true;
         }
 
-        $maxChars = (int) Settings::get('enrichment.max_agent_text_chars', $batch->shop_id);
+        $maxChars = (int) Settings::get('enrichment.max_highlight_text_chars', $batch->shop_id);
         $digest = HighlightDigest::build($product, $maxChars, $batch->prompt_hash, (array) ($batch->scope['boilerplate'] ?? []), []);
 
         return $digest->context['text_hash'] !== ($item->context['text_hash'] ?? null);

@@ -103,6 +103,18 @@ final class ScanningTest extends TestCase
         $this->assertTrue($result['truncated']);
     }
 
+    public function test_past_the_budget_a_heading_stays_only_with_what_it_introduces(): void
+    {
+        $sections = ['טיק ברומזי', "יתרונות המוצר:\nשימושים ויישומים:\nמומלץ להשתמש בברגים איכותיים המתאימים לעץ קשה ולשמור על מרווחי התפשטות\nבמהלך ההתקנה:"];
+
+        $plain = (new TextCondenser)->condense($sections, 70)['text'];
+        $this->assertStringContainsString('יתרונות המוצר:', $plain, 'without the option, short headings fill the budget');
+        $this->assertStringNotContainsString('ברגים', $plain);
+
+        $text = (new TextCondenser)->condense($sections, 110, headingsWithContent: true)['text'];
+        $this->assertSame("טיק ברומזי\nשימושים ויישומים:\nמומלץ להשתמש בברגים איכותיים המתאימים לעץ קשה ולשמור על מרווחי התפשטות", $text);
+    }
+
     public function test_bullets_are_trimmed_without_breaking_hebrew_letters(): void
     {
         // "ע" is D7 A2 in UTF-8, and A2 is also the last byte of "•". trim() would cut it.

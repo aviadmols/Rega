@@ -12,6 +12,7 @@ return [
         'completed' => 'הסתיים',
         'cancelled' => 'בוטל',
     ],
+    'known_choice' => 'לבחירה בעמוד: :name',
     'fact_kinds' => [
         'type' => 'סוג מוצר',
         'spec' => 'מפרט',

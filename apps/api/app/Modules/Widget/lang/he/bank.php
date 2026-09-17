@@ -79,5 +79,9 @@ return [
         'price' => 'מחיר',
         'on_sale' => 'מבצע',
         'browse' => 'עוד ב:name',
+        'differences' => 'מה שונה',
+        'same_in_both' => 'זהה בשניהם:',
+        'this_cheaper' => 'המוצר הזה זול ב־:amount',
+        'before_cheaper' => 'המוצר שראיתם קודם זול ב־:amount',
     ],
 ];

@@ -38,7 +38,8 @@ enum TaskType: string
     /** The model the plan binds to this job. Operators can run it elsewhere; this is the default. */
     public function suggestedModel(int $reviewTier = 1): string
     {
-        return $this === self::FactReview && $reviewTier >= 2 ? 'claude-sonnet-5' : 'claude-haiku-4-5';
+        // Highlights are read by shoppers: the stronger writer.
+        return ($this === self::FactReview && $reviewTier >= 2) || $this === self::ProductHighlights ? 'claude-sonnet-5' : 'claude-haiku-4-5';
     }
 
     /** @return array<string, string> */

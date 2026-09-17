@@ -5,6 +5,10 @@ return [
         'label' => 'Maximum requests in one task file',
         'description' => 'Larger jobs are split: create another file when the first is done.',
     ],
+    'max_highlight_text_chars' => [
+        'label' => 'Product text for writing highlights',
+        'description' => 'Usage, installation and care advice usually comes at the end of a description, so writing highlights gets longer text. Headings are kept only with what they introduce.',
+    ],
     'max_agent_text_chars' => [
         'label' => 'Product text sent to a model',
         'description' => 'Code shortens each product to this many characters, keeping lines with numbers and specs first. Measurements are found before shortening is applied to prose.',

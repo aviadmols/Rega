@@ -17,7 +17,9 @@ final class PlainText {
 
 		$text = strip_shortcodes( $html );
 		$text = (string) preg_replace( '#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $text );
-		$text = (string) preg_replace( '#<br\s*/?>|</(p|div|li|h[1-6]|tr|blockquote)>#i', "\n", $text );
+		// Breaks with attributes (<br data-start="12">) and accordion titles (<summary>) end a line too.
+		$text = (string) preg_replace( '#<br\b[^>]*>|</(p|div|li|h[1-6]|tr|blockquote|summary|details|section|article|header|footer|figcaption|dt|dd|ul|ol|table)\s*>#i', "\n", $text );
+		$text = (string) preg_replace( '#</(td|th)\s*>#i', ' ', $text );
 		$text = wp_strip_all_tags( $text );
 		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		$text = (string) preg_replace( '/[ \t\x{00A0}]+/u', ' ', $text );

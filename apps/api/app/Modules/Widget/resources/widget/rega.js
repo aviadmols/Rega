@@ -416,10 +416,21 @@
     '.guides a{display:flex;align-items:center;gap:10px;padding:6px 0;color:inherit;text-decoration:none}',
     '.guides img{width:56px;height:42px;object-fit:cover;border-radius:6px;flex:none;background:#f6f6f7}',
     '.guides span{font-size:14px}.guides a:hover span{text-decoration:underline}',
-    '.compare{width:100%;border-collapse:collapse;font-size:14px}',
-    '.compare th,.compare td{padding:6px 8px;border-top:1px solid var(--line);text-align:start;vertical-align:top}',
-    '.compare thead th{border-top:0;font-weight:600}.compare thead a{color:inherit}',
-    '.compare td:first-child{color:var(--muted);width:32%}'
+    '.cmp-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+    '.cmp-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff;color:inherit;text-decoration:none;min-width:0}',
+    '.cmp-card.is-this{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}',
+    'a.cmp-card:hover,a.cmp-card:focus-visible{border-color:var(--accent)}',
+    '.cmp-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#f6f6f7;border-radius:8px}',
+    '.cmp-badge{padding:1px 8px;border-radius:999px;background:rgba(17,24,39,.07);font-size:11px;color:var(--muted)}',
+    '.cmp-card.is-this .cmp-badge{background:var(--accent);color:#fff}',
+    '.cmp-title{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+    '.cmp-price{font-weight:700;font-size:15px}',
+    '.cmp-note{margin-top:10px;padding:6px 10px;border-radius:8px;background:#e8f6ee;color:#146c43;font-size:13px}',
+    '.cmp-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
+    '.cmp-row{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;padding:8px 0;border-top:1px solid var(--line)}',
+    '.cmp-label{grid-column:1/-1;font-size:12px;color:var(--muted)}',
+    '.cmp-value{font-size:14px;font-weight:500}.cmp-value.is-this{font-weight:700}',
+    '.cmp-same{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}'
   ].join('');
 
   var SPARK = '<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>';
@@ -594,42 +605,63 @@
     return list.firstChild ? list : null;
   }
 
-  function compareTable(section, previous, live, labels) {
-    var table = el('table', 'compare');
-    var head = el('thead');
-    var headRow = el('tr');
-    headRow.appendChild(el('th'));
+  /** An amount in the store's currency format, like money() but for any value. */
+  function moneyValue(prices, value) {
+    var minor = parseInt(prices && prices.currency_minor_unit, 10) || 0;
+    var formatted = {};
+    for (var key in prices) {
+      if (Object.prototype.hasOwnProperty.call(prices, key)) {
+        formatted[key] = prices[key];
+      }
+    }
+    formatted.value = String(Math.round(value * Math.pow(10, minor)));
+    return money(formatted, 'value');
+  }
 
+  /**
+   * This product next to one of the same kind the shopper viewed before: two cards with photo and
+   * price, how much cheaper one is, what differs, and what is the same in one line.
+   */
+  function compareView(section, previous, live, labels) {
     var current = live && live[PAGE_ID];
     var before = live && live[previous.id];
-    var thisHead = el('th', null, labels.this_product);
-    var beforeHead = el('th');
-    var beforeUrl = safeUrl(previous.url);
-    if (beforeUrl) {
-      var link = el('a', null, previous.title);
-      link.href = beforeUrl;
-      link.addEventListener('click', function () { track('click', section, 'panel', { product_id: String(previous.id) }); });
-      beforeHead.appendChild(link);
-    } else {
-      beforeHead.textContent = previous.title;
-    }
-    beforeHead.appendChild(el('div', 'reason', labels.viewed_before));
-    headRow.appendChild(thisHead);
-    headRow.appendChild(beforeHead);
-    head.appendChild(headRow);
-    table.appendChild(head);
+    var view = el('div', 'cmp');
 
-    var body = el('tbody');
-    function row(label, a, b) {
-      var tr = el('tr');
-      tr.appendChild(el('td', null, label));
-      tr.appendChild(el('td', null, a || '—'));
-      tr.appendChild(el('td', null, b || '—'));
-      body.appendChild(tr);
+    function card(data, title, url, badge, isThis) {
+      var col = el(url ? 'a' : 'div', 'cmp-card' + (isThis ? ' is-this' : ''));
+      if (url) {
+        col.href = url;
+        col.addEventListener('click', function () { track('click', section, 'panel', { product_id: String(previous.id) }); });
+      }
+      var image = safeUrl(data && data.images && data.images[0] ? data.images[0].thumbnail : '');
+      if (image) {
+        var img = el('img');
+        img.src = image;
+        img.alt = '';
+        img.loading = 'lazy';
+        col.appendChild(img);
+      }
+      col.appendChild(el('span', 'cmp-badge', badge));
+      col.appendChild(el('span', 'cmp-title', title));
+      if (data) {
+        col.appendChild(el('span', 'cmp-price', money(data.prices, 'price')));
+      }
+      return col;
     }
 
-    if (current || before) {
-      row(labels.price, current ? money(current.prices, 'price') : '', before ? money(before.prices, 'price') : '');
+    var heading = document.querySelector('h1');
+    var thisTitle = current ? decodeEntities(current.name) : (heading ? heading.textContent.trim() : labels.this_product);
+    var cards = el('div', 'cmp-cards');
+    cards.appendChild(card(current, thisTitle, null, labels.this_product, true));
+    cards.appendChild(card(before, before ? decodeEntities(before.name) : previous.title, safeUrl(previous.url), labels.viewed_before, false));
+    view.appendChild(cards);
+
+    if (current && before) {
+      var difference = amount(current.prices, 'price') - amount(before.prices, 'price');
+      if (Math.abs(difference) >= 1) {
+        var note = difference < 0 ? labels.this_cheaper : labels.before_cheaper;
+        view.appendChild(el('div', 'cmp-note', String(note || '').replace(':amount', moneyValue(current.prices, Math.abs(difference)))));
+      }
     }
 
     var mine = {};
@@ -639,13 +671,32 @@
     var keys = bank.compare.rows.map(function (r) { return r[0]; });
     previous.rows.forEach(function (r) { if (keys.indexOf(r[0]) === -1) { keys.push(r[0]); } });
 
+    var rows = el('div', 'cmp-rows');
+    var same = [];
     keys.forEach(function (key) {
       var label = (mine[key] || theirs[key])[1];
-      row(label, mine[key] ? mine[key][2] : '', theirs[key] ? theirs[key][2] : '');
+      var a = mine[key] ? mine[key][2] : '';
+      var b = theirs[key] ? theirs[key][2] : '';
+      if (a && a === b) {
+        same.push(label + ': ' + a);
+        return;
+      }
+      var row = el('div', 'cmp-row');
+      row.appendChild(el('div', 'cmp-label', label));
+      row.appendChild(el('div', 'cmp-value is-this', a || '—'));
+      row.appendChild(el('div', 'cmp-value', b || '—'));
+      rows.appendChild(row);
     });
 
-    table.appendChild(body);
-    return table;
+    if (rows.firstChild) {
+      view.appendChild(el('div', 'cmp-heading', labels.differences));
+      view.appendChild(rows);
+    }
+    if (same.length) {
+      view.appendChild(el('div', 'cmp-same', (labels.same_in_both || '') + ' ' + same.join(' · ')));
+    }
+
+    return view;
   }
 
   /** The body of one section, or null when nothing in it survives live data. */
@@ -653,7 +704,7 @@
     var node = el('div', 'body');
 
     if (section.candidate === 'compare') {
-      node.appendChild(compareTable(section, section.previous, live, labels));
+      node.appendChild(compareView(section, section.previous, live, labels));
       return node;
     }
 
