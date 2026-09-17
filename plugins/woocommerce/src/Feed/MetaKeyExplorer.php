@@ -3,6 +3,7 @@
 namespace Rega\Feed;
 
 use Rega\Support\PlainText;
+use Rega\Support\SensitiveFields;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -35,7 +36,7 @@ final class MetaKeyExplorer {
 	);
 
 	/**
-	 * @return list<array{key: string, private: bool, uses: int, samples: list<string>}>
+	 * @return list<array{key: string, private: bool, sensitive: bool, uses: int, samples: list<string>}>
 	 */
 	public function explore( string $post_type ): array {
 		global $wpdb;
@@ -58,18 +59,21 @@ final class MetaKeyExplorer {
 				continue;
 			}
 
-			$samples = array();
+			$samples   = array();
+			$sensitive = SensitiveFields::is_sensitive( $key );
 
-			if ( $sampled < self::SAMPLED_KEYS ) {
+			// A sensitive field is listed so the store knows it exists, but its values never are.
+			if ( ! $sensitive && $sampled < self::SAMPLED_KEYS ) {
 				++$sampled;
 				$samples = $this->samples( $post_type, $key );
 			}
 
 			$keys[] = array(
-				'key'     => $key,
-				'private' => str_starts_with( $key, '_' ),
-				'uses'    => (int) $row->uses,
-				'samples' => $samples,
+				'key'       => $key,
+				'private'   => str_starts_with( $key, '_' ),
+				'sensitive' => $sensitive,
+				'uses'      => (int) $row->uses,
+				'samples'   => $samples,
 			);
 		}
 

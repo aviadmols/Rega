@@ -1,0 +1,1016 @@
+{
+    "schema_version": 1,
+    "key": "power_tools",
+    "name": {
+        "he": "כלי עבודה חשמליים",
+        "en": "Power tools"
+    },
+    "root_category_external_id": "1751",
+    "excluded_category_external_ids": [
+        "2954"
+    ],
+    "product_types": [
+        {
+            "key": "drill_driver",
+            "label": {
+                "he": "מברגה/מקדחה",
+                "en": "Drill driver"
+            },
+            "hint": "מקדחה או מברגה בלי רטט",
+            "patterns": [
+                "מברגה\\s?/\\s?מקדחה(?!\\s?רוטטת)",
+                "מקדחה\\s?/\\s?מברגה(?!\\s?רוטטת)",
+                "מברגה נטענת(?!.{0,15}רוטטת)",
+                "מקדחה \\d+ מ[\"״”]מ",
+                "^מקדחה(?!.{0,30}(?:רוטטת|זוויתית))"
+            ]
+        },
+        {
+            "key": "hammer_drill",
+            "label": {
+                "he": "מקדחה/מברגה רוטטת",
+                "en": "Hammer drill"
+            },
+            "hint": "קידוח רוטט, בחשמל או נטענת",
+            "patterns": [
+                "רוטטת",
+                "מברגת גיר רוטטת"
+            ]
+        },
+        {
+            "key": "impact_driver",
+            "label": {
+                "he": "מברגת אימפקט",
+                "en": "Impact driver"
+            },
+            "patterns": [
+                "אימפקט"
+            ]
+        },
+        {
+            "key": "angle_drill",
+            "label": {
+                "he": "מקדחה זוויתית",
+                "en": "Angle drill"
+            },
+            "patterns": [
+                "מקדחה זוויתית"
+            ]
+        },
+        {
+            "key": "rotary_hammer",
+            "label": {
+                "he": "פטישון",
+                "en": "Rotary hammer"
+            },
+            "patterns": [
+                "פטישון(?!\\s?חציבה)",
+                "פטיש קידוח"
+            ]
+        },
+        {
+            "key": "demolition_hammer",
+            "label": {
+                "he": "פטיש חציבה",
+                "en": "Demolition hammer"
+            },
+            "patterns": [
+                "פטיש חציבה",
+                "פטישון חציבה"
+            ]
+        },
+        {
+            "key": "angle_grinder",
+            "label": {
+                "he": "משחזת זווית",
+                "en": "Angle grinder"
+            },
+            "patterns": [
+                "משחזת\\s?זו?וית",
+                "משחזת דיסק",
+                "משחזת\\s?[\"״”“]\\s?\\d",
+                "משחזת\\s?\\d"
+            ]
+        },
+        {
+            "key": "polisher",
+            "label": {
+                "he": "פוליש",
+                "en": "Polisher"
+            },
+            "patterns": [
+                "(?<!למכונת )(?<!ל)פולישר?(?![\\p{L}])"
+            ]
+        },
+        {
+            "key": "multitool",
+            "label": {
+                "he": "מולטיטול",
+                "en": "Multi-tool"
+            },
+            "patterns": [
+                "מולטיטול",
+                "מולטי טול"
+            ]
+        },
+        {
+            "key": "circular_saw",
+            "label": {
+                "he": "מסור עגול",
+                "en": "Circular saw"
+            },
+            "patterns": [
+                "מ[סש]ור עגול",
+                "מ[סש]ור דיסק"
+            ]
+        },
+        {
+            "key": "miter_saw",
+            "label": {
+                "he": "מסור גרונג/פנדל",
+                "en": "Miter saw"
+            },
+            "patterns": [
+                "גרונג",
+                "פנדל"
+            ],
+            "hint": "כולל מסור שנקרא \"מסור שולחן + פנדל\": זה מסור גרונג אחד ולא סט"
+        },
+        {
+            "key": "table_saw",
+            "label": {
+                "he": "מסור שולחני",
+                "en": "Table saw"
+            },
+            "patterns": [
+                "מ[סש]ור (?:שולחן|שולחני)"
+            ]
+        },
+        {
+            "key": "jigsaw",
+            "label": {
+                "he": "מסור אנכי",
+                "en": "Jigsaw"
+            },
+            "patterns": [
+                "מ[סש]ור אנכי",
+                "ג[׳'’]יקסו",
+                "ג[׳'’]ויסו",
+                "ג[׳'’]קסו"
+            ]
+        },
+        {
+            "key": "reciprocating_saw",
+            "label": {
+                "he": "מסור חרב",
+                "en": "Reciprocating saw"
+            },
+            "patterns": [
+                "מ[סש]ור חרב"
+            ]
+        },
+        {
+            "key": "chainsaw",
+            "label": {
+                "he": "מסור שרשרת",
+                "en": "Chainsaw"
+            },
+            "patterns": [
+                "מ[סש]ור שרשרת"
+            ]
+        },
+        {
+            "key": "cutoff_saw",
+            "label": {
+                "he": "מסור שורף",
+                "en": "Cut-off saw"
+            },
+            "patterns": [
+                "מ[סש]ור שורף"
+            ]
+        },
+        {
+            "key": "orbital_sander",
+            "label": {
+                "he": "מלטשת רוטטת",
+                "en": "Orbital sander"
+            },
+            "patterns": [
+                "מלטשת רוטטת",
+                "מלטשת מלבנית"
+            ]
+        },
+        {
+            "key": "random_orbit_sander",
+            "label": {
+                "he": "מלטשת אקצנטרית",
+                "en": "Random orbit sander"
+            },
+            "patterns": [
+                "אקצנטרית",
+                "אקצטרית",
+                "מלטשת עגולה"
+            ]
+        },
+        {
+            "key": "detail_sander",
+            "label": {
+                "he": "מלטשת פינות",
+                "en": "Detail sander"
+            },
+            "patterns": [
+                "מלטשת פינות"
+            ]
+        },
+        {
+            "key": "belt_sander",
+            "label": {
+                "he": "מלטשת סרט",
+                "en": "Belt sander"
+            },
+            "patterns": [
+                "מלטשת סרט"
+            ]
+        },
+        {
+            "key": "bench_sander",
+            "label": {
+                "he": "מלטשת שולחן",
+                "en": "Bench sander"
+            },
+            "patterns": [
+                "מלטשת שולחן"
+            ]
+        },
+        {
+            "key": "drywall_sander",
+            "label": {
+                "he": "מלטשת קירות",
+                "en": "Drywall sander"
+            },
+            "patterns": [
+                "מלטשת קירות",
+                "מלטשת גבס",
+                "מלטשת תקרות",
+                "ג[׳'’]ירפה"
+            ]
+        },
+        {
+            "key": "planer",
+            "label": {
+                "he": "מקצועה",
+                "en": "Planer"
+            },
+            "patterns": [
+                "(?<![\\p{L}])מקצוע(?:ה|ות)?(?![\\p{L}])"
+            ]
+        },
+        {
+            "key": "router_trimmer",
+            "label": {
+                "he": "רוטר/טרימר",
+                "en": "Router or trimmer"
+            },
+            "patterns": [
+                "רוטר",
+                "טרימר"
+            ]
+        },
+        {
+            "key": "heat_gun",
+            "label": {
+                "he": "אקדח חום",
+                "en": "Heat gun"
+            },
+            "patterns": [
+                "אקדח חום"
+            ]
+        },
+        {
+            "key": "nail_gun",
+            "label": {
+                "he": "אקדח מסמרים/סיכות",
+                "en": "Nail or staple gun"
+            },
+            "patterns": [
+                "אקדח מסמרים",
+                "אקדח סיכות",
+                "מסמרת"
+            ]
+        },
+        {
+            "key": "laser_level",
+            "label": {
+                "he": "פלס לייזר",
+                "en": "Laser level"
+            },
+            "patterns": [
+                "פלס לייזר",
+                "לייזר קווי",
+                "לייזר \\d+ קווים",
+                "לייזר ירוק",
+                "לייזר אדום"
+            ]
+        },
+        {
+            "key": "distance_meter",
+            "label": {
+                "he": "מד מרחק",
+                "en": "Distance meter"
+            },
+            "patterns": [
+                "מד מרחק",
+                "מד טווח"
+            ]
+        },
+        {
+            "key": "pressure_washer",
+            "label": {
+                "he": "מכונת שטיפה",
+                "en": "Pressure washer"
+            },
+            "patterns": [
+                "מכונת שטיפה",
+                "שוטף בלחץ",
+                "מכונת לחץ"
+            ]
+        },
+        {
+            "key": "air_compressor",
+            "label": {
+                "he": "מדחס אוויר",
+                "en": "Air compressor"
+            },
+            "patterns": [
+                "מדחס",
+                "קומפרסור"
+            ]
+        },
+        {
+            "key": "blower",
+            "label": {
+                "he": "מפוח",
+                "en": "Blower"
+            },
+            "patterns": [
+                "מפוח"
+            ]
+        },
+        {
+            "key": "vacuum",
+            "label": {
+                "he": "שואב אבק",
+                "en": "Vacuum"
+            },
+            "patterns": [
+                "שואב"
+            ]
+        },
+        {
+            "key": "pump",
+            "label": {
+                "he": "משאבה",
+                "en": "Pump"
+            },
+            "patterns": [
+                "משאבה",
+                "משאבת"
+            ]
+        },
+        {
+            "key": "paint_sprayer",
+            "label": {
+                "he": "מרסס צבע",
+                "en": "Paint sprayer"
+            },
+            "patterns": [
+                "מרסס",
+                "מרסס צבע"
+            ]
+        },
+        {
+            "key": "paint_mixer",
+            "label": {
+                "he": "מערבל",
+                "en": "Mixer"
+            },
+            "patterns": [
+                "מערבל"
+            ]
+        },
+        {
+            "key": "winch",
+            "label": {
+                "he": "כננת",
+                "en": "Winch"
+            },
+            "patterns": [
+                "כננת"
+            ]
+        },
+        {
+            "key": "welder",
+            "label": {
+                "he": "רתכת",
+                "en": "Welder"
+            },
+            "patterns": [
+                "רתכת"
+            ]
+        },
+        {
+            "key": "flashlight",
+            "label": {
+                "he": "פנס",
+                "en": "Flashlight"
+            },
+            "patterns": [
+                "פנס"
+            ]
+        },
+        {
+            "key": "fan",
+            "label": {
+                "he": "מאוורר",
+                "en": "Fan"
+            },
+            "patterns": [
+                "מאוורר",
+                "מצנן"
+            ]
+        },
+        {
+            "key": "battery",
+            "label": {
+                "he": "סוללה",
+                "en": "Battery"
+            },
+            "hint": "סוללה או ערכת סוללות שנמכרת לבד",
+            "patterns": [
+                "^סוללה",
+                "^סוללת",
+                "^ערכת סוללות",
+                "^סט סוללות"
+            ]
+        },
+        {
+            "key": "charger",
+            "label": {
+                "he": "מטען",
+                "en": "Charger"
+            },
+            "patterns": [
+                "^מטען"
+            ]
+        },
+        {
+            "key": "tool_set",
+            "label": {
+                "he": "סט כלים",
+                "en": "Tool kit"
+            },
+            "hint": "כמה כלים שונים באריזה אחת",
+            "patterns": [
+                "^סט \\d? ?(?:מברגות|כלים|כלי)",
+                "קומבו",
+                "^סט (?!מקדחי|ביטים|להבים|דיסקים).{0,40}\\+",
+                "^סט (?!מקדחי|ביטים|להבים|דיסקים).{0,40}(?:מברגת|פטישון|מסור|משחזת).{0,30}(?:ו|\\+)"
+            ]
+        },
+        {
+            "key": "accessory",
+            "label": {
+                "he": "אביזר",
+                "en": "Accessory"
+            },
+            "hint": "אביזר לכלי: להב, דיסק, מסילה, מוביל, סוס עבודה, חצובה, גלגל מדידה, גלאי לייזר, משקפיים, מתאם, סט מקדחים. לא כלי בפני עצמו",
+            "patterns": [
+                "משורית",
+                "^להב",
+                "מסילה",
+                "מוביל",
+                "סוס עבודה",
+                "^מסכת",
+                "^מקדח ",
+                "מקדחי",
+                "(?:^|\\s)ל(?:מכונת|מסור|משחזת|פלס|מקדחה|מברגה|סוללת)",
+                "עבור (?:מכונת|מסור|משחזת|פלס)",
+                "חצובה|חצובת",
+                "גלגל מדידה|גלגלת מדידה",
+                "^גלאי",
+                "^משקפיים",
+                "^סטנד",
+                "^מתאם",
+                "^דיסק",
+                "^רשת ליטוש",
+                "^נייר לטש",
+                "סקוטש",
+                "מוט סרגל"
+            ]
+        },
+        {
+            "key": "other",
+            "label": {
+                "he": "אחר",
+                "en": "Other"
+            },
+            "hint": "רק כשאף סוג אחר לא מתאים, למשל מאזנת אופטית או מחבר ביסקוויטים"
+        }
+    ],
+    "attributes": [
+        {
+            "key": "voltage_v",
+            "label": {
+                "he": "מתח סוללה",
+                "en": "Battery voltage"
+            },
+            "type": "number",
+            "dimension": "voltage",
+            "min": 3.6,
+            "max": 60,
+            "hint": "מתח של כלי נטען. 20V MAX או V20 של סטנלי הם פלטפורמת 18V. 230V הוא חשמל הבית ולא מתח סוללה. \"2X18V\" בשם של כלי מקיטה הוא כלי של 36V; \"2X18V\" ברשימת סוללות שבאריזה הן שתי סוללות של 18V"
+        },
+        {
+            "key": "power_w",
+            "label": {
+                "he": "הספק",
+                "en": "Power"
+            },
+            "type": "number",
+            "dimension": "power",
+            "min": 50,
+            "max": 5000,
+            "rank": "max",
+            "hint": "הספק מנוע של כלי שמתחבר לחשמל"
+        },
+        {
+            "key": "battery_ah",
+            "label": {
+                "he": "קיבולת סוללה",
+                "en": "Battery capacity"
+            },
+            "type": "number",
+            "dimension": "charge",
+            "min": 0.5,
+            "max": 15,
+            "rank": "max",
+            "hint": "קיבולת כל סוללה שכלולה באריזה. לא סוללות שאפשר לקנות בנפרד, ולא סכום של כמה סוללות"
+        },
+        {
+            "key": "torque_nm",
+            "label": {
+                "he": "מומנט",
+                "en": "Torque"
+            },
+            "type": "number",
+            "dimension": "torque",
+            "min": 1,
+            "max": 2000,
+            "rank": "max"
+        },
+        {
+            "key": "max_speed_rpm",
+            "label": {
+                "he": "מהירות סיבוב מרבית",
+                "en": "Max speed"
+            },
+            "type": "number",
+            "dimension": "speed",
+            "min": 100,
+            "max": 60000,
+            "hint": "המהירות הגבוהה ביותר בלי עומס"
+        },
+        {
+            "key": "impact_rate_bpm",
+            "label": {
+                "he": "קצב מכות",
+                "en": "Impact rate"
+            },
+            "type": "number",
+            "dimension": "rate",
+            "min": 100,
+            "max": 100000
+        },
+        {
+            "key": "impact_energy_j",
+            "label": {
+                "he": "עוצמת מכה",
+                "en": "Impact energy"
+            },
+            "type": "number",
+            "dimension": "energy",
+            "min": 0.5,
+            "max": 100,
+            "rank": "max",
+            "applies_to": [
+                "rotary_hammer",
+                "demolition_hammer",
+                "tool_set"
+            ]
+        },
+        {
+            "key": "chuck_mm",
+            "label": {
+                "he": "קוטר פוטר",
+                "en": "Chuck size"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 6,
+            "max": 20,
+            "hint": "גודל הפוטר או הצ׳אק של מקדחה או מברגה. לא כושר קידוח במתכת, בעץ או בבטון",
+            "applies_to": [
+                "drill_driver",
+                "hammer_drill",
+                "impact_driver",
+                "angle_drill",
+                "tool_set"
+            ]
+        },
+        {
+            "key": "disc_mm",
+            "label": {
+                "he": "קוטר דיסק או להב",
+                "en": "Disc or blade diameter"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 50,
+            "max": 410,
+            "hint": "קוטר הדיסק של משחזת או הלהב של מסור עגול, גרונג או שולחני",
+            "applies_to": [
+                "angle_grinder",
+                "polisher",
+                "circular_saw",
+                "miter_saw",
+                "table_saw",
+                "cutoff_saw",
+                "random_orbit_sander",
+                "tool_set",
+                "drywall_sander"
+            ]
+        },
+        {
+            "key": "cutting_depth_mm",
+            "label": {
+                "he": "עומק חיתוך",
+                "en": "Cutting depth"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 400,
+            "rank": "max",
+            "hint": "עומק החיתוך המרבי בזווית ישרה",
+            "applies_to": [
+                "circular_saw",
+                "miter_saw",
+                "table_saw",
+                "jigsaw",
+                "reciprocating_saw",
+                "cutoff_saw",
+                "chainsaw",
+                "tool_set"
+            ]
+        },
+        {
+            "key": "bar_length_mm",
+            "label": {
+                "he": "אורך מוט",
+                "en": "Bar length"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 150,
+            "max": 900,
+            "applies_to": [
+                "chainsaw"
+            ]
+        },
+        {
+            "key": "weight_kg",
+            "label": {
+                "he": "משקל הכלי",
+                "en": "Tool weight"
+            },
+            "type": "number",
+            "dimension": "mass",
+            "min": 0.2,
+            "max": 80,
+            "rank": "min",
+            "hint": "משקל הכלי עצמו כפי שכתוב בטקסט. לא משקל משלוח"
+        },
+        {
+            "key": "max_pressure_bar",
+            "label": {
+                "he": "לחץ מרבי",
+                "en": "Max pressure"
+            },
+            "type": "number",
+            "dimension": "pressure",
+            "min": 1,
+            "max": 300,
+            "rank": "max",
+            "applies_to": [
+                "pressure_washer",
+                "air_compressor"
+            ]
+        },
+        {
+            "key": "tank_l",
+            "label": {
+                "he": "נפח מיכל",
+                "en": "Tank volume"
+            },
+            "type": "number",
+            "dimension": "volume",
+            "min": 1,
+            "max": 500,
+            "applies_to": [
+                "air_compressor",
+                "vacuum",
+                "paint_sprayer"
+            ]
+        },
+        {
+            "key": "laser_range_mm",
+            "label": {
+                "he": "טווח",
+                "en": "Range"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 1000,
+            "max": 500000,
+            "rank": "max",
+            "applies_to": [
+                "laser_level",
+                "distance_meter"
+            ]
+        },
+        {
+            "key": "power_source",
+            "label": {
+                "he": "מקור כוח",
+                "en": "Power source"
+            },
+            "type": "enum",
+            "values": [
+                {
+                    "key": "cordless",
+                    "label": {
+                        "he": "נטען",
+                        "en": "Cordless"
+                    },
+                    "patterns": [
+                        "נטע[נן]",
+                        "ללא כבל",
+                        "\\d+(?:[.,]\\d+)?\\s?V(?![\\p{L}\\d])",
+                        "\\d+(?:[.,]\\d+)?\\s?וולט"
+                    ]
+                },
+                {
+                    "key": "corded",
+                    "label": {
+                        "he": "חשמלי בכבל",
+                        "en": "Corded"
+                    },
+                    "patterns": [
+                        "\\d{3,4}\\s?W(?![\\p{L}\\d])",
+                        "\\d{3,4}\\s?וואט",
+                        "230\\s?V",
+                        "כבל חשמל",
+                        "כבל \\d"
+                    ]
+                },
+                {
+                    "key": "petrol",
+                    "label": {
+                        "he": "בנזין",
+                        "en": "Petrol"
+                    },
+                    "patterns": [
+                        "בנזין"
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "kit",
+            "label": {
+                "he": "מה באריזה",
+                "en": "In the box"
+            },
+            "type": "enum",
+            "values": [
+                {
+                    "key": "body_only",
+                    "label": {
+                        "he": "גוף בלבד",
+                        "en": "Body only"
+                    },
+                    "patterns": [
+                        "גוף בלבד",
+                        "רק גוף",
+                        "ללא סוללה",
+                        "ללא סוללות",
+                        "^גוף ",
+                        "\\(גוף\\)"
+                    ]
+                },
+                {
+                    "key": "with_batteries",
+                    "label": {
+                        "he": "כולל סוללות ומטען",
+                        "en": "With batteries and charger"
+                    },
+                    "patterns": [
+                        "כולל\\s(?:\\d\\s)?סוללו?ת",
+                        "עם\\s(?:\\d\\s)?סוללו?ת",
+                        "סוללו?ת\\s?ומטען",
+                        "\\+\\s?סוללו?ת",
+                        "סט סוללות",
+                        "\\d\\s?[xX×]\\s?\\d(?:[.,]\\d)?\\s?Ah"
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "brushless",
+            "label": {
+                "he": "מנוע ללא פחמים",
+                "en": "Brushless motor"
+            },
+            "type": "boolean",
+            "patterns": [
+                "ברשלס",
+                "בראשלס",
+                "brushless",
+                "(?<![\\p{L}])BL(?![\\p{L}])"
+            ]
+        }
+    ],
+    "tags": [
+        {
+            "key": "compact",
+            "label": {
+                "he": "קומפקטי",
+                "en": "Compact"
+            },
+            "patterns": [
+                "קומפקט"
+            ]
+        },
+        {
+            "key": "lightweight",
+            "label": {
+                "he": "קל משקל",
+                "en": "Lightweight"
+            },
+            "patterns": [
+                "קל משקל",
+                "קלת משקל",
+                "משקל קל",
+                "קל במיוחד",
+                "קלה במיוחד"
+            ]
+        },
+        {
+            "key": "led_light",
+            "label": {
+                "he": "תאורת LED",
+                "en": "LED light"
+            },
+            "patterns": [
+                "LED",
+                "(?<![\\p{L}])לד(?![\\p{L}])",
+                "תאורת עבודה"
+            ]
+        },
+        {
+            "key": "variable_speed",
+            "label": {
+                "he": "מהירות משתנה",
+                "en": "Variable speed"
+            },
+            "patterns": [
+                "מהירות משתנה",
+                "ויסות מהירות",
+                "בקרת מהירות",
+                "הדק משתנה"
+            ]
+        },
+        {
+            "key": "multiple_speeds",
+            "label": {
+                "he": "כמה מהירויות",
+                "en": "Several speeds"
+            },
+            "patterns": [
+                "(?:2|3|שתי|שלוש)\\s?מהירויות",
+                "(?:2|3)\\s?הילוכים",
+                "(?:2|3|שלושה)\\s?מצבי מהירות"
+            ]
+        },
+        {
+            "key": "carry_case",
+            "label": {
+                "he": "מזוודה או תיק",
+                "en": "Carry case"
+            },
+            "patterns": [
+                "מזוודה",
+                "ארגז",
+                "תיק נשיאה",
+                "קייס"
+            ]
+        },
+        {
+            "key": "laser_guide",
+            "label": {
+                "he": "סימון לייזר",
+                "en": "Laser guide"
+            },
+            "patterns": [
+                "עם לייזר",
+                "סמן לייזר",
+                "מדריך לייזר",
+                "קו לייזר"
+            ]
+        },
+        {
+            "key": "dust_collection",
+            "label": {
+                "he": "איסוף אבק",
+                "en": "Dust collection"
+            },
+            "patterns": [
+                "איסוף אבק",
+                "שקית איסוף",
+                "שאיבת אבק",
+                "חיבור לשואב"
+            ]
+        },
+        {
+            "key": "anti_vibration",
+            "label": {
+                "he": "הפחתת רעידות",
+                "en": "Anti-vibration"
+            },
+            "patterns": [
+                "אנטי.?ויברציה",
+                "anti.?vibration",
+                "הפחתת רעידות",
+                "מפחית רעידות",
+                "בולם רעידות",
+                "מצמצמים את הרטט"
+            ]
+        },
+        {
+            "key": "for_professionals",
+            "label": {
+                "he": "לאנשי מקצוע",
+                "en": "For professionals"
+            },
+            "patterns": [
+                "לאנשי מקצוע",
+                "מקצועי",
+                "קבלנים",
+                "לשימוש מקצועי"
+            ]
+        },
+        {
+            "key": "for_home_diy",
+            "label": {
+                "he": "לבית ולעשה זאת בעצמך",
+                "en": "Home and DIY"
+            },
+            "patterns": [
+                "DIY",
+                "שימוש ביתי",
+                "עשה זאת בעצמך",
+                "חובבים",
+                "לבית"
+            ]
+        },
+        {
+            "key": "soft_start",
+            "label": {
+                "he": "התנעה רכה",
+                "en": "Soft start"
+            },
+            "patterns": [
+                "התנעה רכה",
+                "soft start"
+            ]
+        }
+    ],
+    "comparison": {
+        "set_by": [
+            "power_source"
+        ],
+        "price_set_by": [
+            "kit"
+        ]
+    }
+}

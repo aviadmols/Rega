@@ -18,6 +18,10 @@ return [
         'tasks' => 'tasks',
         'percent' => '%',
         'days' => 'days',
+        'products' => 'products',
+        'items' => 'items',
+        'characters' => 'characters',
+        'kilobytes' => 'KB',
     ],
     'errors' => [
         'not_integer' => 'Enter a whole number.',

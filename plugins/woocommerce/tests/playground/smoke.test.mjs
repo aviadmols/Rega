@@ -73,7 +73,7 @@ test('status describes the site, WooCommerce and active plugins', async () => {
   assert.equal(headers.get('cache-control'), 'no-store');
 
   const s = body.data;
-  assert.equal(s.plugin.version, '0.1.0');
+  assert.equal(s.plugin.version, '0.1.1');
   assert.equal(s.woocommerce.active, true);
   assert.equal(s.woocommerce.currency, 'ILS');
   assert.ok(s.plugins.some((p) => p.name === 'WooCommerce'));
@@ -121,6 +121,10 @@ test('a product carries clean text, category path, attributes, public meta, rela
   assert.equal(d.meta.power_watts, '550');
   assert.equal(d.meta.chuck_mm, '13');
   assert.equal('_internal_flag' in d.meta, false, 'private meta is not exported');
+  for (const key of ['עלות ליחידה מהספק (לא לפרסום)', 'supplier_cost', 'הערת קליטה']) {
+    assert.equal(key in d.meta, false, `sensitive field "${key}" is not exported`);
+  }
+  assert.equal(JSON.stringify(d).includes('4321.87'), false, 'the cost value appears nowhere in the record');
 
   assert.deepEqual(
     d.relations.map((r) => [r.type, Number(r.target), r.source]).sort(),
@@ -163,6 +167,18 @@ test('a variable product lists its variations with readable attribute values', a
 test('a variation or a missing ID is not a product', async () => {
   assert.equal((await authed(`/feed/products/${fixtures.variations.red}`)).status, 404);
   assert.equal((await authed('/feed/products/99999999')).status, 404);
+});
+
+test('categories and tags come in a fixed order, so an unchanged product keeps its hash', async () => {
+  const first = (await authed(`/feed/products/${P.pro}`)).body.data;
+  const ids = first.categories.map((c) => Number(c.id));
+  assert.equal(ids.length, 3);
+  assert.deepEqual(ids, [...ids].sort((a, b) => a - b), 'categories by ascending ID');
+  assert.deepEqual(first.tags, [...first.tags].sort(), 'tags sorted');
+
+  for (let i = 0; i < 3; i++) {
+    assert.equal((await authed(`/feed/products/${P.pro}`)).body.data.hash, first.hash);
+  }
 });
 
 test('since filters to changed products', async () => {
@@ -217,6 +233,12 @@ test('meta keys show product custom fields with samples, and refuse other post t
   assert.deepEqual(power.samples, ['550']);
   assert.equal(power.private, false);
   assert.equal(body.data.find((k) => k.key === '_sku').private, true);
+  assert.equal(power.sensitive, false);
+
+  const cost = body.data.find((k) => k.key === 'עלות ליחידה מהספק (לא לפרסום)');
+  assert.equal(cost.sensitive, true, 'a cost field is listed as sensitive');
+  assert.deepEqual(cost.samples, [], 'and its values are never sampled');
+  assert.equal(JSON.stringify(body).includes('internal import note'), false);
 
   const refused = await authed('/meta-keys', { post_type: 'shop_order' });
   assert.equal(refused.status, 400);

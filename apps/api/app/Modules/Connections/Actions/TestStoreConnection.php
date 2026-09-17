@@ -5,12 +5,12 @@ namespace App\Modules\Connections\Actions;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Connections\Enums\ConnectionStatus;
 use App\Modules\Connections\Models\StoreConnection;
+use App\Modules\Connections\Support\PluginHttp;
 use App\Modules\Runs\Contracts\RecordsRuns;
 use App\Modules\Runs\Contracts\RunContext;
 use App\Modules\Runs\Models\Run;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Calls the store plugin's /rega/v1/status with the saved token and records what happened,
@@ -53,15 +53,8 @@ final class TestStoreConnection
         $run->output(['url' => $url, 'http_status' => $response->status()]);
         $code = (string) $response->json('code', '');
 
-        $failure = match (true) {
-            $response->status() === 401 => 'invalid_token',
-            $response->status() === 429 => 'locked_out',
-            $response->status() === 404 && ! str_starts_with($code, 'rega_') => 'plugin_missing',
-            $response->status() === 503 && $code === 'rega_woocommerce_inactive' => 'woocommerce_inactive',
-            ! $response->successful() => 'http_error',
-            ! is_array($response->json('data.plugin')) => 'unexpected_response',
-            default => null,
-        };
+        $failure = PluginHttp::failure($response)
+            ?? (is_array($response->json('data.plugin')) ? null : 'unexpected_response');
 
         if ($failure !== null) {
             $this->fail($connection, $run, $failure, ['status' => $response->status()], $code !== '' ? $code : null);
@@ -90,30 +83,10 @@ final class TestStoreConnection
         ]);
     }
 
-    /**
-     * Pretty permalinks first; sites without them only answer on ?rest_route=.
-     *
-     * @return array{0: Response, 1: string}
-     */
+    /** @return array{0: Response, 1: string} */
     private function request(StoreConnection $connection): array
     {
-        $client = Http::acceptJson()
-            ->withHeaders(['X-Rega-Token' => $connection->access_token, 'User-Agent' => 'Rega/'.config('app.name')])
-            ->connectTimeout(10)
-            ->timeout(self::TIMEOUT_SECONDS);
-
-        $url = $connection->site_url.'/wp-json/rega/v1/status';
-        $response = $client->get($url);
-
-        // Retry only when the answer did not come from the WordPress REST API at all (an HTML
-        // 404 because pretty permalinks are off). A JSON "rest_no_route" already means the REST
-        // API works and the plugin is missing; asking again would only double the wait.
-        if ($response->status() === 404 && ! is_string($response->json('code'))) {
-            $url = $connection->site_url.'/?rest_route=/rega/v1/status';
-            $response = $client->get($url);
-        }
-
-        return [$response, $url];
+        return PluginHttp::get($connection, '/status', [], self::TIMEOUT_SECONDS);
     }
 
     /** @param array<string, scalar> $params */

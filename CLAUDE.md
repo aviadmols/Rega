@@ -31,6 +31,23 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
   fails on a missing key and on a declared flag or setting without a label.
 - Business logic lives in single-purpose `Actions`. Controllers, commands and Filament call them.
 
+## Catalog and product knowledge (apps/api)
+
+- `Catalog` reads the store feed through `Connections\Contracts\StoreFeed` (the Rega plugin today).
+  Records are never deleted by a sync; `removed_at` marks what the store stopped publishing, and
+  only after a complete read. Costs and internal notes are stripped before storing
+  (`Catalog\Support\SensitiveFields`), even if an old plugin sends them.
+- `Enrichment` builds facts about products and articles. Code first (`Scanning/`: text condenser,
+  boilerplate, measurement scanner, vocabulary patterns), then a model picks IDs from what code
+  found, then code checks every answer (`Tasks/`). Runbook: `docs/runbooks/agent-tasks.md`.
+- Agent work goes through batches: a downloadable JSONL task file, answers uploaded back. Request
+  IDs contain a hash of the input, so answers are reusable across batches with the same requests.
+- Prompts are versioned files in `Enrichment/Prompts`. Never edit a released version; add a new
+  one and raise `PromptLibrary::CURRENT`.
+- Superlatives are computed in code only, from approved facts (`ComputeRankings`).
+- Hebrew text: never `trim($s, '•…')` with multibyte characters (PHP trims bytes and cuts letters);
+  use a `/u` regex. Hebrew final letters (ן ם ך ף ץ) differ from their regular forms in patterns.
+
 ## WooCommerce plugin (plugins/woocommerce)
 
 - Plain WordPress PHP, no Composer runtime deps, minimum PHP 8.1 (CI lints on 8.1: no readonly

@@ -81,7 +81,10 @@ final class ContentExporter {
 			$assigned = get_the_terms( $post, $taxonomy->name );
 
 			if ( is_array( $assigned ) && array() !== $assigned ) {
-				$terms[ $taxonomy->name ] = array_values( array_map( static fn ( $term ): string => PlainText::line( $term->name ), $assigned ) );
+				// Sorted so the hash changes only when the terms do, not their order.
+				$names = array_map( static fn ( $term ): string => PlainText::line( $term->name ), $assigned );
+				sort( $names, SORT_STRING );
+				$terms[ $taxonomy->name ] = array_values( $names );
 			}
 		}
 

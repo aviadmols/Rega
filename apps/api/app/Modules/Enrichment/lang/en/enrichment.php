@@ -1,0 +1,62 @@
+<?php
+
+return [
+    'tasks' => [
+        'product_extraction' => 'Read products',
+        'fact_review' => 'Check facts',
+        'content_mapping' => 'Read articles',
+    ],
+    'batch_statuses' => [
+        'awaiting_results' => 'Waiting for answers',
+        'completed' => 'Done',
+        'cancelled' => 'Cancelled',
+    ],
+    'fact_kinds' => [
+        'type' => 'Product type',
+        'spec' => 'Spec',
+        'choice' => 'Choice',
+        'flag' => 'Yes/no spec',
+        'tag' => 'Tag',
+        'content_kind' => 'Article kind',
+        'shopper_value' => 'Value to shoppers',
+        'category' => 'Category',
+    ],
+    'fact_statuses' => [
+        'approved' => 'Approved',
+        'awaiting_review' => 'Waiting for the checker',
+        'awaiting_escalation' => 'Waiting for the stronger checker',
+        'needs_person' => 'Waiting for a person',
+        'rejected' => 'Rejected',
+        'superseded' => 'Replaced',
+    ],
+    'origins' => [
+        'code_model' => 'Code and model',
+        'model' => 'Model',
+        'person' => 'Person',
+    ],
+    'verdicts' => [
+        'ok' => 'Correct',
+        'wrong' => 'Wrong',
+        'unsure' => 'Unsure',
+    ],
+    'values' => [
+        'yes' => 'Yes',
+    ],
+    'content_kinds' => [
+        'buying_guide' => 'Buying guide',
+        'how_to' => 'How-to',
+        'project_idea' => 'Project idea',
+        'material_guide' => 'Material guide',
+        'product_review' => 'Product review',
+        'brand_story' => 'About a brand',
+        'store_page' => 'About the store',
+        'news' => 'News',
+        'other' => 'Other',
+    ],
+    'shopper_values' => [
+        'high' => 'High',
+        'medium' => 'Medium',
+        'low' => 'Low',
+        'none' => 'None',
+    ],
+];

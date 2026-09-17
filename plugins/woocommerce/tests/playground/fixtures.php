@@ -86,11 +86,22 @@ if ( ! str_contains( (string) get_post_field( 'post_content', $drill_id, 'raw' )
 update_post_meta( $drill_id, 'power_watts', '550' );
 update_post_meta( $drill_id, 'chuck_mm', '13' );
 update_post_meta( $drill_id, '_internal_flag', 'secret-internal' );
+// Real field names seen in a store: the cost price and an import note must never be shared.
+update_post_meta( $drill_id, 'עלות ליחידה מהספק (לא לפרסום)', '4321.87' );
+update_post_meta( $drill_id, 'supplier_cost', '4321.87' );
+update_post_meta( $drill_id, 'הערת קליטה', 'internal import note' );
 
 $pro = new WC_Product_Simple();
 $pro->set_name( 'מקדחה רוטטת 850W' );
 $pro->set_regular_price( '399' );
-$pro->set_category_ids( array( $drills ) );
+// Several categories and tags, given out of order: the feed must return them sorted.
+$pro->set_category_ids( array( $drills, $accessories, $power ) );
+$tag_ids = array();
+foreach ( array( 'מקצועי', 'Bosch', 'אלחוטי' ) as $tag_name ) {
+	$existing  = get_term_by( 'name', $tag_name, 'product_tag' );
+	$tag_ids[] = $existing ? (int) $existing->term_id : (int) wp_insert_term( $tag_name, 'product_tag' )['term_id'];
+}
+$pro->set_tag_ids( $tag_ids );
 $pro_id = $pro->save();
 
 $drill = wc_get_product( $drill_id );

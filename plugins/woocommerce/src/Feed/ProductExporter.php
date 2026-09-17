@@ -4,6 +4,7 @@ namespace Rega\Feed;
 
 use Rega\Support\PlainText;
 use Rega\Support\Records;
+use Rega\Support\SensitiveFields;
 use WC_Product;
 use WC_Product_Attribute;
 
@@ -167,6 +168,11 @@ final class ProductExporter {
 	private function categories( array $category_ids ): array {
 		$categories = array();
 
+		// WordPress does not promise an order, and a term-ordering plugin can change it between
+		// requests. Sorted, an unchanged product always has the same hash.
+		$category_ids = array_map( 'intval', $category_ids );
+		sort( $category_ids, SORT_NUMERIC );
+
 		foreach ( $category_ids as $term_id ) {
 			$term = get_term( (int) $term_id, 'product_cat' );
 
@@ -247,7 +253,10 @@ final class ProductExporter {
 			return array();
 		}
 
-		return array_values( array_map( static fn ( $term ): string => PlainText::line( $term->name ), $terms ) );
+		$names = array_map( static fn ( $term ): string => PlainText::line( $term->name ), $terms );
+		sort( $names, SORT_STRING );
+
+		return array_values( $names );
 	}
 
 	/**
@@ -282,7 +291,8 @@ final class ProductExporter {
 
 	/**
 	 * Custom fields whose keys do not start with "_" (ACF values, store-specific specs).
-	 * Private keys are plugin internals. Arrays and serialized values are skipped.
+	 * Private keys are plugin internals. Arrays and serialized values are skipped, and so are
+	 * costs, supplier details and internal notes (see SensitiveFields).
 	 *
 	 * @return array<string, string>
 	 */
@@ -292,7 +302,7 @@ final class ProductExporter {
 		foreach ( (array) get_post_meta( $product_id ) as $key => $values ) {
 			$key = (string) $key;
 
-			if ( '' === $key || '_' === $key[0] || in_array( $key, self::IGNORED_PUBLIC_META, true ) ) {
+			if ( '' === $key || '_' === $key[0] || in_array( $key, self::IGNORED_PUBLIC_META, true ) || SensitiveFields::is_sensitive( $key ) ) {
 				continue;
 			}
 

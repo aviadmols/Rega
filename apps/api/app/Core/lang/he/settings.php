@@ -18,6 +18,10 @@ return [
         'tasks' => 'משימות',
         'percent' => 'אחוז',
         'days' => 'ימים',
+        'products' => 'מוצרים',
+        'items' => 'פריטים',
+        'characters' => 'תווים',
+        'kilobytes' => 'קילובייט',
     ],
     'errors' => [
         'not_integer' => 'יש להזין מספר שלם.',

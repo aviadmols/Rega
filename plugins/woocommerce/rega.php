@@ -3,7 +3,7 @@
  * Plugin Name:       Rega
  * Plugin URI:        https://github.com/aviadmols/Rega
  * Description:       Connects this WooCommerce store to Rega, the smart shopping assistant. Gives Rega read-only access to the catalog and content through a token you create.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Rega
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'REGA_VERSION', '0.1.0' );
+define( 'REGA_VERSION', '0.1.1' );
 define( 'REGA_FILE', __FILE__ );
 define( 'REGA_DIR', __DIR__ );
 
