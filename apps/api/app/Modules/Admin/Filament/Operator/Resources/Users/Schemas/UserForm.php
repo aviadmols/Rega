@@ -35,6 +35,9 @@ final class UserForm
                             ->label(__('admin::users.fields.password'))
                             ->helperText(fn (string $operation): ?string => $operation === 'edit' ? __('admin::users.fields.password_keep') : null)
                             ->password()
+                            // Without this, a browser can autofill the signed-in operator's saved
+                            // password here and silently change the password of the user being edited.
+                            ->autocomplete('new-password')
                             ->revealable()
                             ->minLength(User::MIN_PASSWORD_LENGTH)
                             ->required(fn (string $operation): bool => $operation === 'create')

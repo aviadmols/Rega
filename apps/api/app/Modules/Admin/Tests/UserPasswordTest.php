@@ -49,6 +49,13 @@ final class UserPasswordTest extends TestCase
         $this->assertSame($before, $this->operator->fresh()->password);
     }
 
+    public function test_browsers_are_told_not_to_autofill_the_operators_own_password(): void
+    {
+        $this->get("/operator/users/{$this->operator->getKey()}/edit")
+            ->assertOk()
+            ->assertSee('autocomplete="new-password"', false);
+    }
+
     public function test_leaving_the_password_empty_keeps_the_current_one(): void
     {
         $before = $this->operator->password;
