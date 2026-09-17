@@ -4,7 +4,11 @@
 .playwright-mcp
 **/node_modules
 docs
-packages
+# Shared packages stay out, except the event spec the API validates beacons against.
+packages/*
+!packages/event-spec
+packages/event-spec/*
+!packages/event-spec/schema
 
 # API
 apps/api/vendor
