@@ -11,6 +11,7 @@ use App\Modules\Enrichment\Vocabulary\VocabularyDefinition;
  *   brand        from the brand field, a brand attribute, the title or the description
  *   family       the same product in other sizes (title without sizes, same category)
  *   type         the product type the store category stands for, when the vocabulary maps it
+ *   category_choices  choice values the category stands for ("מוקצע לא מחוטא" is untreated)
  *   specs        sizes the vocabulary reads from the title ("20X45 מ"מ" is 20 thick, 45 wide)
  *   pack_count   "100 יח'" in the title
  *   choices      what a shopper must choose on the product page (a length, a volume)
@@ -47,6 +48,7 @@ final class CodeReading
             'brand' => $brands->resolve($product),
             'family' => ProductFamily::of($product),
             'type' => $type === null ? null : ['key' => $type, 'source' => 'category'],
+            'category_choices' => $vocabulary?->choicesForCategories($categories) ?: null,
             'specs' => $vocabulary?->titleSpecs($product->title, $type) ?: null,
             'pack_count' => self::packCount($product->title),
             'choices' => self::choices($product) ?: null,

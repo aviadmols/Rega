@@ -132,7 +132,9 @@
             "key": "self_drilling",
             "label": { "he": "קודח", "en": "Self-drilling" },
             "type": "boolean",
-            "patterns": ["(?<!לא )קודח(?! ולא)(?! / לא)"]
+            "hint": "כשאפשר לבחור קודח או לא קודח, זו בחירה בעמוד המוצר ולא כן",
+            "patterns": ["קודח"],
+            "exclude_patterns": ["לא קודח"]
         }
     ],
     "tags": [

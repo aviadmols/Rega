@@ -149,6 +149,10 @@ final class ReadProductsInCode
                     $write(['kind' => FactKind::Type, 'key' => 'type', 'value_text' => $reading['type']['key'], 'quote' => $product->title, 'vocabulary_id' => $vocabulary?->id, 'status_reason' => 'code_category']);
                 }
 
+                foreach ((array) ($reading['category_choices'] ?? []) as $key => $value) {
+                    $write(['kind' => FactKind::Choice, 'key' => $key, 'value_text' => $value, 'quote' => $product->title, 'vocabulary_id' => $vocabulary?->id, 'status_reason' => 'code_category']);
+                }
+
                 foreach ((array) ($reading['specs'] ?? []) as $key => $spec) {
                     $write(['kind' => FactKind::Spec, 'key' => $key, 'value_number' => $spec['value'], 'unit' => $spec['unit'], 'quote' => $spec['quote'], 'vocabulary_id' => $vocabulary?->id, 'status_reason' => 'code_title']);
                 }

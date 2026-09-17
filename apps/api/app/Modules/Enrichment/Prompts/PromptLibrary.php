@@ -16,7 +16,7 @@ final class PromptLibrary
 {
     /** @var array<string, int> task => current version */
     public const CURRENT = [
-        'product_extraction' => 2,
+        'product_extraction' => 3,
         'fact_review' => 2,
         'content_mapping' => 2,
     ];

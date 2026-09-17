@@ -214,10 +214,7 @@
       "if": {
         "properties": {
           "type": {
-            "enum": [
-              "open",
-              "click"
-            ]
+            "const": "open"
           }
         },
         "required": [
@@ -258,6 +255,26 @@
               ]
             }
           ]
+        }
+      }
+    },
+    {
+      "description": "A click may say which product or article in the panel was clicked, so relations that nobody clicks can be dropped.",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "click"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/clickData"
+          }
         }
       }
     }
@@ -547,6 +564,18 @@
             "rag",
             "none"
           ]
+        }
+      }
+    },
+    "clickData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "product_id": {
+          "$ref": "#/$defs/catalogId"
+        },
+        "content_id": {
+          "$ref": "#/$defs/catalogId"
         }
       }
     }

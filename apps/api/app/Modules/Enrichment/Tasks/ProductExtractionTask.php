@@ -181,6 +181,7 @@ final class ProductExtractionTask implements AgentTask
                 $measurement['dimension'] !== $attribute['dimension'] => "wrong_unit:{$key}",
                 (float) $measurement['value'] < (float) $attribute['min'] || (float) $measurement['value'] > (float) $attribute['max'] => "out_of_range:{$key}",
                 ! $vocabulary->appliesTo($key, $typeKey) => "not_applicable:{$key}",
+                in_array(TextNormalizer::forMatching($vocabulary->label('attribute', $key, 'he')), (array) ($context['choice_names'] ?? []), true) => "chosen_by_shopper:{$key}",
                 default => null,
             };
 
@@ -226,7 +227,8 @@ final class ProductExtractionTask implements AgentTask
         $choiceCounts = $accepted->where('kind', 'enum')->countBy('key');
         $uses = $accepted->where('kind', 'use')->pluck('value')->all();
 
-        foreach ($accepted->where('kind', '!=', 'use') as $candidate) {
+        // Choices the category already settled stand as code wrote them.
+        foreach ($accepted->where('kind', '!=', 'use')->reject(fn (array $c): bool => $c['kind'] === 'enum' && isset($known['choices'][$c['key']])) as $candidate) {
             $conflict = $candidate['kind'] === 'enum' && $choiceCounts->get($candidate['key'], 0) > 1;
             // Tag wording is loose ("professional" also describes a result or a brand), and a tag
             // is something a shopper reads. Tags are always checked by a second model.
@@ -241,7 +243,13 @@ final class ProductExtractionTask implements AgentTask
 
         // Jobs the product is good for, from the vocabulary's list. Often not written in the text
         // ("pressure-treated pine" says nothing about pergolas), so every one goes to the reviewer.
-        foreach (array_slice(array_values(array_unique([...$uses, ...array_filter(is_array($output['uses'] ?? null) ? $output['uses'] : [], 'is_string')])), 0, self::MAX_USES) as $use) {
+        // Models sometimes answer a job with its candidate id ("c3"): read it as the job it names.
+        $answeredUses = array_map(
+            fn (string $use): string => ($c = $candidates->get($use)) !== null && $c['kind'] === 'use' ? (string) $c['value'] : $use,
+            array_filter(is_array($output['uses'] ?? null) ? $output['uses'] : [], 'is_string'),
+        );
+
+        foreach (array_slice(array_values(array_unique([...$uses, ...$answeredUses])), 0, self::MAX_USES) as $use) {
             $definition = collect($vocabulary->uses())->firstWhere('key', $use);
 
             if ($definition === null) {
@@ -310,6 +318,7 @@ final class ProductExtractionTask implements AgentTask
 
         if (($reading['vocabulary'] ?? null) === $vocabulary->key()) {
             $known['type'] = $reading['type']['key'] ?? null;
+            $known['choices'] = (array) ($reading['category_choices'] ?? []);
             $known['specs'] = array_map(fn (array $spec): array => [$spec['value'], $spec['unit']], (array) ($reading['specs'] ?? []));
         }
 

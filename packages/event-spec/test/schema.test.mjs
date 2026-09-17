@@ -180,3 +180,21 @@ test('circles for other sizes, sales and jobs are display models, and each circl
   find(ninth, byType('open')).candidate.slot = 'chip_9';
   expectInvalid(ninth, 'there is no ninth circle');
 });
+
+test('a click may name the product clicked, and nothing else', () => {
+  const beacon = base();
+  const click = structuredClone(find(beacon, byType('open')));
+  click.id = 'e-click-with-product-01';
+  click.type = 'click';
+  click.data = { product_id: '14738' };
+  beacon.events.push(click);
+  expectValid(beacon, 'click with the product');
+
+  const extra = structuredClone(beacon);
+  find(extra, byType('click')).data.email = 'a@b.test';
+  expectInvalid(extra, 'click with anything else');
+
+  const open = base();
+  find(open, byType('open')).data = { product_id: '1' };
+  expectInvalid(open, 'an open still carries no data');
+});

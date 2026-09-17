@@ -111,7 +111,8 @@ final class CodeReadingTest extends TestCase
 
         $facts = $this->inShop(fn () => EnrichmentFact::query()->where('product_id', $board->id)->get());
         $this->assertTrue($facts->every(fn (EnrichmentFact $f): bool => $f->origin === FactOrigin::Code && $f->status === FactStatus::Approved));
-        $this->assertEqualsCanonicalizing(['type', 'thickness_mm', 'width_mm'], $facts->pluck('key')->all());
+        $this->assertEqualsCanonicalizing(['type', 'thickness_mm', 'width_mm', 'species', 'treatment'], $facts->pluck('key')->all());
+        $this->assertSame(['species' => 'pine', 'treatment' => 'untreated'], $reading['category_choices'], 'the category says untreated pine even though the title does not');
 
         $cornerReading = $this->inShop(fn () => EnrichmentCodeReading::query()->where('product_id', $corner->id)->sole()->reading);
         $this->assertArrayNotHasKey('type', $cornerReading, 'the title says trim, not a planed board: code leaves the type to the model');
@@ -125,7 +126,8 @@ final class CodeReadingTest extends TestCase
         $batch = app(CreateTaskFile::class)->handle($this->shop->id, TaskType::ProductExtraction, $vocabulary->id)['batch'];
         $item = $this->inShop(fn () => $batch->items()->where('subject_id', $board->id)->sole());
 
-        $this->assertSame(['type' => 'planed_board', 'specs' => ['thickness_mm' => [20, 'mm'], 'width_mm' => [45, 'mm']]], $item->request['known']);
+        $this->assertSame(['type' => 'planed_board', 'choices' => ['species' => 'pine', 'treatment' => 'untreated'], 'specs' => ['thickness_mm' => [20, 'mm'], 'width_mm' => [45, 'mm']]], $item->request['known']);
+        $this->assertTrue(collect($item->request['candidates'])->contains(fn (array $c): bool => $c[1] === 'use' && $c[2] === 'pergola' && $c[3] === ''), 'a job usually done with planed boards is offered to accept or reject');
         $this->assertStringContainsString('`pergola`', $batch->system_prompt);
 
         $contents = json_encode(['type' => 'header', 'batch_id' => $batch->id])."\n".json_encode(['custom_id' => $item->custom_id, 'output' => [

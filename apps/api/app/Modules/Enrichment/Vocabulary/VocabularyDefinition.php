@@ -88,6 +88,12 @@ final class VocabularyDefinition
                 $valueKeys = [];
                 foreach ((array) ($attribute['values'] ?? []) as $j => $value) {
                     $problems = [...$problems, ...self::checkEntry("{$at}.values[{$j}]", $value, $valueKeys)];
+
+                    foreach ((array) ($value['categories'] ?? []) as $category) {
+                        if (! is_string($category) || trim($category) === '') {
+                            $problems[] = "{$at}.values[{$j}].categories must list category external ids";
+                        }
+                    }
                 }
                 if (count($valueKeys) < 2) {
                     $problems[] = "{$at}.values needs at least two values";
@@ -97,6 +103,8 @@ final class VocabularyDefinition
             if ($type === 'boolean') {
                 $problems = [...$problems, ...self::checkPatterns("{$at}.patterns", $attribute['patterns'] ?? null, required: true)];
             }
+
+            $problems = [...$problems, ...self::checkPatterns("{$at}.exclude_patterns", $attribute['exclude_patterns'] ?? null, required: false)];
 
             if (isset($attribute['rank']) && ! in_array($attribute['rank'], self::RANK_DIRECTIONS, true)) {
                 $problems[] = "{$at}.rank must be min, max or absent";
@@ -228,17 +236,52 @@ final class VocabularyDefinition
      */
     public function typeForCategories(array $categoryExternalIds): ?string
     {
-        foreach ($categoryExternalIds as $categoryId) {
-            $types = [];
+        return $this->valueForCategories($this->productTypes(), $categoryExternalIds);
+    }
 
-            foreach ($this->productTypes() as $type) {
-                if (in_array((string) $categoryId, array_map('strval', (array) ($type['categories'] ?? [])), true)) {
-                    $types[] = $type['key'];
+    /**
+     * Choice values a store category stands for: "מוקצע לא מחוטא" is untreated wood even when the
+     * title does not say so.
+     *
+     * @param  list<string>  $categoryExternalIds  most specific first
+     * @return array<string, string> attribute key => value key
+     */
+    public function choicesForCategories(array $categoryExternalIds): array
+    {
+        $choices = [];
+
+        foreach ($this->attributes() as $attribute) {
+            if (($attribute['type'] ?? 'number') !== 'enum') {
+                continue;
+            }
+
+            $value = $this->valueForCategories((array) $attribute['values'], $categoryExternalIds);
+
+            if ($value !== null) {
+                $choices[$attribute['key']] = $value;
+            }
+        }
+
+        return $choices;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $entries  entries with optional `categories`
+     * @param  list<string>  $categoryExternalIds  most specific first
+     */
+    private function valueForCategories(array $entries, array $categoryExternalIds): ?string
+    {
+        foreach ($categoryExternalIds as $categoryId) {
+            $keys = [];
+
+            foreach ($entries as $entry) {
+                if (in_array((string) $categoryId, array_map('strval', (array) ($entry['categories'] ?? [])), true)) {
+                    $keys[] = $entry['key'];
                 }
             }
 
-            if (count($types) === 1) {
-                return $types[0];
+            if (count($keys) === 1) {
+                return $keys[0];
             }
         }
 

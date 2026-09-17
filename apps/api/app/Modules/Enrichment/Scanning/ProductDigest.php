@@ -39,8 +39,8 @@ final class ProductDigest
         $text = $condensed['text'];
 
         $measurements = (new MeasurementScanner)->scan($text);
-        $candidates = self::candidates($text, $vocabulary);
         $typeHints = isset($known['type']) ? [] : self::typeHints($product->title, $vocabulary);
+        $candidates = self::candidates($text, $vocabulary, $known['type'] ?? (count($typeHints) === 1 ? $typeHints[0] : null));
 
         $request = array_filter([
             'id' => $product->external_id,
@@ -62,6 +62,12 @@ final class ProductDigest
             'candidates' => $candidates,
             'type_hints' => $typeHints,
             'vocabulary_hash' => $vocabulary->hash(),
+            // Attributes the shopper chooses on the product page ("קוטר: 3.5 מ"מ, 4.2 מ"מ"): a size
+            // among them is an option, not this product's spec.
+            'choice_names' => array_values(array_map(
+                fn (array $a): string => TextNormalizer::forMatching($a['name']),
+                array_filter($product->storeAttributes(), fn (array $a): bool => $a['for_variations'] && count($a['values']) > 1),
+            )),
         ];
 
         $inputHash = hash('sha256', $promptHash.'|'.$vocabulary->hash().'|'.json_encode($request, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -86,14 +92,19 @@ final class ProductDigest
      *
      * @return list<array{id: string, kind: string, key: string, value: string|bool, quote: string}>
      */
-    public static function candidates(string $text, VocabularyDefinition $vocabulary): array
+    public static function candidates(string $text, VocabularyDefinition $vocabulary, ?string $type = null): array
     {
         $found = [];
 
         foreach ($vocabulary->attributes() as $attribute) {
-            $type = $attribute['type'] ?? 'number';
+            $attributeType = $attribute['type'] ?? 'number';
 
-            if ($type === 'enum') {
+            // "קודח / לא קודח" is two variants to choose from, not a yes: exclude_patterns rule a candidate out.
+            if (self::firstMatch($text, (array) ($attribute['exclude_patterns'] ?? [])) !== null) {
+                continue;
+            }
+
+            if ($attributeType === 'enum') {
                 foreach ((array) $attribute['values'] as $value) {
                     if (($quote = self::firstMatch($text, (array) ($value['patterns'] ?? []))) !== null) {
                         $found[] = ['kind' => 'enum', 'key' => $attribute['key'], 'value' => $value['key'], 'quote' => $quote];
@@ -101,7 +112,7 @@ final class ProductDigest
                 }
             }
 
-            if ($type === 'boolean' && ($quote = self::firstMatch($text, (array) ($attribute['patterns'] ?? []))) !== null) {
+            if ($attributeType === 'boolean' && ($quote = self::firstMatch($text, (array) ($attribute['patterns'] ?? []))) !== null) {
                 $found[] = ['kind' => 'boolean', 'key' => $attribute['key'], 'value' => true, 'quote' => $quote];
             }
         }
@@ -112,11 +123,13 @@ final class ProductDigest
             }
         }
 
-        // Jobs named in the text ("לבניית פרגולות"). Jobs only implied by the product type are
-        // offered by the prompt's list, not as candidates.
+        // Jobs named in the text ("לבניית פרגולות"), then jobs usually done with this type of
+        // product, offered with an empty quote so the model accepts or rejects each one.
         foreach ($vocabulary->uses() as $use) {
             if (($quote = self::firstMatch($text, (array) ($use['patterns'] ?? []))) !== null) {
                 $found[] = ['kind' => 'use', 'key' => 'use', 'value' => $use['key'], 'quote' => $quote];
+            } elseif ($type !== null && in_array($type, (array) ($use['types'] ?? []), true)) {
+                $found[] = ['kind' => 'use', 'key' => 'use', 'value' => $use['key'], 'quote' => ''];
             }
         }
 
