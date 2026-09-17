@@ -34,7 +34,17 @@ recorded in Agent activity.
     a JSON file), then "Compute relations": the merchant's cross-sells, merchant links pointing to
     the product, the rules (a battery of the same brand and voltage for a body-only tool, oil for
     wood meant for outdoor jobs), other sizes of the same product, and alternatives of the same type
-    at a similar price. Every relation keeps its reasons.
+    at a similar price. Every relation keeps its reasons. Rules can also name store categories
+    (`categories`), for branches without a vocabulary yet, such as shelf supports.
+13. **Scores from behavior.** Nothing to run by hand: `analytics:scores` runs every night at 04:15
+    (Asia/Jerusalem) for every connected shop, or `php artisan analytics:scores <shop-slug>`. It
+    scores each widget section across the shop, on each page, and each product or article inside
+    a section: opens + 2 clicks + 4 adds to cart + 8 purchases. A page's score leans on the
+    shop-wide rate until the page has data (`analytics.score_prior_exposures`). The widget orders
+    sections by score. A section with no score yet gets the best known score, so it gets seen.
+    Inside a section, clicked items come first. After `analytics.drop_related_after_opens` openings
+    on a page, products shown there and never clicked are dropped, and spare products take their
+    place. Preview visits do not count. The run's output lists sections from best to worst.
 
 ## The log
 

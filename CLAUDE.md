@@ -61,6 +61,9 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - `Analytics` stores beacons validated against `packages/event-spec` (copied to
   `resources/event-spec` in the image) and plugin order summaries; `BuildShopReport` is the one
   report for the plugin, the operator panel and later the merchant panel.
+- `analytics:scores` (nightly) writes `analytics_scores`; `BuildPageBank::learned()` applies them:
+  section order, clicked items first, never-clicked products dropped after enough openings. Sections
+  carry spare products for that, so trim to `widget.max_products` only there.
 - A route under `api/*` gets `Access-Control-Allow-Origin: *` from Laravel's CORS config; origin
   checks for the widget are done in the controllers with `StoreConnection::allowsOrigin`.
 
