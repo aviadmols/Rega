@@ -227,8 +227,38 @@ final class BuildPageBank
             'price' => $p->price === null ? null : (float) $p->price,
             'currency' => $p->currency,
             'type' => $p->type,
+            // Shown next to the price, e.g. "מחיר למטר": without it a price per meter reads as the item price.
+            'price_note' => self::priceNote($p),
+            'needs_options' => self::needsOptions($p) ?: null,
             'reason' => $reasons?->get($p->id),
         ], fn ($v): bool => $v !== null))->values()->all();
+    }
+
+    /**
+     * Whether the shopper must choose something on the product page before it can go in the cart.
+     * Some stores keep "simple" products with an attribute to choose, such as a length, and a
+     * plugin refuses the add without it.
+     */
+    private static function needsOptions(CatalogProduct $product): bool
+    {
+        if ($product->type !== 'simple') {
+            return true;
+        }
+
+        foreach ($product->storeAttributes() as $attribute) {
+            if ($attribute['for_variations'] && count($attribute['values']) > 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function priceNote(CatalogProduct $product): ?string
+    {
+        $note = trim((string) ($product->payload['meta']['price_text'] ?? ''));
+
+        return $note === '' ? null : mb_substr(strip_tags($note), 0, 40);
     }
 
     /** @return list<array{label: string, value: string}> */

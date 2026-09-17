@@ -53,7 +53,10 @@ final class PageBankTest extends TestCase
             ]],
         ]);
         $this->product('11', 'סוללה 5Ah', 'x', [$tools], ['image_url' => 'https://store.test/battery.jpg']);
-        $this->product('12', 'להבים למסור אנכי', 'x', [$tools]);
+        $this->product('12', 'קרש אורן 20X45', 'x', [$tools], ['payload' => [
+            'attributes' => [['name' => 'אורך', 'values' => ['3 מטר', '3.30 מטר'], 'used_for_variations' => true]],
+            'meta' => ['price_text' => 'מחיר למטר'],
+        ]]);
         $this->product('13', 'מסור אנכי מקצועי', 'x', [$tools]);
         $this->product('14', 'מטען', 'x', [$tools], ['in_stock' => false]);
 
@@ -103,6 +106,9 @@ final class PageBankTest extends TestCase
 
         $this->assertSame(['12', '11'], array_column($complement['products'], 'id'), 'cross-sells in the merchant order, in stock, no upsells');
         $this->assertSame('https://store.test/battery.jpg', $complement['products'][1]['image']);
+        $this->assertTrue($complement['products'][0]['needs_options'], 'a length to choose sends the shopper to the product page');
+        $this->assertSame('מחיר למטר', $complement['products'][0]['price_note']);
+        $this->assertArrayNotHasKey('needs_options', $complement['products'][1]);
         $this->assertSame('guide_card', $guides['model']);
         $this->assertSame('https://store.test/guide/', $guides['guides'][0]['url']);
 
