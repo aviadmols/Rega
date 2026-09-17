@@ -8,4 +8,8 @@ return [
             'en' => 'English',
         ],
     ],
+    'switch' => [
+        'operator' => 'Operator panel',
+        'merchant' => 'Merchant view',
+    ],
 ];

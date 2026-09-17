@@ -22,6 +22,9 @@ final class ShopsTable
      */
     private const CONFIGURATION_ROUTE = 'filament.operator.pages.configuration';
 
+    /** The merchant panel belongs to the Admin module, so this links to it by route name too. */
+    private const MERCHANT_OVERVIEW_ROUTE = 'filament.merchant.pages.overview';
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -73,6 +76,11 @@ final class ShopsTable
                     ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
                     ->visible(fn (): bool => Route::has(self::CONFIGURATION_ROUTE))
                     ->url(fn (Shop $record): string => route(self::CONFIGURATION_ROUTE, ['shop' => $record->id])),
+                Action::make('merchant_view')
+                    ->label(__('tenancy::shops.actions.merchant_view'))
+                    ->icon(Heroicon::OutlinedBuildingStorefront)
+                    ->visible(fn (): bool => Route::has(self::MERCHANT_OVERVIEW_ROUTE))
+                    ->url(fn (Shop $record): string => route(self::MERCHANT_OVERVIEW_ROUTE, ['tenant' => $record->slug])),
             ]);
     }
 }

@@ -36,5 +36,6 @@ return [
     ],
     'actions' => [
         'configure' => 'Settings and flags',
+        'merchant_view' => 'Merchant view',
     ],
 ];

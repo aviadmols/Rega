@@ -36,5 +36,6 @@ return [
     ],
     'actions' => [
         'configure' => 'הגדרות ודגלים',
+        'merchant_view' => 'תצוגת סוחר',
     ],
 ];
