@@ -27,7 +27,19 @@ final class HighlightsTest extends TestCase
 
     private const TOKEN = 'rgt_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
-    private const TEXT = 'שימושים ויישומים: טיק ברומזי 19x120 מ"מ מחורץ מתאים לבניית דקים מעץ וחיפויי קיר ותקרה. '
+    // Installation advice comes after more than the general text budget (1000 characters) of praise.
+    private const TEXT = 'טיק ברומזי הוא עץ טרופי בעל מראה חם וטבעי שמתאים לפרויקטים מעוצבים ואדריכליים. '
+        .'הטקסטורה הייחודית של העץ והגוון העשיר מעניקים לכל פרויקט מראה יוקרתי ומרשים לאורך זמן. '
+        .'העץ נבחר בקפידה ועובר ייבוש מבוקר כדי לשמור על יציבות ואיכות לאורך שנים רבות של שימוש. '
+        .'בזכות החריצה המדויקת מתקבל גימור נקי ומדויק שמשתלב בסגנונות עיצוב מודרניים וכפריים כאחד. '
+        .'הלוחות מגיעים במגוון אורכים כדי להתאים לכל פרויקט ולחסוך בעודפי חומר ובזמן עבודה. '
+        .'צוות החנות ישמח לעזור בבחירת העץ המתאים ובתכנון הכמויות הנדרשות לפרויקט שלכם. '
+        .'עץ טיק נחשב לאחד מסוגי העץ האהובים על מעצבים ואדריכלים בזכות המראה והעמידות שלו. '
+        .'הלוחות מתאימים לשילוב עם סוגי עץ נוספים וחומרים שונים כמו אבן, בטון ומתכת. '
+        .'לאורך השנים העץ מקבל גוון עמוק ועשיר יותר ומוסיף אופי ייחודי לכל מקום שבו הוא מותקן. '
+        .'הלוחות עוברים בדיקת איכות לפני המשלוח כדי לוודא שכל לוח עומד בדרישות ובמידות. '
+        .'המוצר מתאים לפרויקטים פרטיים ומסחריים כאחד ומשמש אנשי מקצוע רבים בכל רחבי הארץ. '
+        ."\n".'שימושים ויישומים: טיק ברומזי 19x120 מ"מ מחורץ מתאים לבניית דקים מעץ וחיפויי קיר ותקרה. '
         .'מומלץ להשתמש בברגים איכותיים המתאימים לעץ קשה. חשוב לשמור על מרווחי התפשטות בעת התקנת דקים וחיפויים. '
         .'האם מתאים לשימוש חיצוני? כן, מתאים לשימוש חוץ ופנים. המחיר מוצג לפי מטר רץ ומתעדכן לפי האורך שנבחר.';
 
@@ -79,9 +91,11 @@ final class HighlightsTest extends TestCase
         $this->assertSame(['לחוץ ולפנים', 'להתקנה'], $highlights->pluck('key')->all());
         $this->assertTrue($highlights->every(fn (EnrichmentFact $f): bool => $f->status === FactStatus::AwaitingReview), 'shoppers read these: a checker approves first');
 
-        // A checker's prompt says how to judge a highlight.
+        // A checker's prompt says how to judge a highlight, and the checker reads the text the writer read.
         $review = app(CreateTaskFile::class)->handle($this->shop->id, TaskType::FactReview, $vocabulary->id, 1, ['subject' => 'product'])['batch'];
         $this->assertStringContainsString('`highlight` claims', $review->system_prompt);
+        $reviewItem = $this->inShop(fn () => $review->items()->where('subject_id', $teak->id)->sole());
+        $this->assertStringContainsString('מרווחי התפשטות', $reviewItem->request['text'], 'past the general text budget, where the highlight came from');
 
         $this->inShop(fn () => EnrichmentFact::query()->whereKey($highlights->pluck('id'))->update(['status' => FactStatus::Approved]));
 

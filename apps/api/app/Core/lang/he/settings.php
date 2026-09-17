@@ -24,6 +24,7 @@ return [
         'characters' => 'תווים',
         'kilobytes' => 'קילובייט',
         'seconds' => 'שניות',
+        'questions' => 'שאלות',
     ],
     'errors' => [
         'not_integer' => 'יש להזין מספר שלם.',

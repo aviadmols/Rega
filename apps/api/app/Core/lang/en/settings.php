@@ -24,6 +24,7 @@ return [
         'characters' => 'characters',
         'kilobytes' => 'KB',
         'seconds' => 'seconds',
+        'questions' => 'questions',
     ],
     'errors' => [
         'not_integer' => 'Enter a whole number.',

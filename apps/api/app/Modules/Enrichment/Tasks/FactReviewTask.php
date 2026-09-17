@@ -74,10 +74,14 @@ final class FactReviewTask implements AgentTask
                 $claims[] = [$claimId, $fact->kind->value, $fact->key, $this->claimValue($fact), (string) $fact->quote];
             }
 
+            // Highlights were written from longer text (see ProductHighlightsTask): the checker reads the same text.
+            $highlights = $facts->contains(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Highlight);
             $request = [
                 'id' => $subjectModel->external_id,
                 'title' => $subjectModel->title,
-                'text' => $this->text($subjectModel, $maxChars, $this->boilerplate($facts->first())),
+                'text' => $highlights
+                    ? $this->text($subjectModel, (int) Settings::get('enrichment.max_highlight_text_chars', $batch->shop_id), $this->boilerplate($facts->first(fn (EnrichmentFact $f): bool => $f->kind === FactKind::Highlight)), true)
+                    : $this->text($subjectModel, $maxChars, $this->boilerplate($facts->first())),
                 'claims' => $claims,
             ];
 
@@ -166,13 +170,13 @@ final class FactReviewTask implements AgentTask
     }
 
     /** @param list<string> $boilerplate */
-    private function text(CatalogProduct|CatalogContent $subject, int $maxChars, array $boilerplate): string
+    private function text(CatalogProduct|CatalogContent $subject, int $maxChars, array $boilerplate, bool $headingsWithContent = false): string
     {
         $sections = $subject instanceof CatalogProduct
             ? ProductDigest::sections($subject)
             : [$subject->title, (string) $subject->body];
 
-        return (new TextCondenser)->condense($sections, $maxChars, $boilerplate)['text'];
+        return (new TextCondenser)->condense($sections, $maxChars, $boilerplate, $headingsWithContent)['text'];
     }
 
     /**

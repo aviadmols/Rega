@@ -409,6 +409,19 @@
     '.add{all:unset;box-sizing:border-box;margin-top:auto;text-align:center;padding:7px 8px;border-radius:8px;background:var(--accent);color:#fff;font-size:13px;cursor:pointer}',
     '.add[disabled]{opacity:.6;cursor:default}.add.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}',
     '.note-price{font-size:12px;color:var(--muted);margin-top:-4px}.status{font-size:12px;color:var(--muted)}.status a{color:var(--accent)}',
+    '.ask-suggested{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}',
+    '.ask-chip{all:unset;box-sizing:border-box;cursor:pointer;padding:6px 12px;border-radius:999px;background:rgba(17,24,39,.06);font-size:13px;line-height:1.4}',
+    '.ask-chip:hover,.ask-chip:focus-visible{background:rgba(17,24,39,.12)}',
+    '.ask-form{display:flex;gap:8px}',
+    '.ask-input{flex:1;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;font:inherit;font-size:16px}',
+    '.ask-input:focus{outline:2px solid var(--accent);outline-offset:1px}',
+    '.ask-send{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px}',
+    '.ask-send[disabled]{opacity:.6;cursor:default}',
+    '.ask-answer{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(17,24,39,.04)}',
+    '.ask-q{font-weight:600;margin-bottom:3px}.ask-a{line-height:1.55}.ask-a.is-loading{color:var(--muted)}',
+    '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
+    '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
+    '.ask-note{margin-top:10px;font-size:11px;color:var(--muted)}',
     '.browse{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
     '.browse a{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:inherit;text-decoration:none;font-size:13px}',
     '.browse a:after{content:"\\203A"}.rega[dir="rtl"] .browse a:after{content:"\\2039"}',
@@ -699,6 +712,110 @@
     return view;
   }
 
+  /**
+   * The question box: questions to tap (asked most about this product, then common ones), a field
+   * for a free question, the answer, and what earlier shoppers asked. Loaded on first open.
+   */
+  function askPanel(section, labels) {
+    var node = el('div', 'body ask');
+    var suggested = el('div', 'ask-suggested');
+    var form = el('form', 'ask-form');
+    var input = el('input', 'ask-input');
+    input.type = 'text';
+    input.maxLength = 200;
+    input.placeholder = labels.ask_placeholder || '';
+    input.setAttribute('aria-label', labels.ask_title || '');
+    var send = el('button', 'ask-send', labels.ask_send);
+    send.type = 'submit';
+    form.appendChild(input);
+    form.appendChild(send);
+    var answer = el('div', 'ask-answer');
+    answer.setAttribute('aria-live', 'polite');
+    answer.hidden = true;
+    var recent = el('div', 'ask-recent');
+    node.appendChild(suggested);
+    node.appendChild(form);
+    node.appendChild(answer);
+    node.appendChild(recent);
+    node.appendChild(el('div', 'ask-note', labels.ask_note));
+
+    var busy = false;
+    function ask(question) {
+      question = String(question || '').trim();
+      if (!question || busy) {
+        return;
+      }
+      busy = true;
+      send.disabled = true;
+      answer.hidden = false;
+      answer.textContent = '';
+      answer.appendChild(el('div', 'ask-q', question));
+      var reply = el('div', 'ask-a is-loading', labels.ask_thinking);
+      answer.appendChild(reply);
+
+      fetch(API + '/widget/' + ctx.site + '/ask', {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ id: PAGE_ID, question: question, vid: vid, locale: String(ctx.locale || 'he').slice(0, 2) })
+      })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (json) {
+          var data = json && json.data;
+          reply.className = 'ask-a';
+          reply.textContent = data ? data.answer : labels.ask_error;
+          track('chat_question', section, 'panel', {
+            length: Math.min(2000, question.length),
+            answered_from: data && data.from === 'bank' ? 'bank' : (data && data.outcome === 'answered' ? 'rag' : 'none')
+          });
+        })
+        .catch(function () {
+          reply.className = 'ask-a';
+          reply.textContent = labels.ask_error;
+        })
+        .then(function () {
+          busy = false;
+          send.disabled = false;
+        });
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      ask(input.value);
+      input.value = '';
+    });
+
+    node.load = function () {
+      node.load = null;
+      fetch(API + '/widget/' + ctx.site + '/questions?id=' + encodeURIComponent(PAGE_ID) + '&locale=' + encodeURIComponent(String(ctx.locale || 'he').slice(0, 2)), { credentials: 'omit' })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (json) {
+          var data = json && json.data;
+          if (!data) {
+            return;
+          }
+          (data.suggested || []).forEach(function (question) {
+            var chip = el('button', 'ask-chip', question);
+            chip.type = 'button';
+            chip.addEventListener('click', function () { ask(question); });
+            suggested.appendChild(chip);
+          });
+          if ((data.recent || []).length) {
+            recent.appendChild(el('div', 'ask-heading', labels.ask_recent));
+            data.recent.forEach(function (item) {
+              var row = el('div', 'ask-item');
+              row.appendChild(el('div', 'ask-q', item.question));
+              row.appendChild(el('div', 'ask-a', item.answer));
+              recent.appendChild(row);
+            });
+          }
+        })
+        .catch(function () { /* the field still works */ });
+    };
+
+    return node;
+  }
+
   /** The body of one section, or null when nothing in it survives live data. */
   function renderBody(section, live, labels) {
     var node = el('div', 'body');
@@ -831,6 +948,12 @@
       }
     });
 
+    // The question box is always the last circle.
+    if (bank.ask) {
+      var askSection = { candidate: 'ask', model: 'chat', title: labels.ask_title, chip: labels.ask_chip };
+      rendered.push({ section: askSection, body: askPanel(askSection, labels) });
+    }
+
     if (rendered.length === 0) {
       return;
     }
@@ -893,6 +1016,9 @@
       heading.textContent = item.section.title;
       holder.textContent = '';
       holder.appendChild(item.body);
+      if (typeof item.body.load === 'function') {
+        item.body.load();
+      }
       panel.hidden = false;
       track('open', item.section, CHIP_SLOTS[Math.min(index, CHIP_SLOTS.length - 1)]);
 
@@ -1010,7 +1136,7 @@
         var sections = data.sections || [];
 
         // In preview mode real visitors only count as page views; the widget is for the team.
-        if (!showWidget || (sections.length === 0 && !previous)) {
+        if (!showWidget || (sections.length === 0 && !previous && !data.ask)) {
           rememberCurrent(null);
           return;
         }

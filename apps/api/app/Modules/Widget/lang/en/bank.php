@@ -83,5 +83,13 @@ return [
         'same_in_both' => 'Same in both:',
         'this_cheaper' => 'This product costs :amount less',
         'before_cheaper' => 'The product you viewed costs :amount less',
+        'ask_chip' => 'Ask about this product',
+        'ask_title' => 'Ask about this product',
+        'ask_placeholder' => 'For example: can I use it outdoors?',
+        'ask_send' => 'Ask',
+        'ask_thinking' => 'Checking the product information…',
+        'ask_recent' => 'What shoppers asked',
+        'ask_note' => 'Answers are written automatically from the product information only.',
+        'ask_error' => 'We could not answer right now. Please try again.',
     ],
 ];

@@ -133,6 +133,8 @@ final class BuildPageBank
         $bank['bank_version'] = max(1, $version);
         $bank['teaser'] = $bank['sections'] === [] ? null : $this->teaser($bank['sections'][0]);
         $bank['compare'] = $compare;
+        // The question box (Assistant module) on product pages, when the shop has it on.
+        $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
 
         return $bank;
     }
