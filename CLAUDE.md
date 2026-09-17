@@ -67,6 +67,12 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - `analytics:scores` (nightly) writes `analytics_scores`; `BuildPageBank::learned()` applies them:
   section order, clicked items first, never-clicked products dropped after enough openings. Sections
   carry spare products for that, so trim to `widget.max_products` only there.
+- `Assistant` answers shoppers' questions (`/widget/{site}/ask`, `/widget/{site}/questions`): saved
+  answers first, contact details and daily limits in code, a small model checks the question is
+  about the product, then the writer answers from approved facts, highlights and text only. Models
+  go through `Ai\Contracts\ChatModel` (panel keys) and `SpendGuard`; tests bind a fake ChatModel.
+- Highlights (`product_highlights`, facts of kind `highlight`) are written from longer text
+  (`enrichment.max_highlight_text_chars`); a reviewer of highlights must read that same text.
 - A route under `api/*` gets `Access-Control-Allow-Origin: *` from Laravel's CORS config; origin
   checks for the widget are done in the controllers with `StoreConnection::allowsOrigin`.
 

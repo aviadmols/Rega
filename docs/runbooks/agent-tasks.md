@@ -39,7 +39,13 @@ recorded in Agent activity.
     several rules find shows the label of the first one, so specific rules (wall fixings for a
     shelf) go before general ones (fasteners for wood builds). The widget shows one product from
     each rule in turn.
-13. **Scores from behavior.** Nothing to run by hand: `analytics:scores` runs every night at 04:15
+13. **Write highlights.** Agent tasks, "Create task file", task "Product highlights", per
+    vocabulary, after the reviews above. Suggested model: `claude-sonnet-5` (shoppers read these
+    words). Up to four points per product from its own text, each resting on a quote; code rejects
+    quotes not in the text and numbers, superlatives or prices the quote does not have. Then check
+    them (step 7): the checker reads the same longer text. A point whose quote the store repeats on
+    many products (`widget.common_highlight_products`) is shown last and never becomes the quote.
+14. **Scores from behavior.** Nothing to run by hand: `analytics:scores` runs every night at 04:15
     (Asia/Jerusalem) for every connected shop, or `php artisan analytics:scores <shop-slug>`. It
     scores each widget section across the shop, on each page, and each product or article inside
     a section: opens + 2 clicks + 4 adds to cart + 8 purchases. A page's score leans on the
