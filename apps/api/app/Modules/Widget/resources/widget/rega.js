@@ -404,6 +404,10 @@
     '.add{all:unset;box-sizing:border-box;margin-top:auto;text-align:center;padding:7px 8px;border-radius:8px;background:var(--accent);color:#fff;font-size:13px;cursor:pointer}',
     '.add[disabled]{opacity:.6;cursor:default}.add.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}',
     '.note-price{font-size:12px;color:var(--muted);margin-top:-4px}.status{font-size:12px;color:var(--muted)}.status a{color:var(--accent)}',
+    '.browse{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
+    '.browse a{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:inherit;text-decoration:none;font-size:13px}',
+    '.browse a:after{content:"\\203A"}.rega[dir="rtl"] .browse a:after{content:"\\2039"}',
+    '.browse a:hover,.browse a:focus-visible{border-color:var(--accent)}',
     '.guides a{display:flex;align-items:center;gap:10px;padding:6px 0;color:inherit;text-decoration:none}',
     '.guides img{width:56px;height:42px;object-fit:cover;border-radius:6px;flex:none;background:#f6f6f7}',
     '.guides span{font-size:14px}.guides a:hover span{text-decoration:underline}',
@@ -683,6 +687,22 @@
         return null;
       }
       node.appendChild(cards);
+
+      // The store's own category pages for more of the same kind.
+      var browse = el('div', 'browse');
+      (section.categories || []).forEach(function (category) {
+        var url = safeUrl(category.url);
+        if (!url) {
+          return;
+        }
+        var link = el('a', null, String(labels.browse || ':name').replace(':name', category.title));
+        link.href = url;
+        link.addEventListener('click', function () { track('click', section, 'panel'); });
+        browse.appendChild(link);
+      });
+      if (browse.firstChild) {
+        node.appendChild(browse);
+      }
     }
 
     if (section.guides) {

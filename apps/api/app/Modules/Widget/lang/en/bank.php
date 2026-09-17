@@ -76,5 +76,6 @@ return [
         'viewed_before' => 'Viewed before',
         'price' => 'Price',
         'on_sale' => 'Sale',
+        'browse' => 'More in :name',
     ],
 ];

@@ -6,6 +6,7 @@ use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Analytics\Models\AnalyticsScore;
+use App\Modules\Catalog\Models\CatalogCategory;
 use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Enums\FactKind;
@@ -18,6 +19,7 @@ use App\Modules\Enrichment\Models\EnrichmentProductRelation;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
 use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
+use App\Modules\Widget\Support\GuideRelevance;
 use Illuminate\Support\Collection;
 
 /**
@@ -65,6 +67,8 @@ final class BuildPageBank
 
     private const SPARE_PRODUCTS = 4;
 
+    private const MAX_BROWSE_LINKS = 3;
+
     private const MIN_LEVEL_SET = 3;
 
     /** A product in the best quarter of its set gets "among the highest". */
@@ -72,6 +76,9 @@ final class BuildPageBank
 
     /** @var array<string, mixed> vocabulary definitions by key, per build */
     private array $vocabularies = [];
+
+    /** @var Collection<string, CatalogCategory>|null */
+    private ?Collection $categories = null;
 
     private string $locale = 'he';
 
@@ -82,6 +89,7 @@ final class BuildPageBank
     {
         $this->locale = in_array($locale, self::LOCALES, true) ? $locale : 'he';
         $this->vocabularies = [];
+        $this->categories = null;
 
         $bank = [
             'v' => 1,
@@ -194,13 +202,17 @@ final class BuildPageBank
 
         // Another size of this product is shown under other sizes, not again as a complement.
         $sizes = $relations->get(RelationKind::Family->value, collect())->pluck('related_product_id')->all();
-        $complements = self::varied($relations->get(RelationKind::Complement->value, collect())
-            ->reject(fn (EnrichmentProductRelation $r): bool => in_array($r->related_product_id, $sizes, true)), $maxProducts);
+        $complementKinds = self::kinds($relations->get(RelationKind::Complement->value, collect())
+            ->reject(fn (EnrichmentProductRelation $r): bool => in_array($r->related_product_id, $sizes, true)));
+        $complements = self::varied($complementKinds, $maxProducts);
         if ($complements->isNotEmpty()) {
-            $sections[] = $this->section('complement', ['products' => $this->cards(
-                $complements->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related),
-                $complements->mapWithKeys(fn (EnrichmentProductRelation $r): array => [$r->related_product_id => $this->relationReason($r, $ruleLabels)]),
-            )]);
+            $sections[] = $this->section('complement', array_filter([
+                'products' => $this->cards(
+                    $complements->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related),
+                    $complements->mapWithKeys(fn (EnrichmentProductRelation $r): array => [$r->related_product_id => $this->relationReason($r, $ruleLabels)]),
+                ),
+                'categories' => $this->browseLinks(array_map(fn (array $kind): array => array_map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related, $kind), $complementKinds)),
+            ]));
         } elseif (($crossSells = $this->merchantCrossSells($product, $maxProducts))->isNotEmpty()) {
             // Relations not computed yet: the merchant's own cross-sells.
             $sections[] = $this->section('complement', ['products' => $this->cards($crossSells)]);
@@ -213,7 +225,10 @@ final class BuildPageBank
 
         $alternatives = $relations->get(RelationKind::Alternative->value, collect());
         if ($alternatives->isNotEmpty()) {
-            $sections[] = $this->section('alternatives', ['products' => $this->cards($alternatives->take($maxProducts)->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related))]);
+            $sections[] = $this->section('alternatives', array_filter([
+                'products' => $this->cards($alternatives->take($maxProducts)->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related)),
+                'categories' => $this->browseLinks([$alternatives->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related)->all()]),
+            ]));
 
             // The widget checks "on sale" again with live prices.
             $onSale = $alternatives->filter(fn (EnrichmentProductRelation $r): bool => $r->related->on_sale)->take($maxProducts);
@@ -505,15 +520,14 @@ final class BuildPageBank
     }
 
     /**
-     * Products bought with this one, one of each kind in turn: a shelf shows a support and a wall
-     * fixing before a second support, a lamp a battery and a charger. The kind is the rule that
-     * found the product; a merchant link no rule found takes the rule of a product in its deepest
-     * store category, or that category. Kinds are taken in the order of their best score.
+     * Related products by kind: the rule that found the product; a merchant link no rule found takes
+     * the rule of a product in its deepest store category, or that category. Kinds come in the
+     * order of their best score.
      *
      * @param  Collection<int, EnrichmentProductRelation>  $relations  best score first
-     * @return Collection<int, EnrichmentProductRelation>
+     * @return list<list<EnrichmentProductRelation>>
      */
-    private static function varied(Collection $relations, int $limit): Collection
+    private static function kinds(Collection $relations): array
     {
         $category = fn (EnrichmentProductRelation $r): string => (string) (collect((array) ($r->related->payload['categories'] ?? []))
             ->sortByDesc(fn ($c): int => count((array) ($c['path'] ?? [])))
@@ -528,12 +542,22 @@ final class BuildPageBank
             }
         }
 
-        $groups = $relations
+        return $relations
             ->groupBy(fn (EnrichmentProductRelation $r): string => $rule($r) ?? $ruleOfCategory[$category($r)] ?? 'category:'.$category($r))
             ->map(fn (Collection $group): array => $group->values()->all())
             ->values()
             ->all();
+    }
 
+    /**
+     * One of each kind in turn: a shelf shows a support and a wall fixing before a second support,
+     * a lamp a battery and a charger.
+     *
+     * @param  list<list<EnrichmentProductRelation>>  $groups  from kinds()
+     * @return Collection<int, EnrichmentProductRelation>
+     */
+    private static function varied(array $groups, int $limit): Collection
+    {
         $varied = [];
         for ($round = 0; count($varied) < $limit && $groups !== []; $round++) {
             foreach ($groups as $g => $group) {
@@ -551,6 +575,56 @@ final class BuildPageBank
         return collect($varied);
     }
 
+    /**
+     * A store category to browse for each kind of related product: the category most products of
+     * that kind share, the deepest and then the smallest when several tie ("shelf supports" before
+     * "shelving" when every support is in both), below the top level (a top-level category such
+     * as "sale" says nothing about the kind), with a page, and holding more than a section shows.
+     *
+     * @param  list<list<CatalogProduct>>  $kinds
+     * @return list<array{id: string, title: string, url: string}>
+     */
+    private function browseLinks(array $kinds): array
+    {
+        $links = [];
+
+        foreach ($kinds as $products) {
+            $counts = [];
+            foreach ($products as $product) {
+                foreach ((array) ($product->payload['categories'] ?? []) as $category) {
+                    $id = is_array($category) ? (string) ($category['id'] ?? '') : '';
+                    if ($id !== '') {
+                        $counts[$id] = ($counts[$id] ?? 0) + 1;
+                    }
+                }
+            }
+
+            $best = collect(array_keys($counts))
+                ->map(fn ($id): ?CatalogCategory => $this->categories()->get((string) $id))
+                ->filter(fn (?CatalogCategory $c): bool => $c !== null && $c->depth > 0 && (string) $c->url !== '' && $c->product_count > count($products))
+                ->sort(fn (CatalogCategory $a, CatalogCategory $b): int => [$counts[$b->external_id], $b->depth, $a->product_count] <=> [$counts[$a->external_id], $a->depth, $b->product_count])
+                ->first();
+
+            if ($best !== null && ! isset($links[$best->external_id])) {
+                $links[$best->external_id] = ['id' => $best->external_id, 'title' => $best->name, 'url' => (string) $best->url];
+            }
+        }
+
+        return array_slice(array_values($links), 0, self::MAX_BROWSE_LINKS);
+    }
+
+    /** @return Collection<string, CatalogCategory> active categories by external id, per build */
+    private function categories(): Collection
+    {
+        return $this->categories ??= CatalogCategory::query()->whereNull('removed_at')->get()->keyBy('external_id');
+    }
+
+    /** @return array<string, string|null> category external id => parent external id */
+    private function categoryParents(): array
+    {
+        return $this->categories()->map(fn (CatalogCategory $c): ?string => $c->parent_external_id)->all();
+    }
+
     /** @return array<string, array<string, string>> rule key => labels */
     private function ruleLabels(): array
     {
@@ -560,7 +634,8 @@ final class BuildPageBank
     }
 
     /**
-     * Guides matched to the product, then articles a checker approved for the same jobs.
+     * Guides for the product: articles matched to it and articles a checker approved for the same
+     * jobs, kept and ranked by GuideRelevance.
      *
      * @param  list<string>  $uses
      * @return list<array<string, mixed>>
@@ -568,48 +643,60 @@ final class BuildPageBank
     private function guides(CatalogProduct $product, array $uses): array
     {
         $matched = EnrichmentContentProduct::query()
-            ->with('content')
             ->where('product_id', $product->id)
-            ->whereHas('content', fn ($q) => $q->whereNull('removed_at'))
             ->orderByDesc('score')
             ->orderBy('rank')
-            ->limit(self::MAX_GUIDES * 3)
-            ->get()
-            ->map(fn (EnrichmentContentProduct $g): CatalogContent => $g->content);
+            ->pluck('content_id')
+            ->all();
 
-        // When the product's jobs are known, an article a checker tied to other jobs is left out: a
-        // shelf gets no pergola guide because both mention pine.
-        if ($uses !== [] && $matched->isNotEmpty()) {
-            $articleUses = EnrichmentFact::query()
-                ->whereIn('content_id', $matched->pluck('id'))
-                ->where('kind', FactKind::Use)
-                ->where('status', FactStatus::Approved)
-                ->get(['content_id', 'value_text'])
-                ->groupBy('content_id')
-                ->map(fn (Collection $facts): array => $facts->pluck('value_text')->all());
+        $forJobs = $uses === [] ? [] : EnrichmentFact::query()
+            ->whereNotNull('content_id')
+            ->where('kind', FactKind::Use)
+            ->where('status', FactStatus::Approved)
+            ->whereIn('value_text', $uses)
+            ->orderBy('created_at')
+            ->pluck('content_id')
+            ->all();
 
-            $matched = $matched
-                ->reject(fn (CatalogContent $c): bool => $articleUses->has($c->id) && array_intersect($articleUses->get($c->id), $uses) === [])
-                ->sortByDesc(fn (CatalogContent $c): int => $articleUses->has($c->id) ? 1 : 0)
-                ->values();
+        $ids = array_values(array_unique([...$matched, ...$forJobs]));
+        if ($ids === []) {
+            return [];
         }
 
-        if ($uses !== [] && $matched->count() < self::MAX_GUIDES) {
-            $forJobs = EnrichmentFact::query()
-                ->with('content')
-                ->whereNotNull('content_id')
-                ->where('kind', FactKind::Use)
-                ->where('status', FactStatus::Approved)
-                ->whereIn('value_text', $uses)
-                ->whereHas('content', fn ($q) => $q->whereNull('removed_at'))
-                ->orderBy('created_at')
-                ->get()
-                ->map(fn (EnrichmentFact $f): CatalogContent => $f->content);
+        $articles = CatalogContent::query()->whereIn('id', $ids)->whereNull('removed_at')->get()->keyBy('id');
+        $facts = EnrichmentFact::query()
+            ->whereIn('content_id', $articles->keys())
+            ->where('status', FactStatus::Approved)
+            ->whereIn('kind', [FactKind::ContentKind, FactKind::ShopperValue, FactKind::Category, FactKind::Use])
+            ->get(['content_id', 'kind', 'value_text'])
+            ->groupBy('content_id');
 
-            $matched = $matched->concat($forJobs)->unique('id');
+        $relevance = new GuideRelevance($this->categoryParents());
+        $productCategories = array_values(array_filter(array_map(fn ($c): string => is_array($c) ? (string) ($c['id'] ?? '') : '', (array) ($product->payload['categories'] ?? []))));
+
+        $scored = [];
+        foreach ($ids as $order => $id) {
+            if (! $articles->has($id)) {
+                continue;
+            }
+
+            $of = fn (FactKind $kind): array => $facts->get($id, collect())->where('kind', $kind)->pluck('value_text')->all();
+            $score = $relevance->score($productCategories, $uses, [
+                'kind' => $of(FactKind::ContentKind)[0] ?? null,
+                'value' => $of(FactKind::ShopperValue)[0] ?? null,
+                'categories' => $of(FactKind::Category),
+                'uses' => $of(FactKind::Use),
+                'matched' => in_array($id, $matched, true),
+            ]);
+
+            if ($score !== null) {
+                $scored[] = ['article' => $articles->get($id), 'score' => $score, 'order' => $order];
+            }
         }
 
-        return $matched->take(self::MAX_GUIDES)->map(fn (CatalogContent $c): array => [
+        usort($scored, fn (array $a, array $b): int => [$b['score'], $a['order']] <=> [$a['score'], $b['order']]);
+
+        return collect($scored)->pluck('article')->take(self::MAX_GUIDES)->map(fn (CatalogContent $c): array => [
             'id' => $c->external_id,
             'title' => $c->title,
             'url' => $c->url,

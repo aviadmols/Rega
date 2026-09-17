@@ -76,5 +76,6 @@ return [
         'viewed_before' => 'ראיתם קודם',
         'price' => 'מחיר',
         'on_sale' => 'מבצע',
+        'browse' => 'עוד ב:name',
     ],
 ];

@@ -114,7 +114,8 @@ final class WidgetCirclesTest extends TestCase
 
         $wood = $this->category('2212', 'עצים');
         $shelves = $this->category('2676', 'מדפים', '2212', ['עצים', 'מדפים']);
-        $supports = $this->category('2834', 'זוויות ותומכי מדף');
+        $supports = $this->category('2834', 'תומכי מדף', '1747', ['מוצרי פרזול', 'תומכי מדף']);
+        $this->inShop(fn () => $supports->forceFill(['url' => 'https://store.test/shelf-supports/', 'product_count' => 12])->save());
         $postBases = $this->category('2415', 'בסיסים לעמודים');
         $screws = $this->category('1848', 'ברגים ודיבלים');
 
@@ -145,6 +146,7 @@ final class WidgetCirclesTest extends TestCase
         $this->assertEqualsCanonicalizing(['30001', '30003', '30004'], array_column($complement, 'id'), 'supports and a wall anchor, no post base');
         $this->assertSame('30003', $complement[1]['id'], 'the anchor before a second support');
         $this->assertSame('דיבלים וברגים לתלייה בקיר', $complement[1]['reason']);
+        $this->assertSame([['id' => '2834', 'title' => 'תומכי מדף', 'url' => 'https://store.test/shelf-supports/']], $sections['complement']['categories'], 'the supports category; the screws are in a top-level category, which says nothing about the kind');
         $this->assertSame(['902'], array_column($sections['good_for']['guides'], 'id'), 'the pergola article is left out');
     }
 
