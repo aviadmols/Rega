@@ -12,6 +12,7 @@ final class TaskRegistry
             TaskType::ProductExtraction => ProductExtractionTask::class,
             TaskType::FactReview => FactReviewTask::class,
             TaskType::ContentMapping => ContentMappingTask::class,
+            TaskType::ProductHighlights => ProductHighlightsTask::class,
         });
     }
 }

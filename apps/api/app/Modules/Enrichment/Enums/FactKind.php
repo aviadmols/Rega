@@ -34,6 +34,9 @@ enum FactKind: string
     /** A category an article helps shoppers with. */
     case Category = 'category';
 
+    /** What a shopper should know, from the product's own text: a short phrase (key) and one sentence. */
+    case Highlight = 'highlight';
+
     public function label(): string
     {
         return __("enrichment::enrichment.fact_kinds.{$this->value}");

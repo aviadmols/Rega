@@ -17,6 +17,9 @@ enum TaskType: string
     /** Reads articles: what kind, how useful to a shopper, which categories they help with. */
     case ContentMapping = 'content_mapping';
 
+    /** Writes what a shopper should know about a product, each point resting on a quote from its text. */
+    case ProductHighlights = 'product_highlights';
+
     public function label(): string
     {
         return __("enrichment::enrichment.tasks.{$this->value}");
@@ -28,6 +31,7 @@ enum TaskType: string
             self::ProductExtraction => 'enrichment.extractor',
             self::FactReview => 'enrichment.reviewer',
             self::ContentMapping => 'enrichment.content_mapper',
+            self::ProductHighlights => 'enrichment.writer',
         };
     }
 

@@ -47,6 +47,7 @@ final class BuildPageBank
     /** Section candidate id => display model in the event spec. */
     public const MODELS = [
         'position' => 'position',
+        'highlights' => 'explainer',
         'specs' => 'specs',
         'complement' => 'complement',
         'family' => 'family',
@@ -68,6 +69,8 @@ final class BuildPageBank
     private const SPARE_PRODUCTS = 4;
 
     private const MAX_BROWSE_LINKS = 3;
+
+    private const MAX_HIGHLIGHTS = 4;
 
     private const MIN_LEVEL_SET = 3;
 
@@ -181,6 +184,13 @@ final class BuildPageBank
         if ($lines !== []) {
             $version = max($version, (int) $rankings->max(fn (EnrichmentRanking $r): int => (int) $r->computed_at->timestamp));
             $sections[] = $this->section('position', ['lines' => array_slice($lines, 0, self::MAX_POSITIONS + 2)]);
+        }
+
+        // What a shopper should know, from the product's own text, in the order the writer chose.
+        $highlights = $facts->where('kind', FactKind::Highlight)->sortBy('value_number')->take(self::MAX_HIGHLIGHTS)
+            ->map(fn (EnrichmentFact $f): array => ['key' => $f->key, 'text' => (string) $f->value_text])->values()->all();
+        if ($highlights !== []) {
+            $sections[] = $this->section('highlights', ['items' => $highlights]);
         }
 
         $specs = $this->specs($facts, $definition, (array) ($reading ?? []));

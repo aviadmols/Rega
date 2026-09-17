@@ -5,6 +5,7 @@ return [
         'product_extraction' => 'Read products',
         'fact_review' => 'Check facts',
         'content_mapping' => 'Read articles',
+        'product_highlights' => 'Product highlights',
     ],
     'batch_statuses' => [
         'awaiting_results' => 'Waiting for answers',
@@ -22,6 +23,7 @@ return [
         'content_kind' => 'Article kind',
         'shopper_value' => 'Value to shoppers',
         'category' => 'Category',
+        'highlight' => 'Highlight',
     ],
     'fact_statuses' => [
         'approved' => 'Approved',

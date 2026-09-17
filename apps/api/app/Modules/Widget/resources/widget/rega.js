@@ -375,8 +375,13 @@
     '.pill[aria-expanded="true"]{background:var(--accent);border-color:var(--accent);color:#fff}',
     '.pill[aria-expanded="true"] .spark{color:#fff}',
     '.spark{flex:none;width:17px;height:17px;color:var(--accent)}',
-    '.teaser{display:block;flex:0 1 auto;min-width:0;max-width:26ch;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:max-width .35s ease}',
-    '.pill.first:hover .teaser,.pill.first:focus-visible .teaser{max-width:70ch}',
+    '.quote{all:unset;box-sizing:border-box;display:flex;align-items:flex-start;gap:10px;width:100%;margin:0 0 10px;padding:10px 14px;',
+    'border-inline-start:3px solid var(--accent);border-start-end-radius:10px;border-end-end-radius:10px;background:rgba(17,24,39,.04);cursor:pointer;font:inherit;font-size:15px;line-height:1.55;color:inherit}',
+    '.quote:hover,.quote:focus-visible{background:rgba(17,24,39,.07)}.quote:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
+    '.quote .mark{flex:none;font-family:Georgia,serif;font-size:30px;line-height:.9;color:var(--accent)}',
+    '.quote strong,.highlights strong{font-weight:700}',
+    '.highlights li{position:relative;padding-inline-start:18px;margin:6px 0}',
+    '.highlights li:before{content:"";position:absolute;inset-inline-start:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--accent)}',
     '.chip-label{display:block;max-width:22ch;overflow:hidden;text-overflow:ellipsis}',
     '.panel{margin-top:8px;padding:6px 16px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:#111827}',
     ':host(.is-floating) .panel{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.18)}',
@@ -658,6 +663,17 @@
       node.appendChild(tags);
     }
 
+    if (section.items) {
+      var points = el('ul', 'highlights');
+      section.items.forEach(function (item) {
+        var point = el('li');
+        point.appendChild(el('strong', null, item.key));
+        point.appendChild(document.createTextNode(' ' + item.text));
+        points.appendChild(point);
+      });
+      node.appendChild(points);
+    }
+
     if (section.lines) {
       var list = el('ul', 'lines');
       section.lines.forEach(function (line) {
@@ -837,22 +853,44 @@
       }
     }
 
+    // The key sentence, readable without a click: the first superlative or highlight, as a quote.
+    var quoteIndex = -1;
+    for (var q = 0; q < rendered.length && quoteIndex === -1; q++) {
+      var candidate = rendered[q].section;
+      if ((candidate.lines && candidate.lines.length) || (candidate.items && candidate.items.length)) {
+        quoteIndex = q;
+      }
+    }
+
+    var quote = null;
+    if (quoteIndex !== -1) {
+      var source = rendered[quoteIndex].section;
+      quote = el('button', 'quote');
+      quote.type = 'button';
+      quote.setAttribute('aria-controls', 'rega-panel');
+      quote.appendChild(el('span', 'mark', '”'));
+      var words = el('span', 'quote-text');
+      if (source.items && source.items.length) {
+        words.appendChild(el('strong', null, source.items[0].key));
+        words.appendChild(document.createTextNode(' ' + source.items[0].text));
+      } else {
+        words.textContent = source.lines[0].text;
+      }
+      quote.appendChild(words);
+      quote.addEventListener('click', function () { setOpen(quoteIndex, 'closed'); });
+    }
+
     rendered.forEach(function (item, index) {
-      var pill = el('button', 'pill' + (index === 0 ? ' first' : ''));
+      var pill = el('button', 'pill');
       pill.type = 'button';
       pill.setAttribute('aria-expanded', 'false');
       pill.setAttribute('aria-controls', 'rega-panel');
 
       if (index === 0) {
         pill.innerHTML = SPARK;
-        var text = item.section.lines && item.section.lines[0] ? item.section.lines[0].text
-          : (bank.teaser && bank.teaser.candidate === item.section.candidate ? bank.teaser.text : item.section.chip);
-        pill.appendChild(el('span', 'teaser', text));
-        pill.title = text;
-      } else {
-        pill.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
-        pill.title = item.section.title;
       }
+      pill.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
+      pill.title = item.section.title;
 
       pill.addEventListener('click', function () { setOpen(index, 'closed'); });
       item.pill = pill;
@@ -866,6 +904,9 @@
       }
     });
 
+    if (quote) {
+      wrap.appendChild(quote);
+    }
     wrap.appendChild(chips);
     wrap.appendChild(panel);
     root.appendChild(wrap);
@@ -874,9 +915,17 @@
       return;
     }
 
-    watchExposure(chips, function (ms, ratio) {
-      track('exposure', rendered[0].section, 'teaser', { visible_ms: ms, ratio: ratio });
-    });
+    // One exposure per section: the quote's section when it is shown, and the first circle's when it is another.
+    if (quote) {
+      watchExposure(quote, function (ms, ratio) {
+        track('exposure', rendered[quoteIndex].section, 'teaser', { visible_ms: ms, ratio: ratio });
+      });
+    }
+    if (quoteIndex !== 0) {
+      watchExposure(chips, function (ms, ratio) {
+        track('exposure', rendered[0].section, quote ? 'chip_1' : 'teaser', { visible_ms: ms, ratio: ratio });
+      });
+    }
   }
 
   // ---------------------------------------------------------------- start

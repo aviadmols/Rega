@@ -31,6 +31,7 @@ return array(
 		'Every visitor sees the widget.' => 'כל הגולשים רואים את הרכיב.',
 		'Goes well with it' => 'מתאים לקנות יחד',
 		'Good for jobs' => 'טוב לעבודות',
+		'Good to know' => 'חשוב לדעת',
 		'Guides' => 'מדריכים',
 		'Guides and articles Rega can show as related reading. Only published entries without a password are shared.' => 'מדריכים ומאמרים ש־Rega יכולה להציג כקריאה נוספת. רק תכנים שפורסמו ואינם מוגנים בסיסמה משותפים.',
 		'Hot display models' => 'מודלים חמים',

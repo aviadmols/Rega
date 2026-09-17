@@ -4,6 +4,7 @@
 return [
     'titles' => [
         'position' => 'למה הדגם הזה',
+        'highlights' => 'מה חשוב לדעת',
         'specs' => 'מפרט בקצרה',
         'complement' => 'מתאים לקנות יחד',
         'family' => 'מידות וגרסאות נוספות',
@@ -15,6 +16,7 @@ return [
     ],
     'chips' => [
         'position' => 'למה הדגם הזה',
+        'highlights' => 'חשוב לדעת',
         'specs' => 'מפרט',
         'complement' => 'מתאים לקנות יחד',
         'family' => 'מידות נוספות',

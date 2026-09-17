@@ -302,6 +302,7 @@ final class ReportsPage {
 			'alternative'      => __( 'Similar products', 'rega' ),
 			'on_sale'          => __( 'Similar on sale', 'rega' ),
 			'good_for'         => __( 'Good for jobs', 'rega' ),
+			'explainer'        => __( 'Good to know', 'rega' ),
 			'compare'          => __( 'Comparison with a viewed product', 'rega' ),
 		);
 

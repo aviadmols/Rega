@@ -5,6 +5,7 @@ return [
         'product_extraction' => 'קריאת מוצרים',
         'fact_review' => 'בדיקת עובדות',
         'content_mapping' => 'קריאת מאמרים',
+        'product_highlights' => 'נקודות חשובות למוצרים',
     ],
     'batch_statuses' => [
         'awaiting_results' => 'מחכה לתשובות',
@@ -22,6 +23,7 @@ return [
         'content_kind' => 'סוג מאמר',
         'shopper_value' => 'ערך לקונה',
         'category' => 'קטגוריה',
+        'highlight' => 'נקודה חשובה',
     ],
     'fact_statuses' => [
         'approved' => 'מאושר',

@@ -4,6 +4,7 @@
 return [
     'titles' => [
         'position' => 'Why this model',
+        'highlights' => 'Good to know',
         'specs' => 'Specs in brief',
         'complement' => 'Goes well with it',
         'family' => 'Other sizes and versions',
@@ -15,6 +16,7 @@ return [
     ],
     'chips' => [
         'position' => 'Why this model',
+        'highlights' => 'Good to know',
         'specs' => 'Specs',
         'complement' => 'Goes well with it',
         'family' => 'Other sizes',
