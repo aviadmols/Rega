@@ -88,7 +88,7 @@ final class PageBankTest extends TestCase
         $this->assertFalse($bank['preview']);
         $this->assertSame($this->shop->id, $bank['shop']);
         $this->assertSame(['selector' => 'form.cart', 'position' => 'after', 'floating' => true], $bank['placement']);
-        $this->assertSame(['position', 'specs', 'complement', 'guides'], array_column($bank['sections'], 'candidate'));
+        $this->assertSame(['highlights', 'specs', 'complement', 'guides'], array_column($bank['sections'], 'candidate'), 'where the model stands is part of what to know');
 
         [$position, $specs, $complement, $guides] = $bank['sections'];
 

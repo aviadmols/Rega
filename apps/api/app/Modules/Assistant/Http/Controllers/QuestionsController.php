@@ -57,7 +57,7 @@ final class QuestionsController
                 ->where('product_id', $product->id)
                 ->where('outcome', AssistantAnswer::ANSWERED)
                 ->where('status', AssistantAnswer::SHOWN)
-                ->get(['question', 'answer', 'asked_count', 'last_asked_at']);
+                ->get(['question', 'answer', 'source', 'asked_count', 'last_asked_at']);
 
             $limit = (int) Settings::get('assistant.suggested_questions', $shopId);
             $suggested = $answered->sortByDesc('asked_count')->pluck('question')
@@ -68,7 +68,7 @@ final class QuestionsController
                 'enabled' => true,
                 'suggested' => $suggested,
                 'recent' => $answered->sortByDesc('last_asked_at')->take(self::RECENT)
-                    ->map(fn (AssistantAnswer $a): array => ['question' => $a->question, 'answer' => (string) $a->answer])->values()->all(),
+                    ->map(fn (AssistantAnswer $a): array => array_filter(['question' => $a->question, 'answer' => (string) $a->answer, 'source' => $a->source]))->values()->all(),
             ];
         });
 

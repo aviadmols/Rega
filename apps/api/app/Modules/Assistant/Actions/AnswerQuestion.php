@@ -25,14 +25,18 @@ use Illuminate\Support\Facades\RateLimiter;
 /**
  * Answers a shopper's question about one product.
  *
- * 1. The same question asked before about this product: the saved answer, no model.
+ * 1. The same question asked before about this product: the saved answer, no model. A "no answer"
+ *    saved by an older prompt version is asked again.
  * 2. Contact details, too short, over the visitor's or the shop's daily questions: refused in code.
  * 3. A small model decides whether the question is about the product. When it is not, a fixed
  *    refusal, and the writing model never sees the question.
- * 4. The writing model answers from the product's approved facts, highlights and text only. When
- *    those do not say, it says so.
+ * 4. The writing model answers from the store's information about the product first, and from
+ *    general knowledge about products exactly like it when that does not say.
+ * 5. Code refuses an answer with contact details, a price, or a number the store's information
+ *    does not have. The small model then checks the answer is about this product, consistent with
+ *    the store's information and on topic. Only then the shopper sees it.
  *
- * Both calls ask SpendGuard first and record tokens and cost on one run. Every answer is saved.
+ * Every call asks SpendGuard first and records tokens and cost on one run. Every answer is saved.
  */
 final class AnswerQuestion
 {
@@ -40,11 +44,13 @@ final class AnswerQuestion
 
     public const ACTION = 'assistant.answer';
 
-    public const PROMPT_VERSION = 1;
+    public const PROMPT_VERSION = 2;
 
     private const MIN_CHARS = 3;
 
-    private const SCOPE_OUTPUT_TOKENS = 400;
+    private const CHECK_OUTPUT_TOKENS = 400;
+
+    private const MAX_ANSWER_CHARS = 1200;
 
     public function __construct(
         private readonly RecordsRuns $runs,
@@ -54,8 +60,8 @@ final class AnswerQuestion
     ) {}
 
     /**
-     * @return array{outcome: string, answer: string, from: string} outcome: answered, no_info, out_of_scope,
-     *                                                              invalid, limit or unavailable; from: bank, model or none
+     * @return array{outcome: string, answer: string, from: string, source?: string} outcome: answered, no_info,
+     *                                                                               out_of_scope, invalid, limit or unavailable; from: bank, model or none
      */
     public function handle(string $shopId, string $productExternalId, string $question, string $visitorHash, string $locale = 'he'): array
     {
@@ -74,11 +80,17 @@ final class AnswerQuestion
 
             $saved = AssistantAnswer::query()->where('product_id', $product->id)->where('question_key', Question::key($question))->first();
 
+            // An older prompt that could not answer may answer now.
+            if ($saved !== null && $saved->outcome === AssistantAnswer::NO_INFO && $saved->prompt_version < self::PROMPT_VERSION) {
+                $saved->delete();
+                $saved = null;
+            }
+
             if ($saved !== null) {
                 $saved->forceFill(['asked_count' => $saved->asked_count + 1, 'last_asked_at' => now()])->save();
 
                 return $saved->status === AssistantAnswer::SHOWN && $saved->outcome === AssistantAnswer::ANSWERED
-                    ? ['outcome' => $saved->outcome, 'answer' => (string) $saved->answer, 'from' => 'bank']
+                    ? array_filter(['outcome' => $saved->outcome, 'answer' => (string) $saved->answer, 'from' => 'bank', 'source' => $saved->source])
                     : $this->fixed($saved->outcome === AssistantAnswer::OUT_OF_SCOPE ? 'out_of_scope' : 'no_info', $locale, 'bank');
             }
 
@@ -94,7 +106,7 @@ final class AnswerQuestion
         });
     }
 
-    /** @return array{outcome: string, answer: string, from: string} */
+    /** @return array{outcome: string, answer: string, from: string, source?: string} */
     private function ask(string $shopId, CatalogProduct $product, string $question, string $locale): array
     {
         $result = $this->fixed('unavailable', $locale);
@@ -107,39 +119,58 @@ final class AnswerQuestion
             input: ['product' => $product->external_id, 'question' => $question],
             work: function (RunContext $run) use ($shopId, $product, $question, $locale, &$result): void {
                 $answerModel = (string) Settings::get('assistant.answer_model');
-                $scopeModel = (string) Settings::get('assistant.scope_model');
+                $checkModel = (string) Settings::get('assistant.scope_model');
                 $maxOutput = (int) Settings::get('assistant.answer_max_output_tokens');
                 $effort = (string) Settings::get('assistant.reasoning_effort');
                 $effort = $effort === 'model_default' ? null : $effort;
 
                 $context = $this->context($product, (int) Settings::get('assistant.max_text_chars', $shopId));
-                $estimatedInput = (int) ceil(mb_strlen((string) json_encode($context, JSON_UNESCAPED_UNICODE)) / 2) + 800;
+                $contextJson = (string) json_encode($context, JSON_UNESCAPED_UNICODE);
+                $estimatedInput = (int) ceil(mb_strlen($contextJson) / 2) + 800;
+                /** @var list<array{0: ModelReply, 1: string}> $replies */
+                $replies = [];
 
                 try {
-                    $this->spend->assertCanSpend(
-                        ($estimatedInput * $this->price('answer_input') + $maxOutput * $this->price('answer_output')
-                        + 600 * $this->price('scope_input') + self::SCOPE_OUTPUT_TOKENS * $this->price('scope_output')) / 1_000_000,
-                    );
+                    $this->spend->assertCanSpend((
+                        $estimatedInput * $this->price('answer_input') + $maxOutput * $this->price('answer_output')
+                        + ($estimatedInput + 1200) * $this->price('scope_input') + 2 * self::CHECK_OUTPUT_TOKENS * $this->price('scope_output')
+                    ) / 1_000_000);
 
-                    $scope = $this->models->json(AiProviderName::OpenAi, $scopeModel, self::prompt('scope'), (string) json_encode([
-                        'product' => ['title' => $context['title'], 'category' => $context['category']],
-                        'question' => $question,
-                    ], JSON_UNESCAPED_UNICODE), self::SCOPE_OUTPUT_TOKENS, $effort);
-                    $this->record($run, $scopeModel, $scope, 'scope');
+                    $scope = $this->call($run, $checkModel, 'scope', ['product' => ['title' => $context['title'], 'category' => $context['category']], 'question' => $question], self::CHECK_OUTPUT_TOKENS, $effort);
+                    $replies[] = [$scope, 'scope'];
 
                     if (($scope->data['about_product'] ?? null) !== true) {
-                        $this->save($product, $question, AssistantAnswer::OUT_OF_SCOPE, null, $scopeModel, $scope, 'scope', $run);
+                        $this->save($product, $question, AssistantAnswer::OUT_OF_SCOPE, null, null, $checkModel, $replies, $run);
                         $result = $this->fixed('out_of_scope', $locale, 'model');
                         $run->output(['outcome' => AssistantAnswer::OUT_OF_SCOPE])->summary('assistant::runs.out_of_scope');
 
                         return;
                     }
 
-                    $reply = $this->models->json(AiProviderName::OpenAi, $answerModel, self::prompt('answer'), (string) json_encode([
-                        'product' => $context,
-                        'question' => $question,
-                    ], JSON_UNESCAPED_UNICODE), $maxOutput, $effort);
-                    $this->record($run, $answerModel, $reply, 'answer');
+                    $reply = $this->call($run, $answerModel, 'answer', ['product' => $context, 'question' => $question], $maxOutput, $effort, 'answer');
+                    $replies[] = [$reply, 'answer'];
+
+                    $answer = mb_substr(trim((string) ($reply->data['answer'] ?? '')), 0, self::MAX_ANSWER_CHARS);
+                    $source = in_array($reply->data['source'] ?? null, ['store', 'general'], true) ? $reply->data['source'] : null;
+                    $refusal = match (true) {
+                        $source === null || $answer === '' => 'no_answer',
+                        Question::hasContactDetails($answer) => 'contact_details',
+                        self::mentionsPrice($answer) => 'price',
+                        self::hasNumberNotIn($answer, $contextJson.' '.$question) => 'number_not_in_product_information',
+                        default => null,
+                    };
+
+                    if ($refusal === null) {
+                        $check = $this->call($run, $checkModel, 'verify', ['product' => $context, 'question' => $question, 'answer' => $answer], self::CHECK_OUTPUT_TOKENS, $effort);
+                        $replies[] = [$check, 'scope'];
+
+                        $refusal = match (false) {
+                            ($check->data['about_this_product'] ?? null) === true => 'not_about_this_product',
+                            ($check->data['consistent'] ?? null) === true => 'not_consistent',
+                            ($check->data['on_topic'] ?? null) === true => 'off_topic',
+                            default => null,
+                        };
+                    }
                 } catch (SpendCapReached $e) {
                     $run->fail('assistant::runs.spend_cap', [], $e->getMessage());
 
@@ -150,17 +181,26 @@ final class AnswerQuestion
                     return;
                 }
 
-                $answer = trim((string) ($reply->data['answer'] ?? ''));
-                $found = ($reply->data['found'] ?? false) === true && $answer !== '' && ! Question::hasContactDetails($answer) && ! self::mentionsPrice($answer);
-                $outcome = $found ? AssistantAnswer::ANSWERED : AssistantAnswer::NO_INFO;
+                $outcome = $refusal === null ? AssistantAnswer::ANSWERED : AssistantAnswer::NO_INFO;
+                $this->save($product, $question, $outcome, $refusal === null ? $answer : null, $refusal === null ? $source : null, $answerModel, $replies, $run);
 
-                $this->save($product, $question, $outcome, $found ? mb_substr($answer, 0, 1200) : null, $answerModel, $reply, 'answer', $run, $scope ?? null);
-                $result = $found ? ['outcome' => $outcome, 'answer' => mb_substr($answer, 0, 1200), 'from' => 'model'] : $this->fixed('no_info', $locale, 'model');
-                $run->output(['outcome' => $outcome, 'answer' => $found ? $answer : null])->summary('assistant::runs.'.$outcome);
+                $result = $refusal === null
+                    ? ['outcome' => $outcome, 'answer' => $answer, 'from' => 'model', 'source' => (string) $source]
+                    : $this->fixed('no_info', $locale, 'model');
+                $run->output(['outcome' => $outcome, 'source' => $source, 'refused' => $refusal, 'answer' => $answer])->summary('assistant::runs.'.$outcome);
             },
         );
 
         return $result;
+    }
+
+    /** @param array<string, mixed> $input */
+    private function call(RunContext $run, string $model, string $prompt, array $input, int $maxOutput, ?string $effort, string $prices = 'scope'): ModelReply
+    {
+        $reply = $this->models->json(AiProviderName::OpenAi, $model, self::prompt($prompt), (string) json_encode($input, JSON_UNESCAPED_UNICODE), $maxOutput, $effort);
+        $run->usage('openai', $model, $reply->inputTokens, $reply->outputTokens, 0, $reply->costUsd($this->price($prices.'_input'), $this->price($prices.'_output')));
+
+        return $reply;
     }
 
     /** @return array<string, mixed> what the writer may answer from */
@@ -219,15 +259,17 @@ final class AnswerQuestion
         return true;
     }
 
-    private function record(RunContext $run, string $model, ModelReply $reply, string $step): void
+    /** @param list<array{0: ModelReply, 1: string}> $replies each reply with the prices it is charged at */
+    private function save(CatalogProduct $product, string $question, string $outcome, ?string $answer, ?string $source, string $model, array $replies, RunContext $run): void
     {
-        $run->usage('openai', $model, $reply->inputTokens, $reply->outputTokens, 0, $reply->costUsd($this->price($step.'_input'), $this->price($step.'_output')));
-    }
-
-    private function save(CatalogProduct $product, string $question, string $outcome, ?string $answer, string $model, ModelReply $reply, string $step, RunContext $run, ?ModelReply $scope = null): void
-    {
-        $cost = $reply->costUsd($this->price($step.'_input'), $this->price($step.'_output'))
-            + ($scope?->costUsd($this->price('scope_input'), $this->price('scope_output')) ?? 0.0);
+        $cost = 0.0;
+        $input = 0;
+        $output = 0;
+        foreach ($replies as [$reply, $prices]) {
+            $cost += $reply->costUsd($this->price($prices.'_input'), $this->price($prices.'_output'));
+            $input += $reply->inputTokens;
+            $output += $reply->outputTokens;
+        }
 
         AssistantAnswer::query()->create([
             'shop_id' => $product->shop_id,
@@ -236,10 +278,11 @@ final class AnswerQuestion
             'question' => $question,
             'answer' => $answer,
             'outcome' => $outcome,
+            'source' => $source,
             'prompt_version' => self::PROMPT_VERSION,
             'model' => $model,
-            'input_tokens' => $reply->inputTokens + ($scope->inputTokens ?? 0),
-            'output_tokens' => $reply->outputTokens + ($scope->outputTokens ?? 0),
+            'input_tokens' => $input,
+            'output_tokens' => $output,
             'cost_usd' => round($cost, 6),
             'run_id' => $run->runId,
             'last_asked_at' => now(),
@@ -255,6 +298,20 @@ final class AnswerQuestion
     private static function mentionsPrice(string $answer): bool
     {
         return preg_match('~₪|ש"ח|ש״ח|\d+\s*שקל~u', $answer) === 1;
+    }
+
+    /** A number the store's information and the question do not have is a spec the model made up. */
+    private static function hasNumberNotIn(string $answer, string $known): bool
+    {
+        preg_match_all('~\d+(?:[.,]\d+)?~u', $answer, $numbers);
+
+        foreach ($numbers[0] as $number) {
+            if (! str_contains($known, $number) && ! str_contains($known, str_replace(',', '.', $number))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function prompt(string $name): string

@@ -56,9 +56,9 @@ final class WidgetCirclesTest extends TestCase
         $bank = $this->page('10');
 
         $sections = collect($bank['sections'])->keyBy('candidate');
-        $this->assertSame(['position', 'specs', 'complement', 'alternatives', 'on_sale'], array_column($bank['sections'], 'candidate'));
+        $this->assertSame(['highlights', 'specs', 'complement', 'alternatives', 'on_sale'], array_column($bank['sections'], 'candidate'));
 
-        $this->assertStringContainsString('ברבע הנמוך מבין 4 דגמים', $sections['position']['lines'][0]['text'], 'the lightest quarter of four cordless jigsaws');
+        $this->assertStringContainsString('ברבע הנמוך מבין 4 דגמים', $sections['highlights']['lines'][0]['text'], 'the lightest quarter of four cordless jigsaws');
         $this->assertContains('Makita', array_column($sections['specs']['specs'], 'value'), 'the brand code read');
 
         $complement = $sections['complement']['products'];

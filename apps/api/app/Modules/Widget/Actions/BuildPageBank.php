@@ -188,13 +188,17 @@ final class BuildPageBank
 
         if ($lines !== []) {
             $version = max($version, (int) $rankings->max(fn (EnrichmentRanking $r): int => (int) $r->computed_at->timestamp));
-            $sections[] = $this->section('position', ['lines' => array_slice($lines, 0, self::MAX_POSITIONS + 2)]);
         }
 
         // What a shopper should know, from the product's own text, in the order the writer chose.
         $highlights = $this->highlights($facts->where('kind', FactKind::Highlight)->sortBy('value_number')->take(self::MAX_HIGHLIGHTS)->values());
-        if ($highlights !== []) {
-            $sections[] = $this->section('highlights', ['items' => $highlights]);
+        // One panel for what to know: where the model stands among its kind, then the highlights.
+        // The widget shows its first line as the quote above the circles.
+        if ($lines !== [] || $highlights !== []) {
+            $sections[] = $this->section('highlights', array_filter([
+                'lines' => array_slice($lines, 0, self::MAX_POSITIONS + 2),
+                'items' => $highlights,
+            ]));
         }
 
         $specs = $this->specs($facts, $definition, (array) ($reading ?? []));
@@ -943,6 +947,7 @@ final class BuildPageBank
     {
         $text = match ($section['candidate']) {
             'position' => $section['lines'][0]['text'],
+            'highlights' => isset($section['lines'][0]) ? $section['lines'][0]['text'] : $section['items'][0]['key'].' '.$section['items'][0]['text'],
             'article_products' => trans_choice('widget::bank.teasers.article_products', count($section['products']), ['count' => count($section['products'])], $this->locale),
             default => (string) $section['chip'],
         };

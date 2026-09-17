@@ -422,6 +422,7 @@
     '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
     '.ask-note{margin-top:10px;font-size:11px;color:var(--muted)}',
+    '.ask-general{margin-top:4px;font-size:12px;color:var(--muted)}',
     '.browse{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
     '.browse a{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:inherit;text-decoration:none;font-size:13px}',
     '.browse a:after{content:"\\203A"}.rega[dir="rtl"] .browse a:after{content:"\\2039"}',
@@ -764,6 +765,9 @@
           var data = json && json.data;
           reply.className = 'ask-a';
           reply.textContent = data ? data.answer : labels.ask_error;
+          if (data && data.source === 'general') {
+            answer.appendChild(el('div', 'ask-general', labels.ask_general));
+          }
           track('chat_question', section, 'panel', {
             length: Math.min(2000, question.length),
             answered_from: data && data.from === 'bank' ? 'bank' : (data && data.outcome === 'answered' ? 'rag' : 'none')
@@ -806,6 +810,9 @@
               var row = el('div', 'ask-item');
               row.appendChild(el('div', 'ask-q', item.question));
               row.appendChild(el('div', 'ask-a', item.answer));
+              if (item.source === 'general') {
+                row.appendChild(el('div', 'ask-general', labels.ask_general));
+              }
               recent.appendChild(row);
             });
           }
@@ -831,23 +838,19 @@
       node.appendChild(tags);
     }
 
-    if (section.items) {
+    // Where the model stands among its kind first, then the highlights, in one list.
+    if (section.lines || section.items) {
       var points = el('ul', 'highlights');
-      section.items.forEach(function (item) {
+      (section.lines || []).forEach(function (line) {
+        points.appendChild(el('li', null, line.text));
+      });
+      (section.items || []).forEach(function (item) {
         var point = el('li');
         point.appendChild(el('strong', null, item.key));
         point.appendChild(document.createTextNode(' ' + item.text));
         points.appendChild(point);
       });
       node.appendChild(points);
-    }
-
-    if (section.lines) {
-      var list = el('ul', 'lines');
-      section.lines.forEach(function (line) {
-        list.appendChild(el('li', null, line.text));
-      });
-      node.appendChild(list);
     }
 
     if (section.specs) {
@@ -922,7 +925,11 @@
         var livePrice = amount(current.prices, 'price');
         return Math.abs(livePrice - line.price) <= Math.max(1, line.price * 0.005);
       });
-      return lines.length ? Object.assign({}, section, { lines: lines }) : null;
+      if (lines.length) {
+        return Object.assign({}, section, { lines: lines });
+      }
+      // A price line the live price contradicts is gone; the highlights beside it stay.
+      return section.items && section.items.length ? Object.assign({}, section, { lines: null }) : null;
     }).filter(Boolean);
   }
 
@@ -1037,11 +1044,11 @@
     for (var q = 0; q < rendered.length && quoteIndex === -1; q++) {
       var candidate = rendered[q].section;
       var items = (candidate.items || []).filter(function (item) { return !item.common; });
-      if (items.length) {
+      if (candidate.lines && candidate.lines.length) {
+        quoteIndex = q;
+      } else if (items.length) {
         quoteIndex = q;
         quoteItem = items[0];
-      } else if (candidate.lines && candidate.lines.length) {
-        quoteIndex = q;
       }
     }
 

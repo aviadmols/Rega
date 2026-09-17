@@ -91,5 +91,6 @@ return [
         'ask_recent' => 'What shoppers asked',
         'ask_note' => 'Answers are written automatically from the product information only.',
         'ask_error' => 'We could not answer right now. Please try again.',
+        'ask_general' => 'A general answer for products like this. Check the manufacturer\'s instructions for exact details.',
     ],
 ];

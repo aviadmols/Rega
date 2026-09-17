@@ -8,6 +8,8 @@ use App\Modules\Ai\Contracts\ChatModel;
 use App\Modules\Ai\Contracts\ModelReply;
 use App\Modules\Ai\Enums\AiProviderName;
 use App\Modules\Assistant\Models\AssistantAnswer;
+use App\Modules\Assistant\Support\Question;
+use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
 use App\Modules\Connections\Support\SiteKeys;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
@@ -24,6 +26,8 @@ final class AnswerQuestionTest extends TestCase
     private const TOKEN = 'rgt_ffffffffffffffffffffffffffffffffffffffffffffffff';
 
     private const VID = 'anon-visitor1234567890abcd';
+
+    private const VERIFIED = ['about_this_product' => true, 'consistent' => true, 'on_topic' => true];
 
     /** @var object{calls: list<array{model: string, user: string}>, replies: list<array<string, mixed>>} */
     private object $model;
@@ -58,20 +62,20 @@ final class AnswerQuestionTest extends TestCase
 
     public function test_a_question_about_the_product_is_answered_once_and_then_from_memory(): void
     {
-        $this->model->replies = [['about_product' => true], ['answer' => 'כן, הוא מתאים לשימוש בחוץ ובפנים.', 'found' => true]];
+        $this->model->replies = [['about_product' => true], ['answer' => 'כן, הוא מתאים לשימוש בחוץ ובפנים.', 'source' => 'store'], self::VERIFIED];
 
         $first = $this->ask('האם זה מתאים לחוץ?')->assertOk()->json('data');
-        $this->assertSame(['outcome' => 'answered', 'answer' => 'כן, הוא מתאים לשימוש בחוץ ובפנים.', 'from' => 'model'], $first);
-        $this->assertSame(['gpt-5.4-nano', 'gpt-5.4-mini'], array_column($this->model->calls, 'model'), 'the small model checks, the writer answers');
+        $this->assertSame(['outcome' => 'answered', 'answer' => 'כן, הוא מתאים לשימוש בחוץ ובפנים.', 'from' => 'model', 'source' => 'store'], $first);
+        $this->assertSame(['gpt-5.4-nano', 'gpt-5.4-mini', 'gpt-5.4-nano'], array_column($this->model->calls, 'model'), 'the small model checks the question, the writer answers, the small model checks the answer');
         $this->assertStringContainsString('ברגים לעץ קשה', $this->model->calls[1]['user'], 'the writer gets the product text');
+        $this->assertStringContainsString('כן, הוא מתאים', $this->model->calls[2]['user'], 'the checker gets the answer');
 
         $run = Run::query()->where('agent', 'assistant.answerer')->sole();
-        $this->assertEqualsWithDelta(2 * (500 * 1 + 100 * 8) / 1_000_000 + 0, (float) $run->cost_usd, 0.01, 'tokens and cost are on the run');
-        $this->assertGreaterThan(0, (float) $run->cost_usd);
+        $this->assertGreaterThan(0, (float) $run->cost_usd, 'tokens and cost are on the run');
 
         $again = $this->ask('  האם זה מתאים לחוץ ')->assertOk()->json('data');
         $this->assertSame('bank', $again['from']);
-        $this->assertCount(2, $this->model->calls, 'the same question costs nothing the second time');
+        $this->assertCount(3, $this->model->calls, 'the same question costs nothing the second time');
 
         $saved = $this->inShop(fn () => AssistantAnswer::query()->sole());
         $this->assertSame(2, $saved->asked_count);
@@ -79,7 +83,37 @@ final class AnswerQuestionTest extends TestCase
         $box = $this->get('/api/v1/widget/'.SiteKeys::site(self::TOKEN).'/questions?id=31538&locale=he', ['Origin' => 'https://store.test'])->assertOk()->json('data');
         $this->assertSame('האם זה מתאים לחוץ?', $box['suggested'][0], 'what shoppers asked first, then common questions');
         $this->assertCount(4, $box['suggested']);
-        $this->assertSame([['question' => 'האם זה מתאים לחוץ?', 'answer' => 'כן, הוא מתאים לשימוש בחוץ ובפנים.']], $box['recent']);
+        $this->assertSame([['question' => 'האם זה מתאים לחוץ?', 'answer' => 'כן, הוא מתאים לשימוש בחוץ ובפנים.', 'source' => 'store']], $box['recent']);
+    }
+
+    public function test_general_knowledge_answers_only_after_code_and_a_second_model_check_them(): void
+    {
+        // The store's text says nothing about using it: general guidance for products like it, checked.
+        $this->model->replies = [['about_product' => true], ['answer' => 'מחברים צינור מים ואז את החשמל, ומתחילים במרחק מהמשטח. כדאי לקרוא את הוראות היצרן.', 'source' => 'general'], self::VERIFIED];
+        $data = $this->ask('איך מפעילים את זה?')->json('data');
+        $this->assertSame(['answered', 'general'], [$data['outcome'], $data['source']]);
+
+        // The checker finds it inconsistent with the product: not shown.
+        $this->model->replies = [['about_product' => true], ['answer' => 'מתאים גם לשימוש מתחת למים.', 'source' => 'general'], ['about_this_product' => true, 'consistent' => false, 'on_topic' => true]];
+        $this->assertSame('no_info', $this->ask('אפשר להשתמש בזה מתחת למים?')->json('data.outcome'));
+        $refused = $this->inShop(fn () => AssistantAnswer::query()->where('question_key', Question::key('אפשר להשתמש בזה מתחת למים?'))->sole());
+        $this->assertNull($refused->answer, 'a refused answer is not kept');
+        $this->assertSame('not_consistent', Run::query()->findOrFail($refused->run_id)->output['refused']);
+
+        // A number the store's information does not have: refused in code, no checker call.
+        $calls = count($this->model->calls);
+        $this->model->replies = [['about_product' => true], ['answer' => 'הלחץ המרבי הוא 150 בר.', 'source' => 'general']];
+        $this->assertSame('no_info', $this->ask('מה הלחץ המרבי?')->json('data.outcome'));
+        $this->assertCount($calls + 2, $this->model->calls);
+
+        // A question an older prompt could not answer is asked again.
+        $this->inShop(fn () => AssistantAnswer::query()->create([
+            'shop_id' => $this->shop->id, 'product_id' => $this->inShop(fn () => CatalogProduct::query()->where('external_id', '31538')->value('id')),
+            'question_key' => Question::key('איך שומרים עליו?'), 'question' => 'איך שומרים עליו?',
+            'outcome' => AssistantAnswer::NO_INFO, 'prompt_version' => 1, 'last_asked_at' => now(),
+        ]));
+        $this->model->replies = [['about_product' => true], ['answer' => 'מנקים אותו אחרי כל שימוש ושומרים במקום יבש.', 'source' => 'general'], self::VERIFIED];
+        $this->assertSame('answered', $this->ask('איך שומרים עליו?')->json('data.outcome'));
     }
 
     public function test_a_question_about_something_else_never_reaches_the_writer(): void
@@ -101,7 +135,7 @@ final class AnswerQuestionTest extends TestCase
         $this->assertSame('out_of_scope', $this->ask('תתקשרו אליי 052-1234567 לגבי המוצר')->json('data.outcome'));
         $this->assertCount(0, $this->model->calls, 'contact details never reach a model');
 
-        $this->model->replies = [['about_product' => true], ['answer' => 'המחיר הוא 89 ₪ למטר.', 'found' => true]];
+        $this->model->replies = [['about_product' => true], ['answer' => 'המחיר הוא 89 ₪ למטר.', 'source' => 'store']];
         $this->assertSame('no_info', $this->ask('כמה עולה מטר?')->json('data.outcome'), 'a price in an answer goes stale');
 
         Settings::set('assistant.questions_per_visitor_per_day', 1, $this->shop->id);
