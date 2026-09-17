@@ -67,7 +67,8 @@ final class RecordBeacon
                 'page_path' => mb_substr((string) $page['path'], 0, 512),
                 'product_external_id' => $page['product_id'] ?? null,
                 'content_external_id' => $page['content_id'] ?? null,
-                'item_external_id' => $data['product_id'] ?? null,
+                // The product or article a click or add was about. WordPress numbers both from one sequence.
+                'item_external_id' => $data['product_id'] ?? $data['content_id'] ?? null,
                 'model' => $event['candidate']['model'] ?? null,
                 'candidate_id' => $event['candidate']['id'] ?? null,
                 'slot' => $event['candidate']['slot'] ?? null,

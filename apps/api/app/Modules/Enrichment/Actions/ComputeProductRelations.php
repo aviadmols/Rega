@@ -334,6 +334,7 @@ final class ComputeProductRelations
                 'choices' => [],
                 'specs' => [],
                 'uses' => [],
+                'categories' => array_values(array_filter(array_map(fn ($c): string => is_array($c) ? (string) ($c['id'] ?? '') : '', (array) ($product->payload['categories'] ?? [])))),
             ];
         }
 

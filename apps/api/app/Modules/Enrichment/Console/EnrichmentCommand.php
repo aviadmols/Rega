@@ -43,7 +43,8 @@ final class EnrichmentCommand extends Command
         {--subject=product : product or content, for reviews}
         {--limit= : maximum requests}
         {--out= : where to write the task file}
-        {--model= : the model that produced the results}';
+        {--model= : the model that produced the results}
+        {--include-done : ask again about products already read with the same input}';
 
     protected $description = 'Run enrichment steps from the command line.';
 
@@ -96,7 +97,7 @@ final class EnrichmentCommand extends Command
             $type,
             $vocabulary?->id,
             (int) $this->option('tier'),
-            $type === TaskType::FactReview ? ['subject' => (string) $this->option('subject')] : [],
+            ($type === TaskType::FactReview ? ['subject' => (string) $this->option('subject')] : []) + ($this->option('include-done') ? ['include_done' => true] : []),
             $this->option('limit') !== null ? (int) $this->option('limit') : null,
         );
 

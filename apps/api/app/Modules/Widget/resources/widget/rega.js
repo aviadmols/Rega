@@ -476,7 +476,7 @@
     if (url) {
       link.href = url;
     }
-    link.addEventListener('click', function () { track('click', section, 'panel'); });
+    link.addEventListener('click', function () { track('click', section, 'panel', { product_id: String(product.id) }); });
 
     var image = safeUrl(data && data.images && data.images[0] ? data.images[0].thumbnail : product.image);
     if (image) {
@@ -515,7 +515,7 @@
       if (url) {
         choose.href = url;
       }
-      choose.addEventListener('click', function () { track('click', section, 'panel'); });
+      choose.addEventListener('click', function () { track('click', section, 'panel', { product_id: String(product.id) }); });
       return choose;
     }
 
@@ -578,7 +578,7 @@
         link.appendChild(img);
       }
       link.appendChild(el('span', null, guide.title));
-      link.addEventListener('click', function () { track('click', section, 'panel'); });
+      link.addEventListener('click', function () { track('click', section, 'panel', guide.id ? { content_id: String(guide.id) } : null); });
       item.appendChild(link);
       list.appendChild(item);
     });
@@ -599,7 +599,7 @@
     if (beforeUrl) {
       var link = el('a', null, previous.title);
       link.href = beforeUrl;
-      link.addEventListener('click', function () { track('click', section, 'panel'); });
+      link.addEventListener('click', function () { track('click', section, 'panel', { product_id: String(previous.id) }); });
       beforeHead.appendChild(link);
     } else {
       beforeHead.textContent = previous.title;

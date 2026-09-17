@@ -3,6 +3,7 @@
     "enabled": true,
     "requires": [
         "Tenancy",
+        "Runs",
         "Connections",
         "Catalog",
         "Admin"
@@ -14,6 +15,9 @@
     "settings": [
         { "name": "attribution_days", "type": "int", "default": 7, "min": 1, "max": 30, "scope": "shop", "unit": "days" },
         { "name": "beacons_per_minute", "type": "int", "default": 120, "min": 10, "max": 2000, "scope": "global", "unit": "requests" },
-        { "name": "retention_days", "type": "int", "default": 400, "min": 30, "max": 3650, "scope": "global", "unit": "days" }
+        { "name": "retention_days", "type": "int", "default": 400, "min": 30, "max": 3650, "scope": "global", "unit": "days" },
+        { "name": "score_window_days", "type": "int", "default": 30, "min": 7, "max": 180, "scope": "shop", "unit": "days" },
+        { "name": "score_prior_exposures", "type": "int", "default": 20, "min": 1, "max": 500, "scope": "shop", "unit": "exposures" },
+        { "name": "drop_related_after_opens", "type": "int", "default": 40, "min": 10, "max": 5000, "scope": "shop", "unit": "opens" }
     ]
 }

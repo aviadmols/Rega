@@ -4,6 +4,7 @@ namespace App\Modules\Analytics;
 
 use App\Core\Facades\Settings;
 use App\Core\Modules\ModuleServiceProvider;
+use App\Modules\Analytics\Console\ComputeScoresCommand;
 use App\Modules\Analytics\Models\AnalyticsEvent;
 use App\Modules\Analytics\Support\BeaconSchema;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -28,6 +29,20 @@ final class AnalyticsServiceProvider extends ModuleServiceProvider
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             $schedule->command('model:prune', ['--model' => [AnalyticsEvent::class]])->dailyAt('03:45')->name('analytics:prune');
+
+            // What worked yesterday reorders the widget today, after the night's catalog read.
+            $schedule->command('analytics:scores')
+                ->dailyAt('04:15')
+                ->timezone('Asia/Jerusalem')
+                ->name('analytics:scores-daily')
+                ->onOneServer();
         });
+    }
+
+    protected function moduleCommands(): array
+    {
+        return [
+            ComputeScoresCommand::class,
+        ];
     }
 }

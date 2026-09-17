@@ -11,6 +11,7 @@ use App\Modules\Enrichment\Actions\ComputeProductRelations;
 use App\Modules\Enrichment\Actions\ImportRelationRules;
 use App\Modules\Enrichment\Actions\ImportVocabulary;
 use App\Modules\Enrichment\Actions\ReadProductsInCode;
+use App\Modules\Enrichment\Models\EnrichmentContentProduct;
 use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
@@ -105,6 +106,46 @@ final class WidgetCirclesTest extends TestCase
         $this->assertSame(['פרגולה', 'גדר'], $sections['good_for']['uses']);
         $this->assertSame('טוב ל: פרגולה · גדר', $sections['good_for']['chip']);
         $this->assertSame('https://store.test/pergola/', $sections['good_for']['guides'][0]['url'], 'an article a checker approved for the same job');
+    }
+
+    public function test_a_pine_shelf_gets_shelf_supports_and_wall_fixings_and_no_pergola(): void
+    {
+        $fasteners = app(ImportVocabulary::class)->handle($this->shop->id, ImportVocabulary::template('fasteners'), 'test')['vocabulary'];
+
+        $wood = $this->category('2212', 'עצים');
+        $shelves = $this->category('2676', 'מדפים', '2212', ['עצים', 'מדפים']);
+        $supports = $this->category('2834', 'זוויות ותומכי מדף');
+        $postBases = $this->category('2415', 'בסיסים לעמודים');
+        $screws = $this->category('1848', 'ברגים ודיבלים');
+
+        $shelf = $this->product('19949', 'מדף מעץ אורן בעובי 18 מ"מ', 'x', [$wood, $shelves]);
+        $this->product('30001', 'זווית תמיכה למדף 20 ס"מ', 'x', [$supports]);
+        $this->product('30004', 'תומך מדף כבד 25 ס"מ', 'x', [$supports]);
+        $this->product('30002', 'בסיס לעמוד פרגולה 9X9', 'x', [$postBases]);
+        $anchor = $this->product('30003', 'דיבל ניילון 8 מ"מ לקיר', 'x', [$screws]);
+        $this->approvedFact(['product_id' => $anchor->id, 'vocabulary_id' => $fasteners->id, 'kind' => 'type', 'key' => 'type', 'value_text' => 'anchor']);
+
+        // An article the old matcher tied to the shelf because both say pine, and one about shelves.
+        $pergola = $this->article('901', 'איך בונים פרגולה מעץ אורן', 'x');
+        $shelving = $this->article('902', 'איך תולים מדף על קיר', 'x');
+        $this->inShop(fn () => EnrichmentContentProduct::query()->create([
+            'shop_id' => $this->shop->id, 'content_id' => $pergola->id, 'product_id' => $shelf->id,
+            'rank' => 1, 'score' => 9, 'reasons' => [], 'computed_at' => now(),
+        ]));
+        $this->approvedFact(['content_id' => $pergola->id, 'kind' => 'use', 'key' => 'use', 'value_text' => 'pergola']);
+        $this->approvedFact(['content_id' => $shelving->id, 'kind' => 'use', 'key' => 'use', 'value_text' => 'shelving']);
+
+        app(ReadProductsInCode::class)->handle($this->shop->id);
+        $this->approvedFact(['product_id' => $shelf->id, 'vocabulary_id' => $this->wood->id, 'kind' => 'use', 'key' => 'use', 'value_text' => 'shelving']);
+        $this->runPipeline(readInCode: false);
+
+        $sections = collect($this->page('19949')['sections'])->keyBy('candidate');
+
+        $complement = $sections['complement']['products'];
+        $this->assertEqualsCanonicalizing(['30001', '30003', '30004'], array_column($complement, 'id'), 'supports and a wall anchor, no post base');
+        $this->assertSame('30003', $complement[1]['id'], 'the anchor before a second support');
+        $this->assertSame('דיבלים וברגים לתלייה בקיר', $complement[1]['reason']);
+        $this->assertSame(['902'], array_column($sections['good_for']['guides'], 'id'), 'the pergola article is left out');
     }
 
     private function runPipeline(bool $readInCode = true): void

@@ -5,6 +5,7 @@ namespace App\Modules\Widget\Actions;
 use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Analytics\Models\AnalyticsScore;
 use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Enums\FactKind;
@@ -62,6 +63,8 @@ final class BuildPageBank
 
     private const MAX_FAMILY = 8;
 
+    private const SPARE_PRODUCTS = 4;
+
     private const MIN_LEVEL_SET = 3;
 
     /** A product in the best quarter of its set gets "among the highest". */
@@ -104,15 +107,17 @@ final class BuildPageBank
         }
 
         $maxProducts = (int) Settings::get('widget.max_products', $shopId);
+        // Sections carry spares, so a product dropped for never being clicked has a replacement.
+        $pool = $maxProducts + self::SPARE_PRODUCTS;
 
         [$sections, $version, $compare] = $this->tenant->run($shopId, fn (): array => $type === 'product'
-            ? $this->productSections($externalId, $maxProducts)
-            : [...$this->contentSections($externalId, $maxProducts), null]);
+            ? $this->productSections($externalId, $pool)
+            : [...$this->contentSections($externalId, $pool), null]);
 
         $bank['enabled'] = true;
-        $bank['sections'] = $sections;
+        $bank['sections'] = $this->tenant->run($shopId, fn (): array => $this->learned($shopId, $type, $externalId, $sections, $maxProducts));
         $bank['bank_version'] = max(1, $version);
-        $bank['teaser'] = $sections === [] ? null : $this->teaser($sections[0]);
+        $bank['teaser'] = $bank['sections'] === [] ? null : $this->teaser($bank['sections'][0]);
         $bank['compare'] = $compare;
 
         return $bank;
@@ -187,7 +192,7 @@ final class BuildPageBank
         $version = max($version, (int) collect($relations->flatten())->max(fn (EnrichmentProductRelation $r): int => (int) $r->computed_at->timestamp));
         $ruleLabels = $this->ruleLabels();
 
-        $complements = $relations->get(RelationKind::Complement->value, collect())->take($maxProducts);
+        $complements = self::varied($relations->get(RelationKind::Complement->value, collect()), $maxProducts);
         if ($complements->isNotEmpty()) {
             $sections[] = $this->section('complement', ['products' => $this->cards(
                 $complements->map(fn (EnrichmentProductRelation $r): CatalogProduct => $r->related),
@@ -350,6 +355,94 @@ final class BuildPageBank
     }
 
     /**
+     * What worked, applied. Scores come from the Analytics module's nightly run.
+     *
+     * - Products inside a section: the ones clicked, added or bought from it on this page first.
+     *   Once the section was opened enough times here, the products it showed and nobody clicked
+     *   are dropped and the spares behind them move up. A section left with nothing is dropped.
+     *   Family (other sizes) is reordered, never dropped.
+     * - Sections: in order of their score on this page, or across the shop while the page has none.
+     *   A section nobody has seen yet gets the best known score, so it gets seen.
+     *
+     * Without scores the built order stands.
+     *
+     * @param  list<array<string, mixed>>  $sections
+     * @return list<array<string, mixed>>
+     */
+    private function learned(string $shopId, string $type, string $externalId, array $sections, int $maxProducts): array
+    {
+        $scores = $sections === [] ? collect() : AnalyticsScore::query()
+            ->where(fn ($q) => $q->where('scope', AnalyticsScore::SCOPE_MODULE)
+                ->orWhere(fn ($q) => $q->where('page_type', $type)->where('page_external_id', $externalId)))
+            ->get();
+
+        $module = $scores->where('scope', AnalyticsScore::SCOPE_MODULE)->keyBy('candidate');
+        $page = $scores->where('scope', AnalyticsScore::SCOPE_PAGE)->keyBy('candidate');
+        $related = $scores->where('scope', AnalyticsScore::SCOPE_RELATED)->groupBy('candidate')
+            ->map(fn (Collection $rows): array => $rows->mapWithKeys(fn (AnalyticsScore $s): array => [$s->related_external_id => (float) $s->score])->all());
+        $dropAfter = (int) Settings::get('analytics.drop_related_after_opens', $shopId);
+
+        foreach ($sections as $i => $section) {
+            if (! isset($section['products'])) {
+                continue;
+            }
+
+            $candidate = (string) $section['candidate'];
+            $worked = $related->get($candidate, []);
+            $products = $section['products'];
+
+            if ($candidate !== 'family' && (int) ($page->get($candidate)?->opens ?? 0) >= $dropAfter) {
+                $shown = array_column(array_slice($products, 0, $maxProducts), 'id');
+                $products = array_filter($products, fn (array $p): bool => isset($worked[(string) $p['id']]) || ! in_array($p['id'], $shown, true));
+            }
+
+            $products = self::workedFirst($products, $worked);
+            $sections[$i]['products'] = $candidate === 'family' ? $products : array_slice($products, 0, $maxProducts);
+        }
+
+        // Guides: the ones read from this section first.
+        foreach ($sections as $i => $section) {
+            if (! empty($section['guides'])) {
+                $sections[$i]['guides'] = self::workedFirst($section['guides'], $related->get((string) $section['candidate'], []));
+            }
+        }
+
+        $sections = array_values(array_filter($sections, fn (array $s): bool => ! isset($s['products']) || $s['products'] !== []));
+
+        if ($scores->isEmpty()) {
+            return $sections;
+        }
+
+        $known = $module->pluck('score')->map(fn ($s): float => (float) $s)->filter(fn (float $s): bool => $s > 0);
+        $explore = $known->isEmpty() ? 0.0 : (float) $known->max();
+
+        $rank = fn (array $section): float => (float) ($page->get($section['candidate'])?->score
+            ?? $module->get($section['candidate'])?->score
+            ?? $explore);
+
+        $order = array_keys($sections);
+        usort($order, fn (int $a, int $b): int => [$rank($sections[$b]), $a] <=> [$rank($sections[$a]), $b]);
+
+        return array_map(fn (int $i): array => $sections[$i], $order);
+    }
+
+    /**
+     * Items by their related score, highest first; items without one keep their built order after.
+     *
+     * @param  array<int, array<string, mixed>>  $items  each with an id
+     * @param  array<string, float>  $worked  item id => related score
+     * @return list<array<string, mixed>>
+     */
+    private static function workedFirst(array $items, array $worked): array
+    {
+        $items = array_values($items);
+        $positions = array_keys($items);
+        usort($positions, fn (int $a, int $b): int => [$worked[(string) $items[$b]['id']] ?? 0.0, $a] <=> [$worked[(string) $items[$a]['id']] ?? 0.0, $b]);
+
+        return array_map(fn (int $p): array => $items[$p], $positions);
+    }
+
+    /**
      * @param  Collection<int, CatalogProduct>  $products
      * @param  Collection<string, string>|null  $reasons  product id => sentence
      * @return list<array<string, mixed>>
@@ -391,7 +484,10 @@ final class BuildPageBank
     private function relationReason(EnrichmentProductRelation $relation, array $ruleLabels): ?string
     {
         $reasons = $relation->reasons;
-        $label = $ruleLabels[$relation->source][$this->locale] ?? null;
+        // A merchant link a rule also found says what the rule says.
+        $label = collect([$relation->source, ...($reasons['also'] ?? [])])
+            ->map(fn (string $source): ?string => $ruleLabels[$source][$this->locale] ?? null)
+            ->first(fn (?string $label): bool => $label !== null);
 
         if ($label === null) {
             return null;
@@ -403,6 +499,53 @@ final class BuildPageBank
         ]);
 
         return implode(' · ', [$label, ...$details]);
+    }
+
+    /**
+     * Products bought with this one, one of each kind in turn: a shelf shows a support and a wall
+     * fixing before a second support, a lamp a battery and a charger. The kind is the rule that
+     * found the product; a merchant link no rule found takes the rule of a product in its deepest
+     * store category, or that category. Kinds are taken in the order of their best score.
+     *
+     * @param  Collection<int, EnrichmentProductRelation>  $relations  best score first
+     * @return Collection<int, EnrichmentProductRelation>
+     */
+    private static function varied(Collection $relations, int $limit): Collection
+    {
+        $category = fn (EnrichmentProductRelation $r): string => (string) (collect((array) ($r->related->payload['categories'] ?? []))
+            ->sortByDesc(fn ($c): int => count((array) ($c['path'] ?? [])))
+            ->first()['id'] ?? '');
+        $rule = fn (EnrichmentProductRelation $r): ?string => $r->reasons['rule'] ?? collect((array) ($r->reasons['also'] ?? []))
+            ->first(fn ($source): bool => ! str_starts_with((string) $source, 'merchant'));
+
+        $ruleOfCategory = [];
+        foreach ($relations as $relation) {
+            if (($key = $rule($relation)) !== null) {
+                $ruleOfCategory[$category($relation)] ??= $key;
+            }
+        }
+
+        $groups = $relations
+            ->groupBy(fn (EnrichmentProductRelation $r): string => $rule($r) ?? $ruleOfCategory[$category($r)] ?? 'category:'.$category($r))
+            ->map(fn (Collection $group): array => $group->values()->all())
+            ->values()
+            ->all();
+
+        $varied = [];
+        for ($round = 0; count($varied) < $limit && $groups !== []; $round++) {
+            foreach ($groups as $g => $group) {
+                if (! isset($group[$round])) {
+                    unset($groups[$g]);
+
+                    continue;
+                }
+                if (count($varied) < $limit) {
+                    $varied[] = $group[$round];
+                }
+            }
+        }
+
+        return collect($varied);
     }
 
     /** @return array<string, array<string, string>> rule key => labels */
@@ -427,9 +570,26 @@ final class BuildPageBank
             ->whereHas('content', fn ($q) => $q->whereNull('removed_at'))
             ->orderByDesc('score')
             ->orderBy('rank')
-            ->limit(self::MAX_GUIDES)
+            ->limit(self::MAX_GUIDES * 3)
             ->get()
             ->map(fn (EnrichmentContentProduct $g): CatalogContent => $g->content);
+
+        // When the product's jobs are known, an article a checker tied to other jobs is left out: a
+        // shelf gets no pergola guide because both mention pine.
+        if ($uses !== [] && $matched->isNotEmpty()) {
+            $articleUses = EnrichmentFact::query()
+                ->whereIn('content_id', $matched->pluck('id'))
+                ->where('kind', FactKind::Use)
+                ->where('status', FactStatus::Approved)
+                ->get(['content_id', 'value_text'])
+                ->groupBy('content_id')
+                ->map(fn (Collection $facts): array => $facts->pluck('value_text')->all());
+
+            $matched = $matched
+                ->reject(fn (CatalogContent $c): bool => $articleUses->has($c->id) && array_intersect($articleUses->get($c->id), $uses) === [])
+                ->sortByDesc(fn (CatalogContent $c): int => $articleUses->has($c->id) ? 1 : 0)
+                ->values();
+        }
 
         if ($uses !== [] && $matched->count() < self::MAX_GUIDES) {
             $forJobs = EnrichmentFact::query()

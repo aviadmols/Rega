@@ -10,6 +10,7 @@ return [
         'keys' => 'מפתחות',
         'requests' => 'בקשות',
         'exposures' => 'חשיפות',
+        'opens' => 'פתיחות',
         'tokens' => 'טוקנים',
         'usd' => 'דולר',
         'messages' => 'הודעות',

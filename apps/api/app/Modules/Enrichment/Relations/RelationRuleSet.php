@@ -18,7 +18,8 @@ namespace App\Modules\Enrichment\Relations;
  *   }]}
  *
  * A side matches a product when every condition it names holds: vocabulary, types (any of),
- * types_not (none of), choices (each key equals one of the values), uses_any (shares a job). `match` adds conditions
+ * types_not (none of), choices (each key equals one of the values), uses_any (shares a job),
+ * categories (in any of these store categories, for branches with no vocabulary yet). `match` adds conditions
  * between the two products: the same brand, equal specs (within 2%), specs_if_known (equal when
  * both products state them), a shared job.
  */
@@ -28,7 +29,7 @@ final class RelationRuleSet
 
     public const KINDS = ['complement', 'alternative'];
 
-    private const SIDE_KEYS = ['vocabulary', 'types', 'types_not', 'choices', 'uses_any'];
+    private const SIDE_KEYS = ['vocabulary', 'types', 'types_not', 'choices', 'uses_any', 'categories'];
 
     /** @param array<string, mixed> $data */
     private function __construct(private readonly array $data) {}
@@ -161,6 +162,10 @@ final class RelationRuleSet
         }
 
         if (isset($side['uses_any']) && array_intersect((array) $side['uses_any'], (array) ($profile['uses'] ?? [])) === []) {
+            return false;
+        }
+
+        if (isset($side['categories']) && array_intersect(array_map('strval', (array) $side['categories']), (array) ($profile['categories'] ?? [])) === []) {
             return false;
         }
 

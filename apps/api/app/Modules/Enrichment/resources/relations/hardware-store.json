@@ -3,90 +3,388 @@
     "rules": [
         {
             "key": "battery_for_cordless_tool",
-            "label": { "he": "סוללה מתאימה", "en": "Matching battery" },
+            "label": {
+                "he": "סוללה מתאימה",
+                "en": "Matching battery"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "power_tools", "choices": { "power_source": "cordless" }, "types_not": ["battery", "charger"] },
-            "to": { "vocabulary": "power_tools", "types": ["battery"] },
-            "match": { "brand": true, "specs": ["voltage_v"] },
-            "boost": { "from_choices": { "kit": "body_only" } },
+            "from": {
+                "vocabulary": "power_tools",
+                "choices": {
+                    "power_source": "cordless"
+                },
+                "types_not": [
+                    "battery",
+                    "charger"
+                ]
+            },
+            "to": {
+                "vocabulary": "power_tools",
+                "types": [
+                    "battery"
+                ]
+            },
+            "match": {
+                "brand": true,
+                "specs": [
+                    "voltage_v"
+                ]
+            },
+            "boost": {
+                "from_choices": {
+                    "kit": "body_only"
+                }
+            },
             "limit": 3
         },
         {
             "key": "charger_for_cordless_tool",
-            "label": { "he": "מטען מתאים", "en": "Matching charger" },
+            "label": {
+                "he": "מטען מתאים",
+                "en": "Matching charger"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "power_tools", "choices": { "kit": "body_only" }, "types_not": ["battery", "charger"] },
-            "to": { "vocabulary": "power_tools", "types": ["charger"] },
-            "match": { "brand": true, "specs_if_known": ["voltage_v"] },
+            "from": {
+                "vocabulary": "power_tools",
+                "choices": {
+                    "kit": "body_only"
+                },
+                "types_not": [
+                    "battery",
+                    "charger"
+                ]
+            },
+            "to": {
+                "vocabulary": "power_tools",
+                "types": [
+                    "charger"
+                ]
+            },
+            "match": {
+                "brand": true,
+                "specs_if_known": [
+                    "voltage_v"
+                ]
+            },
             "limit": 2
         },
         {
             "key": "tools_for_battery",
-            "label": { "he": "כלים שעובדים עם הסוללה", "en": "Tools that take this battery" },
+            "label": {
+                "he": "כלים שעובדים עם הסוללה",
+                "en": "Tools that take this battery"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "power_tools", "types": ["battery"] },
-            "to": { "vocabulary": "power_tools", "choices": { "power_source": "cordless", "kit": "body_only" }, "types_not": ["battery", "charger"] },
-            "match": { "brand": true, "specs": ["voltage_v"] },
+            "from": {
+                "vocabulary": "power_tools",
+                "types": [
+                    "battery"
+                ]
+            },
+            "to": {
+                "vocabulary": "power_tools",
+                "choices": {
+                    "power_source": "cordless",
+                    "kit": "body_only"
+                },
+                "types_not": [
+                    "battery",
+                    "charger"
+                ]
+            },
+            "match": {
+                "brand": true,
+                "specs": [
+                    "voltage_v"
+                ]
+            },
             "limit": 4
         },
         {
             "key": "care_for_outdoor_wood",
-            "label": { "he": "שמן והגנה לעץ בחוץ", "en": "Oil and protection for outdoor wood" },
+            "label": {
+                "he": "שמן והגנה לעץ בחוץ",
+                "en": "Oil and protection for outdoor wood"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "wood", "uses_any": ["deck", "pergola", "fence", "outdoor_cladding", "garden_furniture", "shading"] },
-            "to": { "vocabulary": "care_and_cleaning", "types": ["deck_oil", "wood_cleaner_stripper"] },
-            "match": { "uses": true },
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "deck",
+                    "pergola",
+                    "fence",
+                    "outdoor_cladding",
+                    "garden_furniture",
+                    "shading"
+                ]
+            },
+            "to": {
+                "vocabulary": "care_and_cleaning",
+                "types": [
+                    "deck_oil",
+                    "wood_cleaner_stripper"
+                ]
+            },
+            "match": {
+                "uses": true
+            },
             "limit": 3
         },
         {
             "key": "care_for_indoor_wood",
-            "label": { "he": "גימור לעץ בבית", "en": "Finish for indoor wood" },
+            "label": {
+                "he": "גימור לעץ בבית",
+                "en": "Finish for indoor wood"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "wood", "uses_any": ["furniture", "shelving", "stairs", "indoor_cladding"] },
-            "to": { "vocabulary": "care_and_cleaning", "types": ["furniture_oil", "wood_wax", "varnish", "wood_primer"] },
-            "match": { "uses": true },
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "furniture",
+                    "shelving",
+                    "stairs",
+                    "indoor_cladding"
+                ]
+            },
+            "to": {
+                "vocabulary": "care_and_cleaning",
+                "types": [
+                    "furniture_oil",
+                    "wood_wax",
+                    "varnish",
+                    "wood_primer"
+                ]
+            },
+            "match": {
+                "uses": true
+            },
             "limit": 3
         },
         {
             "key": "fasteners_for_deck",
-            "label": { "he": "ברגים ומחברים לדק", "en": "Deck screws and fasteners" },
+            "label": {
+                "he": "ברגים ומחברים לדק",
+                "en": "Deck screws and fasteners"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "wood", "uses_any": ["deck"] },
-            "to": { "vocabulary": "fasteners", "types": ["deck_screw", "hidden_deck_clip"] },
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "deck"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "deck_screw",
+                    "hidden_deck_clip"
+                ]
+            },
             "limit": 3
         },
         {
             "key": "fasteners_for_wood_builds",
-            "label": { "he": "ברגים וחיבורים לבנייה בעץ", "en": "Screws and anchors for wood builds" },
+            "label": {
+                "he": "ברגים וחיבורים לבנייה בעץ",
+                "en": "Screws and anchors for wood builds"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "wood", "uses_any": ["pergola", "fence", "furniture", "shelving", "construction"] },
-            "to": { "vocabulary": "fasteners", "types": ["wood_screw", "pocket_screw", "concrete_bolt", "strap", "anchor"] },
-            "match": { "uses": true },
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "pergola",
+                    "fence",
+                    "furniture",
+                    "shelving",
+                    "construction"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "wood_screw",
+                    "pocket_screw",
+                    "concrete_bolt",
+                    "strap",
+                    "anchor"
+                ]
+            },
+            "match": {
+                "uses": true
+            },
             "limit": 3
         },
         {
             "key": "wood_for_care_product",
-            "label": { "he": "עצים שמתאימים לטיפול הזה", "en": "Wood this product is for" },
+            "label": {
+                "he": "עצים שמתאימים לטיפול הזה",
+                "en": "Wood this product is for"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "care_and_cleaning", "types": ["deck_oil"] },
-            "to": { "vocabulary": "wood", "types": ["decking_board"] },
-            "match": { "uses": true },
+            "from": {
+                "vocabulary": "care_and_cleaning",
+                "types": [
+                    "deck_oil"
+                ]
+            },
+            "to": {
+                "vocabulary": "wood",
+                "types": [
+                    "decking_board"
+                ]
+            },
+            "match": {
+                "uses": true
+            },
             "limit": 3
         },
         {
             "key": "bits_for_drills",
-            "label": { "he": "מקדחים מתאימים", "en": "Matching drill bits" },
+            "label": {
+                "he": "מקדחים מתאימים",
+                "en": "Matching drill bits"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "power_tools", "types": ["rotary_hammer", "hammer_drill"] },
-            "to": { "vocabulary": "fasteners", "types": ["drill_bit"] },
+            "from": {
+                "vocabulary": "power_tools",
+                "types": [
+                    "rotary_hammer",
+                    "hammer_drill"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "drill_bit"
+                ]
+            },
             "limit": 2
         },
         {
             "key": "anchors_for_drills",
-            "label": { "he": "דיבלים וברגים לקידוח בקיר", "en": "Anchors for drilling in walls" },
+            "label": {
+                "he": "דיבלים וברגים לקידוח בקיר",
+                "en": "Anchors for drilling in walls"
+            },
             "kind": "complement",
-            "from": { "vocabulary": "power_tools", "types": ["rotary_hammer", "hammer_drill"] },
-            "to": { "vocabulary": "fasteners", "types": ["anchor"] },
+            "from": {
+                "vocabulary": "power_tools",
+                "types": [
+                    "rotary_hammer",
+                    "hammer_drill"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "anchor"
+                ]
+            },
+            "limit": 2
+        },
+        {
+            "key": "supports_for_shelves",
+            "label": {
+                "he": "תומכי מדף",
+                "en": "Shelf supports"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "types": [
+                    "shelf"
+                ]
+            },
+            "to": {
+                "categories": [
+                    "2834"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "wall_fixings_for_shelves",
+            "label": {
+                "he": "דיבלים וברגים לתלייה בקיר",
+                "en": "Wall anchors and screws"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "types": [
+                    "shelf"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "anchor",
+                    "wood_screw"
+                ]
+            },
+            "limit": 2
+        },
+        {
+            "key": "shelves_for_supports",
+            "label": {
+                "he": "מדפים שמתאימים",
+                "en": "Shelves for these supports"
+            },
+            "kind": "complement",
+            "from": {
+                "categories": [
+                    "2834"
+                ]
+            },
+            "to": {
+                "vocabulary": "wood",
+                "types": [
+                    "shelf"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "post_bases_for_outdoor_builds",
+            "label": {
+                "he": "תושבות לעמודים",
+                "en": "Post bases and brackets"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "pergola",
+                    "fence"
+                ]
+            },
+            "to": {
+                "categories": [
+                    "2415"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "brackets_for_wood_joints",
+            "label": {
+                "he": "זוויות לחיבור עץ",
+                "en": "Wood connectors"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "furniture",
+                    "construction",
+                    "pergola"
+                ]
+            },
+            "to": {
+                "categories": [
+                    "2414"
+                ]
+            },
             "limit": 2
         }
     ]

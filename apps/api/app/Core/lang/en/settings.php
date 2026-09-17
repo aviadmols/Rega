@@ -10,6 +10,7 @@ return [
         'keys' => 'keys',
         'requests' => 'requests',
         'exposures' => 'exposures',
+        'opens' => 'opens',
         'tokens' => 'tokens',
         'usd' => 'USD',
         'messages' => 'messages',

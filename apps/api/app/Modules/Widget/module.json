@@ -6,6 +6,7 @@
         "Connections",
         "Catalog",
         "Enrichment",
+        "Analytics",
         "Admin"
     ],
     "provider": "WidgetServiceProvider",
