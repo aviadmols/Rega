@@ -3,7 +3,7 @@
 return [
     'connected' => 'מחובר. התוסף בגרסה :version, :products מוצרים מפורסמים.',
     'failures' => [
-        'invalid_token' => 'הטוקן נדחה (HTTP :status). צרו טוקן חדש ב־WooCommerce > Rega והדביקו אותו כאן.',
+        'invalid_token' => 'הטוקן נדחה (HTTP :status). צרו טוקן חדש בתוסף, בתפריט WooCommerce תחת Rega, והדביקו אותו כאן.',
         'locked_out' => 'האתר חוסם זמנית בגלל ניסיונות כושלים (HTTP :status). נסו שוב בעוד עשר דקות.',
         'plugin_missing' => 'לא נמצא תוסף Rega באתר (HTTP :status). ודאו שהתוסף מותקן ופעיל ושהכתובת נכונה.',
         'woocommerce_inactive' => 'התוסף מותקן אבל WooCommerce לא פעיל באתר.',

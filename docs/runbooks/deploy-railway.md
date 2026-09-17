@@ -6,13 +6,19 @@
 
 | שירות | מקור | הגדרות עיקריות |
 |---|---|---|
-| api | GitHub `aviadmols/Rega`, ענף `main` | Root directory `apps/api`, watch path `/apps/api/**`, healthcheck `/up` עם 300 שניות, הפעלה מחדש בכישלון עד 5 פעמים, דומיין ציבורי על פורט 8080 |
-| worker | אותו repo | Root directory `apps/api`, watch path `/apps/api/**`, הפעלה מחדש תמיד |
-| scheduler | אותו repo | Root directory `apps/api`, watch path `/apps/api/**`, הפעלה מחדש תמיד |
+| api | GitHub `aviadmols/Rega`, ענף `main` | Root directory `/`, Dockerfile `apps/api/Dockerfile`, watch paths `/apps/api/**` ו־`/plugins/woocommerce/**`, healthcheck `/up` עם 300 שניות, הפעלה מחדש בכישלון עד 5 פעמים, דומיין ציבורי על פורט 8080 |
+| worker | אותו repo | אותן הגדרות בנייה, הפעלה מחדש תמיד |
+| scheduler | אותו repo | אותן הגדרות בנייה, הפעלה מחדש תמיד |
 | Postgres | image `pgvector/pgvector:pg17` | volume ב־`/var/lib/postgresql/data`, `PGDATA` בתת־תיקייה, בלי דומיין ציבורי |
 | Redis | image `redis:7-alpine` | עם סיסמה, בלי volume ובלי דומיין ציבורי |
 
-שלושת שירותי האפליקציה בונים את אותו `apps/api/Dockerfile`. התפקיד נקבע במשתנה `APP_ROLE`: `web`, `worker` או `scheduler`.
+שלושת שירותי האפליקציה בונים את אותו `apps/api/Dockerfile`, מתיקיית השורש של הריפו. הבנייה מתחילה בשורש כדי שה־image יבנה גם את קובץ ה־zip של התוסף מתוך `plugins/woocommerce`, ויגיש אותו להורדה במסך "התוסף לחנויות". התפקיד נקבע במשתנה `APP_ROLE`: `web`, `worker` או `scheduler`.
+
+בנייה מקומית של אותו image:
+
+```sh
+docker build -f apps/api/Dockerfile .
+```
 
 **למה בלי קובצי הגדרות בריפו.** Railway הוציא משימוש את `railway.json`, והמחליף שלו, `.railway/railway.ts`, מופעל רק בפקודה `railway config apply` ולא ב־push. שירות לא יכול להיות מנוהל גם כקוד וגם דרך הממשק. לכן ההגדרות מנוהלות בממשק של Railway או ב־API, ומתועדות כאן.
 
@@ -90,7 +96,13 @@ BOOTSTRAP_OPERATOR_LOCALE=he
 
 ## פריסה שוטפת
 
-push ל־`main` שמשנה משהו תחת `apps/api` בונה ופורס את שלושת שירותי האפליקציה. שינויים רק בתיעוד או ב־`packages` לא מפעילים בנייה.
+1. push ל־`main`.
+2. **לחכות ש־CI יסתיים בירוק**, כולל Postgres. SQLite לבד לא מספיק: פעם אחת migration עבר ב־SQLite ונכשל ב־Postgres.
+3. לפרוס את api, worker ו־scheduler על ה־commit הזה, מהממשק של Railway או מה־API עם `serviceInstanceDeployV2`.
+
+השירותים חוברו ל־repo דרך טוקן פרויקט, ולכן push לא מפעיל פריסה אוטומטית. כדי שכל push יפרוס לבד, מחברים מחדש את ה־repo בהגדרות של כל שירות בממשק. גם אז כדאי להפעיל ב־Railway את האפשרות לחכות ל־CI.
+
+פריסה שנכשלת לא מחליפה את הגרסה הרצה: Railway ממשיך להגיש את הפריסה הקודמת עד שבדיקת `/up` עוברת.
 
 ## Cloudflare
 

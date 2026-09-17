@@ -37,7 +37,7 @@ return array(
 		'The access token is not valid.' => 'טוקן הגישה אינו תקין.',
 		'The current token will stop working immediately. Continue?' => 'הטוקן הנוכחי יפסיק לעבוד מיד. להמשיך?',
 		'The token was revoked. Rega can no longer read this store.' => 'הטוקן בוטל. Rega כבר לא יכולה לקרוא את החנות.',
-		'This content type is not shared with Rega. Allowed types: %s. Change this in WooCommerce > Rega.' => 'סוג התוכן הזה לא משותף עם Rega. סוגים מותרים: %s. אפשר לשנות זאת ב־WooCommerce > Rega.',
+		'This content type is not shared with Rega. Allowed types: %s. Change this in WooCommerce > Rega.' => 'סוג התוכן הזה לא משותף עם Rega. סוגים מותרים: %s. אפשר לשנות זאת בהגדרות Rega שבתפריט WooCommerce.',
 		'Too many failed attempts. Try again in a few minutes.' => 'יותר מדי ניסיונות כושלים. נסו שוב בעוד כמה דקות.',
 		'WooCommerce is not active on this site.' => 'WooCommerce לא פעיל באתר.',
 		'You do not have permission to manage Rega.' => 'אין לך הרשאה לנהל את Rega.',

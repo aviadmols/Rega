@@ -19,7 +19,7 @@ return [
         'site_url' => 'כתובת האתר',
         'site_url_help' => 'הכתובת הראשית של האתר, למשל https://store.co.il',
         'access_token' => 'טוקן התוסף',
-        'access_token_help' => 'ב־WordPress: WooCommerce > Rega > יצירת טוקן. מתחיל ב־rgt_.',
+        'access_token_help' => 'בניהול WordPress, בתפריט WooCommerce בוחרים Rega ולוחצים על ״יצירת טוקן״. הטוקן מתחיל ב־rgt_.',
         'access_token_keep' => 'ריק ישאיר את הטוקן הקיים.',
         'status' => 'מצב',
         'last_checked_at' => 'בדיקה אחרונה',

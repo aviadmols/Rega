@@ -71,6 +71,7 @@ final class AiProviderForm
                     ->collapsible()
                     ->schema([
                         TextEntry::make('models')
+                            ->label(__('ai::providers.sections.models'))
                             ->hiddenLabel()
                             ->state(fn (?AiProvider $record): array => array_map(
                                 fn (array $model): string => $model['name'] === $model['id'] ? $model['id'] : "{$model['name']} ({$model['id']})",

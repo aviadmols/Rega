@@ -61,6 +61,7 @@ final class StorePlugin extends Page
                 ->schema($package === null
                     ? [
                         TextEntry::make('missing')
+                            ->label(__('connections::plugin.sections.file'))
                             ->hiddenLabel()
                             ->state(__('connections::plugin.missing'))
                             ->color('danger')
@@ -74,6 +75,7 @@ final class StorePlugin extends Page
             Section::make(__('connections::plugin.sections.install'))
                 ->schema([
                     TextEntry::make('steps')
+                        ->label(__('connections::plugin.sections.install'))
                         ->hiddenLabel()
                         ->state([
                             __('connections::plugin.steps.upload'),
@@ -87,6 +89,7 @@ final class StorePlugin extends Page
             Section::make(__('connections::plugin.sections.access'))
                 ->schema([
                     TextEntry::make('access')
+                        ->label(__('connections::plugin.sections.access'))
                         ->hiddenLabel()
                         ->state([
                             __('connections::plugin.access.reads'),
