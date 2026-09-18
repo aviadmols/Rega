@@ -423,6 +423,15 @@
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
     '.ask-note{margin-top:10px;font-size:11px;color:var(--muted)}',
     '.ask-general{margin-top:4px;font-size:12px;color:var(--muted)}',
+    '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}',
+    '.contact-head{display:flex;align-items:center;gap:8px;flex:1 1 200px;min-width:0}',
+    '.contact-title{font-size:14px;line-height:1.4}',
+    '.contact-badge{flex:none;display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:rgba(17,24,39,.07);color:var(--muted);font-size:11px}',
+    '.contact-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}',
+    '.contact.is-online .contact-badge{background:#e8f6ee;color:#146c43}',
+    '.contact-button{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:999px;background:#25d366;color:#0b2e13;text-decoration:none;font-size:14px;font-weight:600}',
+    '.contact-button:hover,.contact-button:focus-visible{filter:brightness(.95)}',
+    '.contact-note{flex:1 1 100%;font-size:12px;color:var(--muted)}',
     '.browse{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
     '.browse a{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:inherit;text-decoration:none;font-size:13px}',
     '.browse a:after{content:"\\203A"}.rega[dir="rtl"] .browse a:after{content:"\\2039"}',
@@ -713,6 +722,83 @@
     return view;
   }
 
+  /** Whether the shop answers right now, by its own hours and time zone. */
+  function shopIsOnline(contact) {
+    var hours = contact.hours || [];
+    var now = new Date();
+    var day;
+    var minutes;
+
+    try {
+      var parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: contact.timezone || 'UTC', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(now);
+      var read = {};
+      parts.forEach(function (part) { read[part.type] = part.value; });
+      day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(read.weekday);
+      minutes = parseInt(read.hour, 10) * 60 + parseInt(read.minute, 10);
+    } catch (e) {
+      day = now.getDay();
+      minutes = now.getHours() * 60 + now.getMinutes();
+    }
+
+    // Sunday to Thursday share their hours; Friday and Saturday have their own.
+    var today = day === 5 ? hours[1] : (day === 6 ? hours[2] : hours[0]);
+    var match = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/.exec(String(today || '').trim());
+
+    if (!match) {
+      return false;
+    }
+
+    var from = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+    var until = parseInt(match[3], 10) * 60 + parseInt(match[4], 10);
+
+    return minutes >= from && minutes < until;
+  }
+
+  /** The strip that opens WhatsApp with this product, when the shop asked for one. */
+  function contactStrip(live) {
+    var contact = bank.contact;
+
+    if (!contact) {
+      return null;
+    }
+
+    var online = shopIsOnline(contact);
+
+    if (!online && contact.hide_when_offline) {
+      return null;
+    }
+
+    var data = live && live[PAGE_ID];
+    var heading = document.querySelector('h1');
+    var title = data ? decodeEntities(data.name) : (heading ? heading.textContent.trim().slice(0, 120) : document.title);
+    var link = safeUrl(data ? data.permalink : location.href.split('?')[0]) || location.href.split('?')[0];
+    var message = String(contact.message || '').replace(':product', title).replace(':url', link);
+
+    var strip = el('div', 'contact' + (online ? ' is-online' : ''));
+    var head = el('div', 'contact-head');
+    head.appendChild(el('span', 'contact-badge', online ? contact.online_label : contact.offline_label));
+    head.appendChild(el('span', 'contact-title', contact.title));
+    strip.appendChild(head);
+
+    var button = el('a', 'contact-button', contact.button);
+    button.href = 'https://wa.me/' + contact.number + '?text=' + encodeURIComponent(message);
+    button.target = '_blank';
+    button.rel = 'noopener';
+    var section = { candidate: 'contact', model: 'contact' };
+    button.addEventListener('click', function () {
+      track('click', section, 'teaser', PAGE_TYPE === 'product' ? { product_id: PAGE_ID } : { content_id: PAGE_ID });
+    });
+    strip.appendChild(button);
+
+    if (!online && contact.offline_note) {
+      strip.appendChild(el('div', 'contact-note', contact.offline_note));
+    }
+
+    return strip;
+  }
+
   /**
    * The question box: questions to tap (asked most about this product, then common ones), a field
    * for a free question, the answer, and what earlier shoppers asked. Loaded on first open.
@@ -961,7 +1047,7 @@
       rendered.push({ section: askSection, body: askPanel(askSection, labels) });
     }
 
-    if (rendered.length === 0) {
+    if (rendered.length === 0 && !bank.contact) {
       return;
     }
 
@@ -1099,6 +1185,11 @@
     }
     wrap.appendChild(chips);
     wrap.appendChild(panel);
+
+    var strip = contactStrip(live);
+    if (strip) {
+      wrap.appendChild(strip);
+    }
     root.appendChild(wrap);
 
     if (!place(host)) {
@@ -1111,9 +1202,14 @@
         track('exposure', rendered[quoteIndex].section, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
-    if (quoteIndex !== 0) {
+    if (quoteIndex !== 0 && rendered.length) {
       watchExposure(chips, function (ms, ratio) {
         track('exposure', rendered[0].section, quote ? 'chip_1' : 'teaser', { visible_ms: ms, ratio: ratio });
+      });
+    }
+    if (strip) {
+      watchExposure(strip, function (ms, ratio) {
+        track('exposure', { candidate: 'contact', model: 'contact' }, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
   }
@@ -1143,7 +1239,7 @@
         var sections = data.sections || [];
 
         // In preview mode real visitors only count as page views; the widget is for the team.
-        if (!showWidget || (sections.length === 0 && !previous && !data.ask)) {
+        if (!showWidget || (sections.length === 0 && !previous && !data.ask && !data.contact)) {
           rememberCurrent(null);
           return;
         }

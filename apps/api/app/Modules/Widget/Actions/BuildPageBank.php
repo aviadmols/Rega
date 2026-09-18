@@ -135,6 +135,7 @@ final class BuildPageBank
         $bank['compare'] = $compare;
         // The question box (Assistant module) on product pages, when the shop has it on.
         $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
+        $bank['contact'] = $this->contact($shopId);
 
         return $bank;
     }
@@ -953,6 +954,44 @@ final class BuildPageBank
         };
 
         return ['candidate' => $section['candidate'], 'model' => $section['model'], 'text' => $text];
+    }
+
+    /**
+     * Talking to the store on WhatsApp: the sentence the shop wrote, its hours, and the message the
+     * shopper sends, with the product filled in by the widget. Whether the shop is online now is
+     * decided in the browser, so a cached page never says "online" after closing time.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function contact(string $shopId): ?array
+    {
+        $number = preg_replace('/\D/', '', (string) Settings::get('widget.whatsapp_number', $shopId));
+
+        if (! Features::enabled('widget.whatsapp', $shopId) || mb_strlen((string) $number) < 8) {
+            return null;
+        }
+
+        $text = fn (string $name): string => trim((string) Settings::get("widget.whatsapp_{$name}", $shopId))
+            ?: (string) __("widget::bank.contact.{$name}", [], $this->locale);
+
+        return [
+            'number' => $number,
+            'title' => $text('title'),
+            'button' => $text('button'),
+            // :product and :url are filled in by the widget with the page it is on.
+            'message' => $text('message'),
+            'offline_note' => $text('offline_note'),
+            'hide_when_offline' => Settings::get('widget.whatsapp_when_offline', $shopId) === 'hide',
+            'timezone' => (string) Settings::get('widget.whatsapp_timezone', $shopId),
+            // "09:00-18:00", empty for a day the shop is closed. Sunday to Thursday, then Friday, then Saturday.
+            'hours' => [
+                (string) Settings::get('widget.whatsapp_hours', $shopId),
+                (string) Settings::get('widget.whatsapp_hours_friday', $shopId),
+                (string) Settings::get('widget.whatsapp_hours_saturday', $shopId),
+            ],
+            'online_label' => (string) __('widget::bank.contact.online', [], $this->locale),
+            'offline_label' => (string) __('widget::bank.contact.offline', [], $this->locale),
+        ];
     }
 
     /** @return array<string, string> */

@@ -344,7 +344,8 @@
         "article_products",
         "family",
         "on_sale",
-        "good_for"
+        "good_for",
+        "contact"
       ]
     },
     "slot": {

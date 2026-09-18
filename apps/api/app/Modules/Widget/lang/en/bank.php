@@ -61,6 +61,16 @@ return [
     'to_choose' => ':name to choose',
     'pack' => 'Pieces in the pack',
     'price_unit' => 'Price',
+    // What the shop can rewrite in its settings; these are the defaults.
+    'contact' => [
+        'title' => 'Want a video of this product, or to ask us about it?',
+        'button' => 'Chat on WhatsApp',
+        'message' => 'Hello, I would like to know more about :product
+:url',
+        'offline_note' => 'Outside opening hours. Write now and we will get back to you.',
+        'online' => 'Online now',
+        'offline' => 'Offline now',
+    ],
     'ui' => [
         'close' => 'Close',
         'add_to_cart' => 'Add to cart',

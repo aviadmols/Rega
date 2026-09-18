@@ -119,6 +119,33 @@ final class PageBankTest extends TestCase
         $this->assertSame('ltr', $english['dir']);
     }
 
+    public function test_the_whatsapp_strip_carries_the_shop_wording_hours_and_message(): void
+    {
+        $this->assertNull($this->page('product', '10')->json('contact'), 'off until a shop turns it on');
+
+        Features::override('widget.whatsapp', true, $this->shop->id);
+        Cache::flush();
+        $this->assertNull($this->page('product', '10')->json('contact'), 'and until it has a number');
+
+        Settings::set('widget.whatsapp_number', '+972 50-123-4567', $this->shop->id);
+        Settings::set('widget.whatsapp_title', 'רוצה שנשלח לך סרטון של המוצר?', $this->shop->id);
+        Settings::set('widget.whatsapp_hours_friday', '09:00-13:00', $this->shop->id);
+        Settings::set('widget.whatsapp_when_offline', 'hide', $this->shop->id);
+        Cache::flush();
+
+        $contact = $this->page('product', '10')->json('contact');
+
+        $this->assertSame('972501234567', $contact['number'], 'digits only, as WhatsApp links need');
+        $this->assertSame('רוצה שנשלח לך סרטון של המוצר?', $contact['title']);
+        $this->assertSame('לשיחה בוואטסאפ', $contact['button'], 'what the shop did not write comes from the default');
+        $this->assertStringContainsString(':product', $contact['message'], 'the widget fills in the product and the page');
+        $this->assertSame(['09:00-18:00', '09:00-13:00', ''], $contact['hours'], 'Sunday to Thursday, Friday, Saturday closed');
+        $this->assertSame('Asia/Jerusalem', $contact['timezone']);
+        $this->assertTrue($contact['hide_when_offline']);
+
+        $this->assertNotNull($this->page('content', '900')->json('contact'), 'articles get the strip too');
+    }
+
     public function test_an_article_gets_its_matched_products(): void
     {
         $bank = $this->page('content', '900')->assertOk()->json();

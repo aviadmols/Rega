@@ -46,4 +46,45 @@ return [
         'label' => 'Page content requests per minute, per visitor address',
         'description' => 'Beyond this, requests are refused until the minute ends.',
     ],
+    'whatsapp_number' => [
+        'label' => 'The shop WhatsApp number',
+        'description' => 'International digits only, such as 972501234567. Without a number the strip is not shown.',
+    ],
+    'whatsapp_title' => [
+        'label' => 'The sentence on the strip',
+        'description' => 'For example: Want a video of this product? Empty shows the default sentence.',
+    ],
+    'whatsapp_button' => [
+        'label' => 'The button text',
+        'description' => 'For example: Chat on WhatsApp.',
+    ],
+    'whatsapp_message' => [
+        'label' => 'The message WhatsApp opens with',
+        'description' => 'The shopper sends it to the shop. :product becomes the product name and :url the page address.',
+    ],
+    'whatsapp_offline_note' => [
+        'label' => 'The note outside opening hours',
+        'description' => 'Shown under the button when nobody is there now. Empty shows the default.',
+    ],
+    'whatsapp_hours' => [
+        'label' => 'Opening hours, Sunday to Thursday',
+        'description' => 'As 09:00-18:00. Empty closes the day.',
+    ],
+    'whatsapp_hours_friday' => [
+        'label' => 'Opening hours on Friday',
+        'description' => 'As 09:00-13:00. Empty closes the day.',
+    ],
+    'whatsapp_hours_saturday' => [
+        'label' => 'Opening hours on Saturday',
+        'description' => 'As 10:00-14:00. Empty closes the day.',
+    ],
+    'whatsapp_timezone' => [
+        'label' => 'The shop time zone',
+        'description' => 'An IANA time zone, such as Asia/Jerusalem.',
+    ],
+    'whatsapp_when_offline' => [
+        'label' => 'Outside opening hours',
+        'description' => 'Show the strip with a note, or hide it.',
+        'options' => ['show' => 'Show with a note', 'hide' => 'Hide'],
+    ],
 ];

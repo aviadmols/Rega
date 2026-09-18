@@ -61,6 +61,16 @@ return [
     'to_choose' => ':name לבחירה',
     'pack' => 'יחידות באריזה',
     'price_unit' => 'המחיר',
+    // What the shop can rewrite in its settings; these are the defaults.
+    'contact' => [
+        'title' => 'רוצה שנשלח לך סרטון וידאו של המוצר, או לשאול אותנו עליו?',
+        'button' => 'לשיחה בוואטסאפ',
+        'message' => 'שלום, אשמח לשמוע עוד על :product
+:url',
+        'offline_note' => 'מחוץ לשעות הפעילות. אפשר לכתוב עכשיו ונחזור אליכם.',
+        'online' => 'זמינים עכשיו',
+        'offline' => 'לא זמינים כרגע',
+    ],
     'ui' => [
         'close' => 'סגירה',
         'add_to_cart' => 'הוספה לסל',
