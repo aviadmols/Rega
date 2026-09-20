@@ -109,6 +109,47 @@ final class ProductRelationsTest extends TestCase
         $this->assertFalse($alternatives->pluck('related_product_id')->contains($expensive->id));
     }
 
+    public function test_products_no_vocabulary_reads_get_alternatives_from_their_category_and_complements_from_the_store_habit(): void
+    {
+        $hardware = $this->category('1747', 'מוצרי פרזול');
+        $hinges = $this->category('2412', 'צירים', '1747', ['מוצרי פרזול', 'צירים']);
+        $handles = $this->category('2416', 'ידיות', '1747', ['מוצרי פרזול', 'ידיות']);
+        $sale = $this->category('2509', 'מבצעים');
+        // Overrides replace the whole payload, so the categories come along with the links.
+        $link = fn (string ...$targets): array => ['payload' => [
+            'relations' => array_map(fn (string $t): array => ['type' => 'cross_sell', 'target' => $t], $targets),
+            'categories' => [['id' => '1747', 'name' => 'מוצרי פרזול', 'path' => ['מוצרי פרזול']], ['id' => '2412', 'name' => 'צירים', 'path' => ['מוצרי פרזול', 'צירים']]],
+        ]];
+
+        // Three hinges link to handles: the store's habit. A fourth hinge has no links and no vocabulary.
+        $h1 = $this->product('101', 'ציר ספר 3 אינץ', 'x', [$hardware, $hinges], ['price' => '20.00'] + $link('201', '202'));
+        $h2 = $this->product('102', 'ציר ספר 4 אינץ', 'x', [$hardware, $hinges], ['price' => '25.00'] + $link('201'));
+        $h3 = $this->product('103', 'ציר קפיצי', 'x', [$hardware, $hinges], ['price' => '60.00'] + $link('202'));
+        $h4 = $this->product('104', 'ציר נסתר למטבח', 'x', [$hardware, $hinges, $sale], ['price' => '22.00']);
+        $expensive = $this->product('105', 'ציר תעשייתי כבד', 'x', [$hardware, $hinges], ['price' => '300.00']);
+        $handle1 = $this->product('201', 'ידית ארון 128 מ"מ', 'x', [$hardware, $handles], ['price' => '15.00']);
+        $handle2 = $this->product('202', 'ידית דלת', 'x', [$hardware, $handles], ['price' => '80.00']);
+        $this->product('203', 'ידית מגירה', 'x', [$hardware, $handles], ['price' => '12.00']);
+
+        app(ReadProductsInCode::class)->handle($this->shop->id);
+        $run = app(ComputeProductRelations::class)->handle($this->shop->id);
+        $this->assertSame(RunStatus::Succeeded, $run->status, (string) $run->error);
+
+        $alternatives = $this->relations($h4, RelationKind::Alternative);
+        $this->assertSame([$h1->id, $h2->id], $alternatives->sortByDesc('score')->pluck('related_product_id')->all(), 'same deepest category, within the price band; "sale" is not a category of its own');
+        $this->assertSame(['same_category', 'צירים'], [$alternatives->first()->source, $alternatives->first()->reasons['category']]);
+        $this->assertFalse($alternatives->pluck('related_product_id')->contains($expensive->id));
+
+        $complements = $this->relations($h4, RelationKind::Complement);
+        $this->assertSame('category_affinity', $complements->first()->source);
+        $this->assertSame([$handle1->id, $handle2->id], $complements->sortByDesc('score')->pluck('related_product_id')->take(2)->all(), 'the most linked handles first');
+        $this->assertSame(['affinity' => ['צירים', 'ידיות'], 'links' => 3], $complements->first()->reasons);
+        $this->assertSame(1, $run->output['rules']['category_affinity']['pairs']);
+
+        $this->assertTrue($this->relations($h1, RelationKind::Complement)->every(fn (EnrichmentProductRelation $r): bool => $r->source === 'merchant'), 'a product with its own links keeps them');
+        $this->assertSame([], $this->relations($handle1, RelationKind::Complement)->where('source', 'category_affinity')->all(), 'one link from handles to hinges is not a habit');
+    }
+
     /** @return Collection<int, EnrichmentProductRelation> */
     private function relations(CatalogProduct $product, RelationKind $kind): Collection
     {

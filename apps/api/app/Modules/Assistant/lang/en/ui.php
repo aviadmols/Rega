@@ -1,0 +1,40 @@
+<?php
+
+return [
+    'questions' => [
+        'title' => 'Shopper questions',
+        'subheading' => 'Everything shoppers asked about products, by product. Unanswered questions first: an answer the team writes is what the next shopper gets, and no model replaces it.',
+        'no_shop' => 'No shop yet.',
+        'totals' => [
+            'questions' => 'Questions in 90 days',
+            'distinct' => 'Distinct questions',
+            'open' => 'Unanswered',
+            'from_team' => 'Team answers',
+            'cost' => 'Model cost',
+        ],
+        'open_heading' => 'Questions without an answer yet',
+        'open_description' => 'The product information did not answer them. An answer written here is published at once.',
+        'none_open' => 'Every question was answered.',
+        'answered_heading' => 'Answered questions',
+        'answered_description' => 'By product, the most asked products first. An answer can be edited or hidden.',
+        'none_answered' => 'No answered questions yet.',
+        'refused_heading' => 'Questions not about the product',
+        'refused_description' => 'The checking model decided they were not about the product, and the shopper was pointed elsewhere. If one of them does belong, answer it here.',
+        'none_refused' => 'None.',
+        'hidden_heading' => 'Hidden questions',
+        'asked_times' => '{1} asked once|[2,*] asked :count times',
+        'write_answer' => 'The answer for shoppers…',
+        'publish' => 'Publish answer',
+        'hide' => 'Hide',
+        'show' => 'Show again',
+        'edit' => 'Edit or hide',
+        'answer_anyway' => 'Answer anyway',
+        'answered' => 'Published. The next shopper who asks gets it.',
+        'saved' => 'Saved.',
+        'sources' => [
+            'store' => 'Written from the product information',
+            'general' => 'A general answer for products like this',
+            'team' => 'Written by the team',
+        ],
+    ],
+];

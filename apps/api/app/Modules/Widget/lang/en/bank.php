@@ -61,6 +61,9 @@ return [
     'to_choose' => ':name to choose',
     'pack' => 'Pieces in the pack',
     'price_unit' => 'Price',
+    'reasons' => [
+        'category_affinity' => 'Usually bought with :category',
+    ],
     // What the shop can rewrite in its settings; these are the defaults.
     'contact' => [
         'title' => 'Want a video of this product, or to ask us about it?',
@@ -82,6 +85,7 @@ return [
         'view_cart' => 'View cart',
         'read' => 'Read',
         'preview' => 'Preview: only the store team sees this',
+        'why_shown' => 'Why is this shown?',
         'compare_chip' => 'Compare with :title',
         'compare_title' => 'Compare with what you viewed',
         'this_product' => 'This product',

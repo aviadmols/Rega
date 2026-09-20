@@ -51,6 +51,14 @@ final class ComputeProductRelations
 
     private const SAMPLES = 25;
 
+    /** Merchant links from one category to another, from this many products, make the pair a habit of the store. */
+    private const AFFINITY_MIN_LINKS = 3;
+
+    private const AFFINITY_LIMIT = 3;
+
+    /** A product with fewer complements than this gets its category's habitual partners. */
+    private const AFFINITY_WHEN_FEWER_THAN = 2;
+
     /** @var array<string, array<string, mixed>> key "product|related|kind" => row */
     private array $rows = [];
 
@@ -114,6 +122,11 @@ final class ComputeProductRelations
             $ruleStats[$rule['key']] = $this->applyRule($rule, $profiles);
         }
 
+        // 3b. What the store itself pairs: when products of one category link to another category
+        // often enough, products of the first category without complements get the second
+        // category's most linked products. No vocabulary needed; the store's own habit.
+        $ruleStats['category_affinity'] = $this->applyCategoryAffinity($products, $profiles);
+
         // 4. Other sizes of the same product.
         $families = collect($profiles)->filter(fn (array $p): bool => $p['family'] !== null)->groupBy('family');
 
@@ -150,6 +163,31 @@ final class ComputeProductRelations
                     $this->add($profile['id'], $o['id'], RelationKind::Alternative, 'same_type', 100 - (int) round(abs(log($o['ratio'])) * 100), [
                         'type' => $profile['type'],
                         'power_source' => $profile['choices']['power_source'] ?? null,
+                        'price_ratio' => round($o['ratio'], 2),
+                    ]);
+                }
+            }
+        }
+
+        // 5b. Alternatives for products no vocabulary reads yet: the same deepest store category,
+        // similar price, not the same family. Weaker than a shared type, so it never outranks one.
+        $byLeaf = collect($profiles)
+            ->filter(fn (array $p): bool => $p['type'] === null && $p['leaf'] !== null && $p['price'] > 0)
+            ->groupBy('leaf');
+
+        foreach ($byLeaf as $group) {
+            foreach ($group as $profile) {
+                $candidates = $group
+                    ->filter(fn (array $o): bool => $o['id'] !== $profile['id'] && ($o['family'] === null || $o['family'] !== $profile['family']))
+                    ->map(fn (array $o): array => $o + ['ratio' => $o['price'] / $profile['price']])
+                    ->filter(fn (array $o): bool => $o['ratio'] >= self::PRICE_BAND[0] && $o['ratio'] <= self::PRICE_BAND[1])
+                    ->sortBy(fn (array $o): array => [abs(log($o['ratio'])), $o['external_id']])
+                    ->take(self::ALTERNATIVE_LIMIT)
+                    ->values();
+
+                foreach ($candidates as $o) {
+                    $this->add($profile['id'], $o['id'], RelationKind::Alternative, 'same_category', 80 - (int) round(abs(log($o['ratio'])) * 100), [
+                        'category' => $profile['leaf_name'],
                         'price_ratio' => round($o['ratio'], 2),
                     ]);
                 }
@@ -319,6 +357,7 @@ final class ComputeProductRelations
 
         foreach ($products as $product) {
             $reading = $readings->get($product->id);
+            $leaf = self::leaf($product);
 
             $profiles[$product->id] = [
                 'id' => $product->id,
@@ -335,6 +374,9 @@ final class ComputeProductRelations
                 'specs' => [],
                 'uses' => [],
                 'categories' => array_values(array_filter(array_map(fn ($c): string => is_array($c) ? (string) ($c['id'] ?? '') : '', (array) ($product->payload['categories'] ?? [])))),
+                // The deepest store category below the top level: what the product is, as the store files it.
+                'leaf' => $leaf['id'] ?? null,
+                'leaf_name' => $leaf['name'] ?? null,
             ];
         }
 
@@ -361,6 +403,106 @@ final class ComputeProductRelations
             });
 
         return $profiles;
+    }
+
+    /**
+     * Category pairs the store links often (cross-sells and upsells, either way), and for each
+     * product of the first category with few complements, the most linked products of the second.
+     *
+     * @param  Collection<int, CatalogProduct>  $products
+     * @param  array<string, array<string, mixed>>  $profiles
+     * @return array{pairs: int, from: int, related: int}
+     */
+    private function applyCategoryAffinity(Collection $products, array $profiles): array
+    {
+        $byExternal = $products->keyBy('external_id');
+        $pairs = [];
+        $popularity = [];
+
+        foreach ($products as $product) {
+            $from = $profiles[$product->id]['leaf'] ?? null;
+
+            foreach ($product->merchantRelations() as $relation) {
+                $target = $byExternal->get($relation['target']);
+                $to = $target === null ? null : ($profiles[$target->id]['leaf'] ?? null);
+
+                if ($from === null || $to === null || $from === $to) {
+                    continue;
+                }
+
+                $pairs[$from][$to][$product->id] = true;
+                $popularity[$target->id] = ($popularity[$target->id] ?? 0) + 1;
+            }
+        }
+
+        $complements = [];
+        foreach ($this->rows as $row) {
+            if ($row['kind'] === RelationKind::Complement->value) {
+                $complements[$row['product_id']] = ($complements[$row['product_id']] ?? 0) + 1;
+            }
+        }
+
+        $stats = ['pairs' => 0, 'from' => 0, 'related' => 0];
+        $byLeaf = collect($profiles)->filter(fn (array $p): bool => $p['leaf'] !== null)->groupBy('leaf');
+
+        foreach ($pairs as $from => $targets) {
+            foreach ($targets as $to => $linking) {
+                if (count($linking) < self::AFFINITY_MIN_LINKS) {
+                    continue;
+                }
+
+                $stats['pairs']++;
+                $partners = $byLeaf->get($to, collect())
+                    ->filter(fn (array $p): bool => $p['in_stock'])
+                    ->sortBy(fn (array $p): array => [-($popularity[$p['id']] ?? 0), $p['external_id']])
+                    ->take(self::AFFINITY_LIMIT)
+                    ->values();
+
+                foreach ($byLeaf->get($from, collect()) as $profile) {
+                    if (($complements[$profile['id']] ?? 0) >= self::AFFINITY_WHEN_FEWER_THAN || $partners->isEmpty()) {
+                        continue;
+                    }
+
+                    $stats['from']++;
+                    foreach ($partners as $i => $partner) {
+                        if ($partner['id'] === $profile['id']) {
+                            continue;
+                        }
+
+                        $stats['related']++;
+                        $this->add($profile['id'], $partner['id'], RelationKind::Complement, 'category_affinity', 70 - $i, [
+                            'affinity' => [$profile['leaf_name'], $partner['leaf_name']],
+                            'links' => count($linking),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * The product's deepest store category with a parent (a top-level one such as "sale" says
+     * nothing about what it is), as {id, name}, or null.
+     *
+     * @return array{id: string, name: string}|null
+     */
+    private static function leaf(CatalogProduct $product): ?array
+    {
+        $best = null;
+
+        foreach ((array) ($product->payload['categories'] ?? []) as $category) {
+            $path = is_array($category) ? (array) ($category['path'] ?? []) : [];
+
+            if (count($path) < 2 || ($best !== null && count($path) <= $best['depth'])) {
+                continue;
+            }
+
+            $best = ['id' => (string) ($category['id'] ?? ''), 'name' => (string) ($category['name'] ?? end($path)), 'depth' => count($path)];
+        }
+
+        return $best === null || $best['id'] === '' ? null : ['id' => $best['id'], 'name' => $best['name']];
     }
 
     /** @param array<string, mixed> $reasons */

@@ -61,6 +61,9 @@ return [
     'to_choose' => ':name לבחירה',
     'pack' => 'יחידות באריזה',
     'price_unit' => 'המחיר',
+    'reasons' => [
+        'category_affinity' => 'לרוב נקנה יחד עם :category',
+    ],
     // What the shop can rewrite in its settings; these are the defaults.
     'contact' => [
         'title' => 'רוצה שנשלח לך סרטון וידאו של המוצר, או לשאול אותנו עליו?',
@@ -82,6 +85,7 @@ return [
         'view_cart' => 'לסל',
         'read' => 'לקריאה',
         'preview' => 'תצוגה מקדימה: רק צוות החנות רואה את זה',
+        'why_shown' => 'למה זה מוצג?',
         'compare_chip' => 'השוואה ל־:title',
         'compare_title' => 'השוואה למוצר שראיתם קודם',
         'this_product' => 'המוצר הזה',

@@ -81,7 +81,8 @@ final class AnswerQuestion
             $saved = AssistantAnswer::query()->where('product_id', $product->id)->where('question_key', Question::key($question))->first();
 
             // An answer from an older prompt is asked again: the rules for what shoppers see changed.
-            if ($saved !== null && $saved->prompt_version < self::PROMPT_VERSION) {
+            // The team's own answers stay.
+            if ($saved !== null && $saved->prompt_version < self::PROMPT_VERSION && $saved->source !== 'team') {
                 $saved->delete();
                 $saved = null;
             }

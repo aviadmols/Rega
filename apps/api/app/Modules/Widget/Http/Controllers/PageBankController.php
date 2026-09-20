@@ -51,6 +51,11 @@ final class PageBankController
         $preview = $request->query('preview');
         $bank['preview'] = is_string($preview) && hash_equals($connection->previewKey(), $preview);
 
+        // The store team, in preview, gets a link to the panel page that says why each circle is there.
+        if ($bank['preview']) {
+            $bank['explain_url'] = url('operator/widget/page').'?'.http_build_query(['shop' => $shopId, 'type' => $type, 'id' => $id]);
+        }
+
         // Cross-origin reads are allowed by the app's CORS config for api/*; the data is public.
         return response()->json($bank)->header('Cache-Control', 'public, max-age='.min(60, $seconds));
     }

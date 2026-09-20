@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $question
  * @property string|null $answer
  * @property string $outcome answered, no_info or out_of_scope
+ * @property string|null $source store (the product information), general (knowledge about products like it) or team
  * @property string $status shown or hidden
  * @property int $prompt_version
  * @property string|null $model

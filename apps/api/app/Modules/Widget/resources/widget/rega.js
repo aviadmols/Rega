@@ -365,7 +365,7 @@
     ':host(.is-floating){contain:none;position:fixed;bottom:16px;inset-inline-start:16px;z-index:2147483000;margin:0;max-width:calc(100vw - 32px)}',
     '*{box-sizing:border-box}',
     '.rega{position:relative}',
-    '.note{display:block;width:fit-content;margin:0 0 6px;padding:2px 8px;border-radius:999px;background:#fff4d6;color:#7a5200;font-size:12px}',
+    '.note{display:block;width:fit-content;margin:0 0 6px;padding:2px 8px;border-radius:999px;background:#fff4d6;color:#7a5200;font-size:12px}.note a{color:inherit;text-decoration:underline}',
     '.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}',
     ':host(.is-floating) .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}',
     '.pill{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:8px 13px;border:1px solid var(--line);',
@@ -1064,7 +1064,17 @@
     wrap.setAttribute('lang', bank.locale || 'he');
 
     if (teamPreview) {
-      wrap.appendChild(el('div', 'note', labels.preview));
+      var note = el('div', 'note', labels.preview);
+      var explainUrl = safeUrl(bank.explain_url);
+      if (explainUrl) {
+        note.appendChild(document.createTextNode(' '));
+        var explain = el('a', null, labels.why_shown);
+        explain.href = explainUrl;
+        explain.target = '_blank';
+        explain.rel = 'noopener';
+        note.appendChild(explain);
+      }
+      wrap.appendChild(note);
     }
 
     var chips = el('div', 'chips');

@@ -19,6 +19,7 @@ use App\Modules\Enrichment\Models\EnrichmentProductRelation;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
 use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
+use App\Modules\Widget\Models\WidgetCuration;
 use App\Modules\Widget\Support\GuideRelevance;
 use Illuminate\Support\Collection;
 
@@ -87,15 +88,26 @@ final class BuildPageBank
 
     private string $shopId = '';
 
+    private bool $explain = false;
+
+    /** @var array<string, array<string, array<string, mixed>>> candidate => item id ('' for the section) => why */
+    private array $why = [];
+
     public function __construct(private readonly TenantContext $tenant) {}
 
-    /** @return array<string, mixed> */
-    public function handle(string $shopId, string $type, string $externalId, string $locale): array
+    /**
+     * @param  bool  $explain  also return, under "explain", why each section and item is there: for the
+     *                         store team's page in the panel, never for the storefront
+     * @return array<string, mixed>
+     */
+    public function handle(string $shopId, string $type, string $externalId, string $locale, bool $explain = false): array
     {
         $this->locale = in_array($locale, self::LOCALES, true) ? $locale : 'he';
         $this->shopId = $shopId;
         $this->vocabularies = [];
         $this->categories = null;
+        $this->explain = $explain;
+        $this->why = [];
 
         $bank = [
             'v' => 1,
@@ -129,7 +141,12 @@ final class BuildPageBank
             : [...$this->contentSections($externalId, $pool), null]);
 
         $bank['enabled'] = true;
-        $bank['sections'] = $this->tenant->run($shopId, fn (): array => $this->learned($shopId, $type, $externalId, $sections, $maxProducts));
+        $bank['sections'] = $this->tenant->run($shopId, fn (): array => $this->curated(
+            $type,
+            $externalId,
+            $this->learned($shopId, $type, $externalId, $sections, $maxProducts),
+            $maxProducts,
+        ));
         $bank['bank_version'] = max(1, $version);
         $bank['teaser'] = $bank['sections'] === [] ? null : $this->teaser($bank['sections'][0]);
         $bank['compare'] = $compare;
@@ -137,7 +154,103 @@ final class BuildPageBank
         $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
         $bank['contact'] = $this->contact($shopId);
 
+        if ($this->explain) {
+            $bank['explain'] = $this->why;
+        }
+
         return $bank;
+    }
+
+    /**
+     * What the store team decided about this page, applied last: a hidden section or item is gone
+     * whatever code or learning think; a pinned product is in its section, first, even when code
+     * did not put it there; a pinned section comes before the others.
+     *
+     * @param  list<array<string, mixed>>  $sections
+     * @return list<array<string, mixed>>
+     */
+    private function curated(string $type, string $externalId, array $sections, int $maxProducts): array
+    {
+        $curations = WidgetCuration::query()->where('page_type', $type)->where('page_external_id', $externalId)->get();
+
+        if ($curations->isEmpty()) {
+            return $sections;
+        }
+
+        $hiddenSections = $curations->where('action', WidgetCuration::HIDE)->where('item_external_id', '')->pluck('candidate')->all();
+        $pinnedSections = $curations->where('action', WidgetCuration::PIN)->where('item_external_id', '')->pluck('candidate')->all();
+        $hidden = $curations->where('action', WidgetCuration::HIDE)->where('item_external_id', '!=', '')->groupBy('candidate')->map(fn (Collection $c): array => $c->pluck('item_external_id')->all());
+        $pinned = $curations->where('action', WidgetCuration::PIN)->where('item_external_id', '!=', '')->sortBy('created_at')->groupBy('candidate')->map(fn (Collection $c): array => $c->pluck('item_external_id')->all());
+
+        $sections = array_values(array_filter($sections, fn (array $s): bool => ! in_array($s['candidate'], $hiddenSections, true)));
+        $byCandidate = array_column($sections, null, 'candidate');
+
+        // A product pinned into a section code did not build: the section exists for it.
+        foreach ($pinned->keys() as $candidate) {
+            if (! isset($byCandidate[$candidate]) && in_array($candidate, WidgetCuration::PRODUCT_SECTIONS, true) && ! in_array($candidate, $hiddenSections, true)) {
+                $sections[] = $this->section($candidate, ['products' => []]);
+            }
+        }
+
+        foreach ($sections as $i => $section) {
+            $candidate = (string) $section['candidate'];
+            $itemsKey = isset($section['guides']) && ! isset($section['products']) ? 'guides' : 'products';
+
+            if (! isset($section[$itemsKey]) && ! $pinned->has($candidate)) {
+                continue;
+            }
+
+            $items = array_values(array_filter($section[$itemsKey] ?? [], fn (array $item): bool => ! in_array((string) $item['id'], $hidden->get($candidate, []), true)));
+
+            if ($pinned->has($candidate) && $itemsKey === 'products') {
+                $present = array_column($items, null, 'id');
+                $missing = array_values(array_diff($pinned->get($candidate), array_keys($present)));
+                $added = $missing === [] ? collect() : CatalogProduct::query()->active()->where('in_stock', true)->whereIn('external_id', $missing)->get()->keyBy('external_id');
+
+                $first = [];
+                foreach ($pinned->get($candidate) as $externalPinned) {
+                    if (isset($present[$externalPinned])) {
+                        $first[] = $present[$externalPinned];
+                    } elseif ($added->has($externalPinned)) {
+                        $first[] = $this->cards(collect([$added->get($externalPinned)]))[0];
+                    }
+                }
+
+                $rest = array_values(array_filter($items, fn (array $item): bool => ! in_array((string) $item['id'], $pinned->get($candidate), true)));
+                $items = array_slice([...$first, ...$rest], 0, max($maxProducts, count($first)));
+                $this->note($candidate, '', ['pinned' => array_column($first, 'id')]);
+            }
+
+            $sections[$i][$itemsKey] = $items;
+
+            if ($hidden->has($candidate)) {
+                $this->note($candidate, '', ['hidden' => $hidden->get($candidate)]);
+            }
+        }
+
+        $sections = array_values(array_filter($sections, fn (array $s): bool => ! isset($s['products']) || $s['products'] !== []));
+
+        // Pinned sections first, in the order they were pinned; the rest keep their order.
+        $order = array_keys($sections);
+        usort($order, function (int $a, int $b) use ($sections, $pinnedSections): int {
+            $rank = fn (int $i): int => ($p = array_search($sections[$i]['candidate'], $pinnedSections, true)) === false ? PHP_INT_MAX : $p;
+
+            return [$rank($a), $a] <=> [$rank($b), $b];
+        });
+
+        return array_map(fn (int $i): array => $sections[$i], $order);
+    }
+
+    /**
+     * Remembers why something is on the page, for the store team's page. Item '' is the section.
+     *
+     * @param  array<string, mixed>  $why
+     */
+    private function note(string $candidate, string $item, array $why): void
+    {
+        if ($this->explain) {
+            $this->why[$candidate][$item] = array_merge($this->why[$candidate][$item] ?? [], $why);
+        }
     }
 
     /** @return array{0: list<array<string, mixed>>, 1: int, 2: array<string, mixed>|null} */
@@ -218,6 +331,15 @@ final class BuildPageBank
 
         $version = max($version, (int) collect($relations->flatten())->max(fn (EnrichmentProductRelation $r): int => (int) $r->computed_at->timestamp));
         $ruleLabels = $this->ruleLabels();
+
+        if ($this->explain) {
+            foreach ($relations->flatten() as $relation) {
+                $why = ['source' => $relation->source, 'score' => $relation->score, 'reasons' => $relation->reasons, 'label' => $this->relationReason($relation, $ruleLabels)];
+                foreach ($relation->kind === RelationKind::Alternative ? ['alternatives', 'on_sale'] : [$relation->kind === RelationKind::Family ? 'family' : 'complement'] as $candidate) {
+                    $this->note($candidate, (string) $relation->related->external_id, $why);
+                }
+            }
+        }
 
         // Another size of this product is shown under other sizes, not again as a complement.
         $sizes = $relations->get(RelationKind::Family->value, collect())->pluck('related_product_id')->all();
@@ -457,6 +579,20 @@ final class BuildPageBank
             ?? $module->get($section['candidate'])?->score
             ?? $explore);
 
+        foreach ($sections as $section) {
+            $pageScore = $page->get($section['candidate']);
+            $this->note((string) $section['candidate'], '', [
+                'learned' => [
+                    'page_score' => $pageScore?->score,
+                    'page_opens' => $pageScore?->opens,
+                    'page_exposures' => $pageScore?->exposures,
+                    'module_score' => $module->get($section['candidate'])?->score,
+                    'explore' => $pageScore === null && ! $module->has($section['candidate']) ? $explore : null,
+                    'rank' => $rank($section),
+                ],
+            ]);
+        }
+
         $order = array_keys($sections);
         usort($order, fn (int $a, int $b): int => [$rank($sections[$b]), $a] <=> [$rank($sections[$a]), $b]);
 
@@ -486,11 +622,15 @@ final class BuildPageBank
             ->groupBy('quote')
             ->pluck('products', 'quote');
 
-        $items = $facts->map(fn (EnrichmentFact $f): array => array_filter([
-            'key' => $f->key,
-            'text' => (string) $f->value_text,
-            'common' => (int) ($shared[$f->quote] ?? 0) >= $threshold ?: null,
-        ], fn ($v): bool => $v !== null))->all();
+        $items = $facts->map(function (EnrichmentFact $f) use ($shared, $threshold): array {
+            $this->note('highlights', (string) $f->key, ['quote' => $f->quote, 'model' => $f->model, 'review' => $f->review_model, 'products_with_this_quote' => (int) ($shared[$f->quote] ?? 0)]);
+
+            return array_filter([
+                'key' => $f->key,
+                'text' => (string) $f->value_text,
+                'common' => (int) ($shared[$f->quote] ?? 0) >= $threshold ?: null,
+            ], fn ($v): bool => $v !== null);
+        })->all();
 
         usort($items, fn (array $a, array $b): int => isset($a['common']) <=> isset($b['common']));
 
@@ -559,6 +699,11 @@ final class BuildPageBank
         $label = collect([$relation->source, ...($reasons['also'] ?? [])])
             ->map(fn (string $source): ?string => $ruleLabels[$source][$this->locale] ?? null)
             ->first(fn (?string $label): bool => $label !== null);
+
+        // The store's own habit: products of this category are usually linked to that one.
+        if ($label === null && $relation->source === 'category_affinity' && isset($reasons['affinity'][1])) {
+            return __('widget::bank.reasons.category_affinity', ['category' => $reasons['affinity'][1]], $this->locale);
+        }
 
         if ($label === null) {
             return null;
@@ -734,12 +879,18 @@ final class BuildPageBank
             }
 
             $of = fn (FactKind $kind): array => $facts->get($id, collect())->where('kind', $kind)->pluck('value_text')->all();
-            $score = $relevance->score($productCategories, $uses, [
+            $article = [
                 'kind' => $of(FactKind::ContentKind)[0] ?? null,
                 'value' => $of(FactKind::ShopperValue)[0] ?? null,
                 'categories' => $of(FactKind::Category),
                 'uses' => $of(FactKind::Use),
                 'matched' => in_array($id, $matched, true),
+            ];
+            $score = $relevance->score($productCategories, $uses, $article);
+            $this->note('guide', (string) $articles->get($id)->external_id, $article + [
+                'score' => $score,
+                'topic' => $relevance->topic($productCategories, $article['categories']),
+                'shared_uses' => array_values(array_intersect($article['uses'], $uses)),
             ]);
 
             if ($score !== null) {
