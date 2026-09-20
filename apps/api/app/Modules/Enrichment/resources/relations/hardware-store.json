@@ -386,6 +386,245 @@
                 ]
             },
             "limit": 2
+        },
+        {
+            "key": "caulking_gun_for_sealants",
+            "label": {
+                "he": "אקדח סיליקון מתאים",
+                "en": "Caulking gun"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "adhesives",
+                "types": [
+                    "silicone_sealant",
+                    "acrylic_sealant",
+                    "hybrid_sealant",
+                    "construction_adhesive"
+                ]
+            },
+            "to": {
+                "vocabulary": "adhesives",
+                "types": [
+                    "caulking_gun"
+                ]
+            },
+            "limit": 1
+        },
+        {
+            "key": "brushes_for_paints",
+            "label": {
+                "he": "מברשות ורולרים לצבע",
+                "en": "Brushes and rollers"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "paints",
+                "types": [
+                    "wall_paint",
+                    "wood_paint",
+                    "metal_paint",
+                    "primer",
+                    "varnish",
+                    "stain",
+                    "chalk_paint"
+                ]
+            },
+            "to": {
+                "vocabulary": "paints",
+                "types": [
+                    "brush",
+                    "roller",
+                    "tray"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "primer_for_paints",
+            "label": {
+                "he": "פריימר לפני הצבע",
+                "en": "Primer first"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "paints",
+                "types": [
+                    "wood_paint",
+                    "metal_paint"
+                ]
+            },
+            "to": {
+                "vocabulary": "paints",
+                "types": [
+                    "primer"
+                ]
+            },
+            "limit": 1
+        },
+        {
+            "key": "thinner_for_solvent_paints",
+            "label": {
+                "he": "מדלל לצבע על בסיס שמן",
+                "en": "Thinner for solvent paint"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "paints",
+                "choices": {
+                    "base": [
+                        "solvent"
+                    ]
+                }
+            },
+            "to": {
+                "vocabulary": "paints",
+                "types": [
+                    "thinner"
+                ]
+            },
+            "limit": 1
+        },
+        {
+            "key": "finish_for_indoor_wood",
+            "label": {
+                "he": "צבע או לכה לעץ בבית",
+                "en": "Paint or varnish for indoor wood"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "furniture",
+                    "shelving",
+                    "indoor_cladding",
+                    "stairs"
+                ]
+            },
+            "to": {
+                "vocabulary": "paints",
+                "types": [
+                    "varnish",
+                    "wood_paint",
+                    "stain"
+                ]
+            },
+            "limit": 2
+        },
+        {
+            "key": "wood_glue_for_furniture_wood",
+            "label": {
+                "he": "דבק עץ לחיבורים",
+                "en": "Wood glue for joints"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "uses_any": [
+                    "furniture",
+                    "shelving"
+                ]
+            },
+            "to": {
+                "vocabulary": "adhesives",
+                "types": [
+                    "wood_glue"
+                ]
+            },
+            "limit": 1
+        },
+        {
+            "key": "clamps_for_wood_glue",
+            "label": {
+                "he": "מלחציים להדבקה",
+                "en": "Clamps for gluing"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "adhesives",
+                "types": [
+                    "wood_glue",
+                    "contact_glue",
+                    "epoxy"
+                ]
+            },
+            "to": {
+                "vocabulary": "hand_tools",
+                "types": [
+                    "clamp"
+                ]
+            },
+            "limit": 2
+        },
+        {
+            "key": "legs_for_table_tops",
+            "label": {
+                "he": "רגליים לפלטה",
+                "en": "Legs for this top"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "wood",
+                "types": [
+                    "solid_slab"
+                ]
+            },
+            "to": {
+                "vocabulary": "hardware",
+                "types": [
+                    "table_leg"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "tops_for_table_legs",
+            "label": {
+                "he": "פלטות עץ לרגליים",
+                "en": "Tops for these legs"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "hardware",
+                "types": [
+                    "table_leg"
+                ]
+            },
+            "to": {
+                "vocabulary": "wood",
+                "types": [
+                    "solid_slab"
+                ]
+            },
+            "limit": 3
+        },
+        {
+            "key": "screws_for_hardware",
+            "label": {
+                "he": "ברגים ודיבלים להרכבה",
+                "en": "Screws and anchors to mount it"
+            },
+            "kind": "complement",
+            "from": {
+                "vocabulary": "hardware",
+                "types": [
+                    "hinge",
+                    "handle",
+                    "bolt_latch",
+                    "hanging_accessory",
+                    "angle_bracket",
+                    "post_bracket",
+                    "shelf_support"
+                ]
+            },
+            "to": {
+                "vocabulary": "fasteners",
+                "types": [
+                    "wood_screw",
+                    "anchor"
+                ]
+            },
+            "limit": 2
         }
     ]
 }
