@@ -147,6 +147,34 @@ final class CodeReadingTest extends TestCase
         $this->assertTrue($uses->every(fn (EnrichmentFact $f): bool => $f->status === FactStatus::AwaitingReview));
     }
 
+    public function test_a_product_filed_in_two_branches_goes_to_the_vocabulary_whose_category_says_what_it_is(): void
+    {
+        $this->buildShop();
+        $wood = $this->category('2212', 'עצים');
+        $shelves = $this->category('2676', 'מידוף', '1747', ['מוצרי פרזול', 'מידוף']);
+        $hardware = $this->category('1747', 'מוצרי פרזול');
+        $supports = $this->category('2834', 'תומכי מדף', '1747', ['מוצרי פרזול', 'תומכי מדף']);
+
+        // The pine shelf sits in wood and in hardware's shelving; the support only in hardware.
+        $shelf = $this->product('19949', 'מדף מעץ אורן בעובי 18 מ"מ', 'x', [$wood, $hardware, $shelves], [
+            'payload' => ['categories' => [['id' => '2212', 'path' => ['עצים']], ['id' => '1747', 'path' => ['מוצרי פרזול']], ['id' => '2676', 'path' => ['מוצרי פרזול', 'מידוף']]]],
+        ]);
+        $support = $this->product('27803', 'תומך מדף גלים דגם BT020', 'x', [$hardware, $supports], [
+            'payload' => ['categories' => [['id' => '1747', 'path' => ['מוצרי פרזול']], ['id' => '2834', 'path' => ['מוצרי פרזול', 'תומכי מדף']]]],
+        ]);
+
+        // "hardware" sorts before "wood": without the rule, the shelf would go to hardware and lose its type.
+        app(ImportVocabulary::class)->handle($this->shop->id, ImportVocabulary::template('hardware'), 'test');
+        app(ImportVocabulary::class)->handle($this->shop->id, ImportVocabulary::template('wood'), 'test');
+        $run = app(ReadProductsInCode::class)->handle($this->shop->id);
+        $this->assertSame(RunStatus::Succeeded, $run->status, (string) $run->error);
+
+        $readings = $this->inShop(fn () => EnrichmentCodeReading::query()->get()->keyBy('product_id'));
+        $this->assertSame(['wood', 'shelf'], [$readings[$shelf->id]->reading['vocabulary'], $readings[$shelf->id]->reading['type']['key']]);
+        $this->assertSame(['hardware', 'shelf_support'], [$readings[$support->id]->reading['vocabulary'], $readings[$support->id]->reading['type']['key']]);
+        $this->assertSame(1, $run->output['products_in_two_branches']);
+    }
+
     public function test_article_categories_match_construct_state_forms(): void
     {
         $this->buildShop();

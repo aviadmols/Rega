@@ -8,7 +8,10 @@ recorded in Agent activity.
 1. **Sync the catalog.** Operator panel, Catalog, "Sync catalog". Runs on the worker. Or
    `php artisan catalog:sync <shop-slug>`.
 2. **Add a vocabulary** for a branch of the catalog. Vocabularies, "Add vocabulary", from a
-   template (`power-tools`, `wood`, `care-and-cleaning`, `fasteners`) or a JSON file. A
+   template (`power-tools`, `wood`, `care-and-cleaning`, `fasteners`, `hardware`, `hand-tools`,
+   `adhesives`, `paints`) or a JSON file. A product type may name store categories, also outside
+   the root (brushes filed away from paints); a product filed in two branches goes to the
+   vocabulary whose category says what it is. A
    vocabulary lists product types (optionally the store categories each stands for), specs with
    units and ranges (optionally read from the title with a pattern), fixed choices, tags and jobs
    ("good for"), each with the patterns code matches first.

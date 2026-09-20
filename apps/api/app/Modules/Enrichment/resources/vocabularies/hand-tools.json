@@ -1,0 +1,539 @@
+{
+    "schema_version": 1,
+    "key": "hand_tools",
+    "name": {
+        "he": "כלי עבודה ידניים",
+        "en": "Hand tools"
+    },
+    "root_category_external_id": "2021",
+    "excluded_category_external_ids": [
+        "2657",
+        "2658",
+        "2659",
+        "2599",
+        "2816"
+    ],
+    "product_types": [
+        {
+            "key": "hammer",
+            "label": {
+                "he": "פטיש",
+                "en": "Hammer"
+            },
+            "hint": "פטיש יד, לא פטישון או פטיש חציבה חשמליים",
+            "patterns": [
+                "פטיש(?:ים)?(?![\\p{L}])"
+            ],
+            "categories": [
+                "2370"
+            ]
+        },
+        {
+            "key": "axe",
+            "label": {
+                "he": "גרזן",
+                "en": "Axe"
+            },
+            "patterns": [
+                "גרזן(?:ים)?(?![\\p{L}])"
+            ],
+            "categories": [
+                "2370"
+            ]
+        },
+        {
+            "key": "pliers",
+            "label": {
+                "he": "פלייר",
+                "en": "Pliers"
+            },
+            "patterns": [
+                "פלייר(?:ים)?",
+                "צבת(?:ים|ות)?",
+                "קטר\\s?צד",
+                "מקצץ"
+            ],
+            "categories": [
+                "2371"
+            ]
+        },
+        {
+            "key": "tin_snips",
+            "label": {
+                "he": "מספרי פח / מספריים",
+                "en": "Tin snips / shears"
+            },
+            "patterns": [
+                "מספרי\\s?פח",
+                "מספריי?ם",
+                "מספריי\\s?פח"
+            ],
+            "categories": [
+                "2791"
+            ]
+        },
+        {
+            "key": "screwdriver",
+            "label": {
+                "he": "מברג",
+                "en": "Screwdriver"
+            },
+            "hint": "מברג יד, לא מברגה או מברגת גיר (כלים חשמליים)",
+            "patterns": [
+                "מברג(?:ים)?(?![\\p{L}])"
+            ],
+            "categories": [
+                "2372"
+            ]
+        },
+        {
+            "key": "wrench",
+            "label": {
+                "he": "מפתח ובוקסה",
+                "en": "Wrench"
+            },
+            "hint": "מפתח כלי: שוודי, אלן, צינור, פתוח, רינג, בוקסות. לא מפתח דלת",
+            "patterns": [
+                "מפתח\\s?שוודי",
+                "מפתח(?:ות)?\\s?אלן",
+                "מפתח\\s?צינור",
+                "מפתח\\s?פתוח",
+                "מפתח\\s?רינג",
+                "מפתח\\s?משולב",
+                "מפתח\\s?מתכוונן",
+                "בוקסה(?:ות)?"
+            ],
+            "categories": [
+                "2382"
+            ]
+        },
+        {
+            "key": "clamp",
+            "label": {
+                "he": "קליבה / מלחצת",
+                "en": "Clamp"
+            },
+            "patterns": [
+                "קליב(?:ה|ות)",
+                "קלמר(?:ה|ת|ות)",
+                "מלחצ(?:ת|יים)"
+            ],
+            "categories": [
+                "2373"
+            ]
+        },
+        {
+            "key": "knife",
+            "label": {
+                "he": "סכין / אולר",
+                "en": "Knife"
+            },
+            "patterns": [
+                "(?<![\\p{L}])סכין(?:ים)?(?![\\p{L}])",
+                "אולר(?:ים)?",
+                "קטר\\s?תוכי"
+            ],
+            "categories": [
+                "2374"
+            ]
+        },
+        {
+            "key": "scraper",
+            "label": {
+                "he": "מגרדת",
+                "en": "Scraper"
+            },
+            "patterns": [
+                "מגרד(?:ת|ות)"
+            ],
+            "categories": [
+                "2374"
+            ]
+        },
+        {
+            "key": "chisel",
+            "label": {
+                "he": "איזמל / מפסלת",
+                "en": "Chisel"
+            },
+            "hint": "כולל כלי גילוף (מפסלת). לא איזמל SDS לפטישון חשמלי",
+            "patterns": [
+                "איזמל(?:ים)?(?!.{0,10}SDS)",
+                "מפסל(?:ת|ות)"
+            ],
+            "categories": [
+                "2375"
+            ]
+        },
+        {
+            "key": "saw",
+            "label": {
+                "he": "משור יד",
+                "en": "Hand saw"
+            },
+            "hint": "משור יד, בכתיב שי\"ן או סמ\"ך; לא מסור חשמלי (עגול, אנכי, גרונג וכו')",
+            "patterns": [
+                "מ[סש]ור(?:ים)?(?![\\p{L}])"
+            ],
+            "categories": [
+                "2738"
+            ]
+        },
+        {
+            "key": "staple_gun",
+            "label": {
+                "he": "אקדח סיכות / מסמרים",
+                "en": "Staple / nail gun"
+            },
+            "hint": "אקדח ידני או פנאומטי לסיכות, מסמרים או ניטים. לא אקדח מסמרים חשמלי סוללה",
+            "patterns": [
+                "אקדח\\s?סיכות",
+                "אקדח\\s?מסמרים",
+                "אקדח\\s?ניטים",
+                "מהדק(?:ים)?"
+            ],
+            "categories": [
+                "2376"
+            ]
+        },
+        {
+            "key": "tape_measure",
+            "label": {
+                "he": "סרט מדידה / מטר",
+                "en": "Tape measure"
+            },
+            "patterns": [
+                "סרט\\s?מדידה",
+                "רולטה",
+                "גלגל(?:ת)?\\s?מדידה",
+                "^מטר\\s"
+            ],
+            "categories": [
+                "2377"
+            ]
+        },
+        {
+            "key": "spirit_level",
+            "label": {
+                "he": "פלס",
+                "en": "Spirit level"
+            },
+            "hint": "פלס מים או פלס אלומיניום ידני, לא פלס לייזר חשמלי",
+            "patterns": [
+                "פלס(?:ים)?(?![\\p{L}])"
+            ],
+            "categories": [
+                "2377"
+            ]
+        },
+        {
+            "key": "marking_tool",
+            "label": {
+                "he": "כלי סימון",
+                "en": "Marking tool"
+            },
+            "hint": "מעתיק זווית, זווית נגרים, אנך וקו סימון, מרקרים וטושים לסימון",
+            "patterns": [
+                "מעתיק\\s?זו?ו?ית",
+                "זו?ו?ית\\s?נגרים",
+                "אנך\\s?סימון",
+                "קו\\s?סימון",
+                "חוט\\s?סימון",
+                "מרקר(?:ים)?",
+                "טוש(?:ים)?"
+            ],
+            "categories": [
+                "2377"
+            ]
+        },
+        {
+            "key": "glue_gun",
+            "label": {
+                "he": "אקדח סיליקון",
+                "en": "Caulk / glue gun"
+            },
+            "patterns": [
+                "אקדח\\s?סיליקון",
+                "אקדח\\s?(?:ל)?מרק",
+                "אקדח\\s?דבק"
+            ],
+            "categories": [
+                "2378"
+            ]
+        },
+        {
+            "key": "trowel",
+            "label": {
+                "he": "שפכטל / כף בנאים",
+                "en": "Putty knife / trowel"
+            },
+            "patterns": [
+                "שפכטל(?:ים)?",
+                "כף\\s?בנאים",
+                "מלצ['׳’]?",
+                "מסטרינה"
+            ],
+            "categories": [
+                "2381"
+            ]
+        },
+        {
+            "key": "jig",
+            "label": {
+                "he": "ג'יג להתקנה",
+                "en": "Installation jig"
+            },
+            "hint": "ג'יג להתקנה כמו קרג, לא הברגים או הביטים שנמכרים באותה קטגוריה",
+            "patterns": [
+                "ג['׳’]יג",
+                "[Jj]ig",
+                "שבלונה\\s?לקידוח"
+            ],
+            "categories": [
+                "2782"
+            ]
+        },
+        {
+            "key": "toolbox",
+            "label": {
+                "he": "ארגז / תיק כלים",
+                "en": "Toolbox"
+            },
+            "hint": "ארגז או תיק לאחסון ונשיאת כלים. רוב האורגנייזרים לאחסון מסווגים תחת אביזרים לכלי עבודה ולא כאן",
+            "patterns": [
+                "ארגז\\s?(?:ל)?כלים",
+                "תיק\\s?(?:ל)?כלים",
+                "ארגז\\s?עבודה"
+            ]
+        },
+        {
+            "key": "other",
+            "label": {
+                "he": "אחר",
+                "en": "Other"
+            },
+            "hint": "רק כשאף סוג אחר לא מתאים"
+        }
+    ],
+    "attributes": [
+        {
+            "key": "length_mm",
+            "label": {
+                "he": "אורך",
+                "en": "Length"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 20,
+            "max": 900,
+            "hint": "אורך הכלי או הלהב, לא סרט מדידה שנמדד במטרים",
+            "applies_to": ["knife", "chisel", "scraper", "saw", "screwdriver", "pliers", "tin_snips", "hammer", "axe"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]מ", "group": 1 }
+        },
+        {
+            "key": "length_m",
+            "label": {
+                "he": "אורך סרט מדידה",
+                "en": "Tape length"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 1000,
+            "max": 100000,
+            "hint": "אורך סרט המדידה במטרים, מומר למ\"מ",
+            "applies_to": ["tape_measure"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*מטר", "group": 1, "factor": 1000 }
+        },
+        {
+            "key": "weight_g",
+            "label": {
+                "he": "משקל",
+                "en": "Weight"
+            },
+            "type": "number",
+            "dimension": "mass",
+            "min": 0.01,
+            "max": 3,
+            "rank": "min",
+            "hint": "משקל הכלי כפי שכתוב בטקסט, בגרמים, מומר לק\"ג",
+            "applies_to": ["knife", "hammer", "axe", "pliers", "tin_snips", "screwdriver", "wrench", "chisel", "scraper", "staple_gun"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*גר(?:ם|מים)", "group": 1, "factor": 0.001 }
+        },
+        {
+            "key": "size_mm",
+            "label": {
+                "he": "גודל פתח",
+                "en": "Wrench size"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 4,
+            "max": 50,
+            "hint": "גודל הפתח של מפתח או בוקסה, לא אורך הכלי",
+            "applies_to": ["wrench"]
+        },
+        {
+            "key": "pieces",
+            "label": {
+                "he": "כמות בסט",
+                "en": "Pieces in the set"
+            },
+            "type": "number",
+            "dimension": "count",
+            "min": 1,
+            "max": 500,
+            "applies_to": ["screwdriver", "wrench", "staple_gun"],
+            "title_capture": { "pattern": "(\\d+)\\s*(?:יח['׳’]|יחידות|חלקים)", "group": 1 }
+        },
+        {
+            "key": "material",
+            "label": {
+                "he": "חומר הלהב/הגוף",
+                "en": "Blade / body material"
+            },
+            "type": "enum",
+            "applies_to": ["knife", "pliers", "tin_snips", "wrench", "screwdriver", "chisel", "scraper", "hammer", "axe", "saw", "trowel"],
+            "values": [
+                {
+                    "key": "stainless",
+                    "label": { "he": "פלב\"מ / נירוסטה", "en": "Stainless steel" },
+                    "patterns": ["פלב[\"״”]מ", "נירוסטה", "inox"]
+                },
+                {
+                    "key": "chrome_vanadium",
+                    "label": { "he": "כרום ונדיום", "en": "Chrome vanadium" },
+                    "patterns": ["כרום.?ונדיום", "CR-?V(?![\\p{L}])"]
+                },
+                {
+                    "key": "carbon_steel",
+                    "label": { "he": "פלדת פחמן", "en": "Carbon steel" },
+                    "patterns": ["פלדת\\s?פחמן", "high.?carbon"]
+                }
+            ]
+        },
+        {
+            "key": "handle_type",
+            "label": {
+                "he": "סוג ידית",
+                "en": "Handle type"
+            },
+            "type": "enum",
+            "applies_to": ["hammer", "axe", "screwdriver", "pliers", "tin_snips", "scraper", "trowel", "knife", "saw"],
+            "values": [
+                {
+                    "key": "wood",
+                    "label": { "he": "ידית עץ", "en": "Wood handle" },
+                    "patterns": ["ידית עץ", "ידיות עץ"]
+                },
+                {
+                    "key": "rubber_grip",
+                    "label": { "he": "ידית גומי / דו קומפוננטי", "en": "Rubber / soft grip" },
+                    "patterns": ["ידית גומי", "דו\\s?קומפוננטי(?:ת)?", "אנטי.?החלקה", "ארגונומית"]
+                },
+                {
+                    "key": "plastic",
+                    "label": { "he": "ידית פלסטיק", "en": "Plastic handle" },
+                    "patterns": ["ידית פלסטיק"]
+                },
+                {
+                    "key": "fiberglass",
+                    "label": { "he": "ידית סיבי זכוכית", "en": "Fiberglass handle" },
+                    "patterns": ["סיבי זכוכית", "פייבר\\s?גלאס", "fiberglass"]
+                },
+                {
+                    "key": "metal",
+                    "label": { "he": "ידית מתכת", "en": "Metal handle" },
+                    "patterns": ["ידית מתכת"]
+                }
+            ]
+        },
+        {
+            "key": "magnetic",
+            "label": {
+                "he": "מגנטי",
+                "en": "Magnetic"
+            },
+            "type": "boolean",
+            "applies_to": ["screwdriver", "wrench", "tape_measure"],
+            "patterns": ["מגנטי", "מגנט(?![\\p{L}])"]
+        }
+    ],
+    "tags": [
+        {
+            "key": "for_professionals",
+            "label": {
+                "he": "לאנשי מקצוע",
+                "en": "For professionals"
+            },
+            "patterns": ["לאנשי מקצוע", "מקצועי", "מקצועית", "מקצוען"]
+        },
+        {
+            "key": "set",
+            "label": {
+                "he": "סט",
+                "en": "Set"
+            },
+            "patterns": ["^סט\\s", "קומפלט", "ערכה"]
+        },
+        {
+            "key": "insulated_1000v",
+            "label": {
+                "he": "מבודד ל-1000V",
+                "en": "1000V insulated"
+            },
+            "patterns": ["בידוד", "מבודד", "1000\\s?V(?![\\p{L}\\d])", "VDE"]
+        },
+        {
+            "key": "carry_case",
+            "label": {
+                "he": "מזוודה או תיק נשיאה",
+                "en": "Carry case"
+            },
+            "patterns": ["מזוודה", "תיק נשיאה", "קייס"]
+        }
+    ],
+    "uses": [
+        {
+            "key": "furniture",
+            "label": { "he": "נגרות ובניית רהיטים", "en": "Furniture making" },
+            "patterns": ["רהיט", "נגרות", "ארונות"],
+            "types": ["clamp", "chisel", "screwdriver", "saw", "tape_measure", "jig", "glue_gun"]
+        },
+        {
+            "key": "construction",
+            "label": { "he": "בנייה, שלד וטפסנות", "en": "Construction and framing" },
+            "patterns": ["בנייה", "לבניין", "שלד", "טפסנות"],
+            "types": ["hammer", "tape_measure", "spirit_level", "marking_tool", "wrench", "trowel"]
+        },
+        {
+            "key": "shelving",
+            "label": { "he": "מדפים ואחסון", "en": "Shelving" },
+            "patterns": ["מדף", "מדפים"],
+            "types": ["spirit_level", "tape_measure", "screwdriver", "wrench", "marking_tool"]
+        },
+        {
+            "key": "renovation",
+            "label": { "he": "שיפוצים", "en": "Renovation" },
+            "patterns": ["שיפוץ", "שיפוצים", "שיפוצניק"],
+            "types": ["hammer", "chisel", "trowel", "scraper", "knife", "pliers", "wrench"]
+        },
+        {
+            "key": "plumbing",
+            "label": { "he": "אינסטלציה", "en": "Plumbing" },
+            "patterns": ["אינסטלציה", "צנרת", "אינסטלטור"],
+            "types": ["wrench", "pliers", "tin_snips", "tape_measure"]
+        },
+        {
+            "key": "electrical",
+            "label": { "he": "עבודות חשמל", "en": "Electrical work" },
+            "patterns": ["חשמל", "חשמלאי"],
+            "types": ["pliers", "screwdriver", "knife", "tin_snips"]
+        },
+        {
+            "key": "gardening",
+            "label": { "he": "גינון וגן", "en": "Gardening" },
+            "patterns": ["גינה", "גינון", "גן(?![\\p{L}])"],
+            "types": ["pliers", "knife", "axe", "tape_measure"]
+        }
+    ]
+}

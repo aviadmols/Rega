@@ -197,6 +197,10 @@ return [
         'wood' => 'Wood and boards',
         'care-and-cleaning' => 'Care, cleaning and oils',
         'fasteners' => 'Screws, anchors and connectors',
+        'hardware' => 'Hardware',
+        'hand-tools' => 'Hand tools',
+        'adhesives' => 'Adhesives and sealants',
+        'paints' => 'Paints and finishes',
         'hardware-store' => 'Hardware and tools store',
     ],
 ];

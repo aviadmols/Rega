@@ -13,6 +13,7 @@ use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Enrichment\Scanning\BrandResolver;
 use App\Modules\Enrichment\Scanning\CodeReading;
+use App\Modules\Enrichment\Scanning\ProductFamily;
 use App\Modules\Enrichment\Support\VocabularyBranch;
 use App\Modules\Runs\Contracts\RecordsRuns;
 use App\Modules\Runs\Contracts\RunContext;
@@ -53,18 +54,35 @@ final class ReadProductsInCode
     private function read(RunContext $run, string $shopId): void
     {
         $vocabularies = EnrichmentVocabulary::query()->where('active', true)->orderBy('key')->get();
-        $branchOf = [];
-        $overlaps = 0;
+        $candidates = [];
 
         foreach ($vocabularies as $vocabulary) {
             foreach (VocabularyBranch::products($vocabulary->definition())->pluck('id') as $productId) {
-                if (isset($branchOf[$productId])) {
-                    $overlaps++;
+                $candidates[$productId][] = $vocabulary;
+            }
+        }
 
-                    continue;
+        // A product filed in two branches (a pine shelf under both wood and hardware) goes to the
+        // vocabulary whose categories say what it is; when neither does, to the first by key.
+        $branchOf = [];
+        $overlaps = 0;
+
+        foreach ($candidates as $productId => $options) {
+            $branchOf[$productId] = $options[0];
+
+            if (count($options) < 2) {
+                continue;
+            }
+
+            $overlaps++;
+            $overlapping = CatalogProduct::query()->whereKey($productId)->first();
+            $categoryIds = $overlapping === null ? [] : ProductFamily::categoriesMostSpecificFirst($overlapping);
+
+            foreach ($options as $option) {
+                if ($option->definition()->typeForCategories($categoryIds) !== null) {
+                    $branchOf[$productId] = $option;
+                    break;
                 }
-
-                $branchOf[$productId] = $vocabulary;
             }
         }
 

@@ -21,7 +21,7 @@ final class ImportVocabulary
     public const ACTION = 'enrichment.import_vocabulary';
 
     /** Ready-made vocabularies any shop can start from. */
-    public const TEMPLATES = ['power-tools', 'wood', 'care-and-cleaning', 'fasteners'];
+    public const TEMPLATES = ['power-tools', 'wood', 'care-and-cleaning', 'fasteners', 'hardware', 'hand-tools', 'adhesives', 'paints'];
 
     public function __construct(
         private readonly RecordsRuns $runs,

@@ -1,0 +1,633 @@
+{
+    "schema_version": 1,
+    "key": "hardware",
+    "name": {
+        "he": "פרזול",
+        "en": "Hardware"
+    },
+    "root_category_external_id": "1747",
+    "excluded_category_external_ids": [],
+    "product_types": [
+        {
+            "key": "handle",
+            "label": {
+                "he": "ידית וכפתור",
+                "en": "Handle and knob"
+            },
+            "categories": [
+                "2416"
+            ],
+            "patterns": [
+                "ידית",
+                "ידיות",
+                "כפתור"
+            ]
+        },
+        {
+            "key": "shelf_support",
+            "label": {
+                "he": "תומך מדף",
+                "en": "Shelf support/bracket"
+            },
+            "categories": [
+                "2834"
+            ],
+            "patterns": [
+                "תומך מדף",
+                "תומכי מדף",
+                "זרוע למדף",
+                "מסילה למערכת",
+                "מסילות למערכת"
+            ]
+        },
+        {
+            "key": "decorative_trim",
+            "label": {
+                "he": "קישוט ודקורציה",
+                "en": "Decorative trim"
+            },
+            "categories": [
+                "2417"
+            ],
+            "patterns": [
+                "קישוט",
+                "דקורציה",
+                "פלורדליס"
+            ]
+        },
+        {
+            "key": "post",
+            "label": {
+                "he": "עמוד ומכסה לעמוד",
+                "en": "Post and post cap"
+            },
+            "hint": "עמודי מתכת לגדר/פרגולה והמכסים שסוגרים את ראש העמוד",
+            "categories": [
+                "2418"
+            ],
+            "patterns": [
+                "עמוד מתכת",
+                "עמוד מסילה",
+                "מכסה מתכת",
+                "לעמודים",
+                "לעמוד"
+            ]
+        },
+        {
+            "key": "caster",
+            "label": {
+                "he": "גלגל וגלגלת",
+                "en": "Caster / wheel"
+            },
+            "categories": [
+                "2958"
+            ],
+            "patterns": [
+                "גלגל"
+            ]
+        },
+        {
+            "key": "table_leg",
+            "label": {
+                "he": "רגל לשולחן או ספסל",
+                "en": "Table / bench leg"
+            },
+            "categories": [
+                "2458"
+            ],
+            "patterns": [
+                "רגל"
+            ]
+        },
+        {
+            "key": "bolt_latch",
+            "label": {
+                "he": "בריח ומנעולון",
+                "en": "Bolt and latch"
+            },
+            "categories": [
+                "2411"
+            ],
+            "patterns": [
+                "בריח",
+                "סטופר",
+                "וו נעילה",
+                "וו רוח",
+                "סגר טריקה",
+                "שרשרת בטחון"
+            ]
+        },
+        {
+            "key": "hinge",
+            "label": {
+                "he": "ציר",
+                "en": "Hinge"
+            },
+            "categories": [
+                "2412"
+            ],
+            "patterns": [
+                "ציר ספר",
+                "ציר כנף"
+            ]
+        },
+        {
+            "key": "hanging_accessory",
+            "label": {
+                "he": "אביזר תלייה",
+                "en": "Hanging accessory"
+            },
+            "categories": [
+                "2413"
+            ],
+            "patterns": [
+                "מחזיק",
+                "קולב",
+                "מתלה",
+                "מתלים",
+                "תושבת תליה",
+                "חוט ברזל"
+            ]
+        },
+        {
+            "key": "angle_bracket",
+            "label": {
+                "he": "זווית וסרגל חיזוק",
+                "en": "Angle bracket / reinforcement strip"
+            },
+            "categories": [
+                "2414"
+            ],
+            "patterns": [
+                "זווית",
+                "זוית",
+                "סרגל חיזוק",
+                "סרגל חיבור"
+            ]
+        },
+        {
+            "key": "post_bracket",
+            "label": {
+                "he": "תושבת לעמוד או קורה",
+                "en": "Post/beam mounting bracket"
+            },
+            "hint": "הבסיס שמחבר עמוד עץ לקיר, לרצפה או למוט אחר, בעיקר לפרגולות וגדרות",
+            "categories": [
+                "2415"
+            ],
+            "patterns": [
+                "תושבת",
+                "חובק"
+            ]
+        },
+        {
+            "key": "other",
+            "label": {
+                "he": "אחר",
+                "en": "Other"
+            }
+        }
+    ],
+    "attributes": [
+        {
+            "key": "length_mm",
+            "label": {
+                "he": "אורך",
+                "en": "Length"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 3000,
+            "hint": "מספר בודד לפני מ\"מ; לא נתפס כשהוא חלק מביטוי NxN של רוחב/גובה",
+            "applies_to": [
+                "handle",
+                "bolt_latch",
+                "hanging_accessory",
+                "hinge",
+                "post",
+                "table_leg",
+                "angle_bracket",
+                "post_bracket"
+            ],
+            "title_capture": {
+                "pattern": "(?<![\\dxX×])(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]מ",
+                "group": 1
+            }
+        },
+        {
+            "key": "width_mm",
+            "label": {
+                "he": "רוחב",
+                "en": "Width"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 1000,
+            "hint": "המספר הראשון בביטוי מידות כגון 95X95 מ\"מ או 40x400 מ\"מ",
+            "applies_to": [
+                "post",
+                "angle_bracket",
+                "shelf_support",
+                "table_leg",
+                "shelf_board"
+            ],
+            "title_capture": {
+                "pattern": "(\\d+(?:[.,]\\d+)?)\\s*[xX×]\\s*\\d+(?:[.,]\\d+)?\\s*מ[\"״”]מ",
+                "group": 1
+            }
+        },
+        {
+            "key": "wheel_diameter_mm",
+            "label": {
+                "he": "קוטר הגלגל",
+                "en": "Wheel diameter"
+            },
+            "type": "number",
+            "dimension": "length",
+            "min": 20,
+            "max": 300,
+            "hint": "גלגלים תעשייתיים מצוינים באינץ' (2\", 3\", 4\"); הסימן מומר למ\"מ",
+            "applies_to": [
+                "caster"
+            ],
+            "title_capture": {
+                "pattern": "(?<!\\d)(\\d+(?:[.,]\\d+)?)\\s*[\"״](?!מ)",
+                "group": 1,
+                "factor": 25.4
+            }
+        },
+        {
+            "key": "load_kg",
+            "label": {
+                "he": "עומס מומלץ",
+                "en": "Load rating"
+            },
+            "type": "number",
+            "dimension": "mass",
+            "min": 5,
+            "max": 1500,
+            "applies_to": [
+                "shelf_board"
+            ],
+            "title_capture": {
+                "pattern": "(?<!\\d)(\\d+(?:[.,]\\d+)?)\\s*ק[\"״”]ג",
+                "group": 1
+            }
+        },
+        {
+            "key": "material",
+            "label": {
+                "he": "חומר",
+                "en": "Material"
+            },
+            "type": "enum",
+            "hint": "כשלא מצוין חומר אחר, פרזול מתכתי הוא לרוב פלדה",
+            "values": [
+                {
+                    "key": "steel",
+                    "label": {
+                        "he": "פלדה",
+                        "en": "Steel"
+                    },
+                    "patterns": [
+                        "פלדה",
+                        "מתכת"
+                    ]
+                },
+                {
+                    "key": "stainless",
+                    "label": {
+                        "he": "נירוסטה",
+                        "en": "Stainless steel"
+                    },
+                    "patterns": [
+                        "נירוסטה"
+                    ]
+                },
+                {
+                    "key": "brass",
+                    "label": {
+                        "he": "פליז",
+                        "en": "Brass"
+                    },
+                    "patterns": [
+                        "פליז",
+                        "נחושת"
+                    ]
+                },
+                {
+                    "key": "plastic",
+                    "label": {
+                        "he": "פלסטיק",
+                        "en": "Plastic"
+                    },
+                    "patterns": [
+                        "פלסטיק",
+                        "סיליקון"
+                    ]
+                },
+                {
+                    "key": "aluminium",
+                    "label": {
+                        "he": "אלומיניום",
+                        "en": "Aluminium"
+                    },
+                    "patterns": [
+                        "אלומיניום"
+                    ]
+                },
+                {
+                    "key": "zinc",
+                    "label": {
+                        "he": "אבץ",
+                        "en": "Zinc"
+                    },
+                    "patterns": [
+                        "אבץ"
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "finish",
+            "label": {
+                "he": "גימור",
+                "en": "Finish"
+            },
+            "type": "enum",
+            "values": [
+                {
+                    "key": "white",
+                    "label": {
+                        "he": "לבן",
+                        "en": "White"
+                    },
+                    "patterns": [
+                        "לבן"
+                    ]
+                },
+                {
+                    "key": "black",
+                    "label": {
+                        "he": "שחור",
+                        "en": "Black"
+                    },
+                    "patterns": [
+                        "שחור"
+                    ]
+                },
+                {
+                    "key": "yellow",
+                    "label": {
+                        "he": "צהוב",
+                        "en": "Yellow"
+                    },
+                    "patterns": [
+                        "צהוב"
+                    ]
+                },
+                {
+                    "key": "nickel",
+                    "label": {
+                        "he": "ניקל",
+                        "en": "Nickel"
+                    },
+                    "patterns": [
+                        "ניקל"
+                    ]
+                },
+                {
+                    "key": "chrome",
+                    "label": {
+                        "he": "כרום",
+                        "en": "Chrome"
+                    },
+                    "patterns": [
+                        "כרום"
+                    ]
+                },
+                {
+                    "key": "antique",
+                    "label": {
+                        "he": "עתיק / מושחר",
+                        "en": "Antique / blackened"
+                    },
+                    "patterns": [
+                        "עתיק",
+                        "מושחר",
+                        "חלודה"
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "mounting",
+            "label": {
+                "he": "אופן ההתקנה",
+                "en": "Mounting"
+            },
+            "type": "enum",
+            "values": [
+                {
+                    "key": "wall",
+                    "label": {
+                        "he": "לקיר",
+                        "en": "Wall mount"
+                    },
+                    "patterns": [
+                        "תושבת קיר",
+                        "קיר סמויה",
+                        "לקיר"
+                    ]
+                },
+                {
+                    "key": "floor",
+                    "label": {
+                        "he": "לרצפה",
+                        "en": "Floor mount"
+                    },
+                    "patterns": [
+                        "תושבת רצפה",
+                        "לרצפה"
+                    ]
+                },
+                {
+                    "key": "post_rod",
+                    "label": {
+                        "he": "למוט / לעמוד",
+                        "en": "Post/rod mount"
+                    },
+                    "patterns": [
+                        "תושבת מוט",
+                        "למוט"
+                    ]
+                },
+                {
+                    "key": "plate",
+                    "label": {
+                        "he": "עם פלטה",
+                        "en": "Plate mount"
+                    },
+                    "patterns": [
+                        "עם פלטה",
+                        "פלטה"
+                    ]
+                },
+                {
+                    "key": "concealed",
+                    "label": {
+                        "he": "נסתר",
+                        "en": "Concealed"
+                    },
+                    "patterns": [
+                        "נסתר",
+                        "סמוי",
+                        "תלייה נסתרת"
+                    ]
+                }
+            ]
+        }
+    ],
+    "tags": [
+        {
+            "key": "heavy_duty",
+            "label": {
+                "he": "עמיד ולעומס כבד",
+                "en": "Heavy duty"
+            },
+            "patterns": [
+                "תעשייתי",
+                "חזק במיוחד",
+                "כבד"
+            ]
+        },
+        {
+            "key": "outdoor",
+            "label": {
+                "he": "לשימוש חיצוני",
+                "en": "Outdoor"
+            },
+            "patterns": [
+                "חיצוני",
+                "לפרגולה",
+                "לגדר"
+            ]
+        },
+        {
+            "key": "decorative",
+            "label": {
+                "he": "מעוצב",
+                "en": "Decorative"
+            },
+            "patterns": [
+                "מעוצב",
+                "מעוצבת",
+                "דקורטיבי"
+            ]
+        }
+    ],
+    "uses": [
+        {
+            "key": "furniture",
+            "label": {
+                "he": "נגרות ובניית רהיטים",
+                "en": "Furniture making"
+            },
+            "patterns": [
+                "רהיט",
+                "ריהוט",
+                "ארונות",
+                "ארון",
+                "שולחן",
+                "ספסל"
+            ],
+            "types": [
+                "table_leg",
+                "handle",
+                "caster",
+                "hinge"
+            ]
+        },
+        {
+            "key": "pergola",
+            "label": {
+                "he": "פרגולה",
+                "en": "Pergola"
+            },
+            "patterns": [
+                "פרגולה",
+                "פרגולות"
+            ],
+            "types": [
+                "post",
+                "post_bracket",
+                "angle_bracket",
+                "hanging_accessory"
+            ]
+        },
+        {
+            "key": "fence",
+            "label": {
+                "he": "גדר",
+                "en": "Fence"
+            },
+            "patterns": [
+                "גדר"
+            ],
+            "types": [
+                "post",
+                "angle_bracket"
+            ]
+        },
+        {
+            "key": "shelving",
+            "label": {
+                "he": "מדפים ואחסון",
+                "en": "Shelving"
+            },
+            "patterns": [
+                "מדף",
+                "מדפים",
+                "מידוף"
+            ],
+            "types": [
+                "shelf_support"
+            ]
+        },
+        {
+            "key": "doors",
+            "label": {
+                "he": "דלתות",
+                "en": "Doors"
+            },
+            "patterns": [
+                "דלת",
+                "דלתות"
+            ],
+            "types": [
+                "hinge",
+                "handle",
+                "bolt_latch"
+            ]
+        },
+        {
+            "key": "hanging",
+            "label": {
+                "he": "תלייה על הקיר",
+                "en": "Wall hanging"
+            },
+            "patterns": [
+                "תליה",
+                "תלייה",
+                "לתלות",
+                "לתלייה"
+            ],
+            "types": [
+                "hanging_accessory",
+                "shelf_support"
+            ]
+        }
+    ]
+}

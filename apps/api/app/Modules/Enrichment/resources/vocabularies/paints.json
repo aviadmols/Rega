@@ -1,0 +1,185 @@
+{
+    "schema_version": 1,
+    "key": "paints",
+    "name": {
+        "he": "צבעים ולכות",
+        "en": "Paints and finishes"
+    },
+    "root_category_external_id": "1752",
+    "excluded_category_external_ids": [],
+    "product_types": [
+        {
+            "key": "wall_paint",
+            "label": { "he": "צבע קיר", "en": "Wall paint" },
+            "patterns": ["צבע (?:ל)?קיר(?:ות)?", "צבע (?:ל)?תקרה", "צבע פנים(?! וחוץ)"]
+        },
+        {
+            "key": "wood_paint",
+            "label": { "he": "צבע עץ", "en": "Wood paint" },
+            "patterns": ["צבע (?:ל)?עץ", "אמייל (?:ל)?עץ"]
+        },
+        {
+            "key": "metal_paint",
+            "label": { "he": "צבע מתכת", "en": "Metal paint" },
+            "hint": "כולל צבע לברזל, לגילוון ולמעקות",
+            "patterns": ["צבע (?:ל)?מתכת", "צבע (?:ל)?ברזל", "אנטי[ -]?חלוד", "אנטי[ -]?קורוזיה", "אמייל (?:ל)?מתכת", "צבע (?:ל)?גילוון"]
+        },
+        {
+            "key": "primer",
+            "label": { "he": "יסוד ופריימר", "en": "Primer" },
+            "patterns": ["פריימר", "צבע יסוד", "יסוד (?:לקיר|למתכת|לעץ|לבטון)", "גרונד"]
+        },
+        {
+            "key": "varnish",
+            "label": { "he": "לכה וורניש", "en": "Varnish and lacquer" },
+            "hint": "לכה פוליאוריתנית, אקרילית או לעץ חיצוני, כולל פוליטורה",
+            "patterns": ["לכה", "ורניש", "ורניס", "פוליאוריתני", "פוליאוריטן"]
+        },
+        {
+            "key": "spray_paint",
+            "label": { "he": "ספריי צבע", "en": "Spray paint" },
+            "patterns": ["ספריי צבע", "צבע ספריי", "אירוסול"]
+        },
+        {
+            "key": "chalk_paint",
+            "label": { "he": "צבע גיר", "en": "Chalk paint" },
+            "hint": "צבע גיר לרהיטים בסגנון שאבי שיק ולוחות גיר",
+            "patterns": ["צבע (?:לוח )?גיר", "גיר שאבי שיק"]
+        },
+        {
+            "key": "stain",
+            "label": { "he": "מכתים לעץ", "en": "Wood stain" },
+            "patterns": ["מכתים (?:ל)?עץ", "סטיין", "כתם (?:ל)?עץ"]
+        },
+        {
+            "key": "thinner",
+            "label": { "he": "מדלל וטינר", "en": "Thinner" },
+            "patterns": ["מדלל", "טינר", "תרנר", "מסיס"]
+        },
+        {
+            "key": "paint_stripper",
+            "label": { "he": "מסיר צבע ומנקה עץ", "en": "Paint stripper and wood cleaner" },
+            "hint": "כולל חומרי ניקוי והבהרה לעץ שמוכרים לצד מסירי הצבע",
+            "patterns": ["מסיר (?:כל )?צבע", "מסיר צבע מעץ", "סטריפר", "ניקוי והבהרה לעץ", "DECK\\s?BRITE"]
+        },
+        {
+            "key": "sprayer",
+            "label": { "he": "מרסס או איירלס לצבע", "en": "Paint sprayer" },
+            "hint": "כולל השכרת ציוד ריסוס. אותם מוצרים מופיעים גם תחת מברשות צבע (1754)",
+            "patterns": ["מרסס(?: צבע)?", "איירלס", "אקדח (?:ל)?ספריי", "^השכרת"]
+        },
+        {
+            "key": "brush",
+            "label": { "he": "מברשת, פד או ספוג צביעה", "en": "Brush, pad or sponge" },
+            "categories": ["1754"],
+            "patterns": ["מברש(?:ת|ות)", "פד צביעה", "מילוי לפד", "ספוג צביעה", "חיפושית צבע"]
+        },
+        {
+            "key": "roller",
+            "label": { "he": "רולר לצביעה", "en": "Paint roller" },
+            "categories": ["1754"],
+            "patterns": ["רולר", "גלגלת צביעה"]
+        },
+        {
+            "key": "tray",
+            "label": { "he": "מגש לרולר", "en": "Roller tray" },
+            "categories": ["1754"],
+            "patterns": ["מגש (?:ל)?רולר", "מגש צביעה"]
+        }
+    ],
+    "attributes": [
+        {
+            "key": "volume_l",
+            "label": { "he": "נפח", "en": "Volume" },
+            "type": "number",
+            "dimension": "volume",
+            "min": 0.05,
+            "max": 20,
+            "hint": "נפח האריזה בליטרים. כשיש כמה נפחים לבחירה, השאירו ריק",
+            "applies_to": ["wall_paint", "wood_paint", "metal_paint", "primer", "varnish", "spray_paint", "chalk_paint", "stain", "thinner", "paint_stripper"],
+            "title_capture": { "pattern": "(?<![\\d.,/])(?<!/ )(\\d+(?:[.,]\\d+)?)\\s*ליטר(?![\\p{L}])(?!\\s*/)", "group": 1 }
+        },
+        {
+            "key": "volume_ml",
+            "label": { "he": "נפח (מ\"ל)", "en": "Volume (ml)" },
+            "type": "number",
+            "dimension": "volume",
+            "min": 0.03,
+            "max": 1,
+            "hint": "נפח אריזות קטנות כמו ספריי או לכה, כתוב במ\"ל בכותרת",
+            "applies_to": ["wall_paint", "wood_paint", "metal_paint", "primer", "varnish", "spray_paint", "chalk_paint", "stain", "thinner", "paint_stripper"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]ל(?![\\p{L}])", "group": 1, "factor": 0.001 }
+        },
+        {
+            "key": "width_mm",
+            "label": { "he": "רוחב", "en": "Width" },
+            "type": "number",
+            "dimension": "length",
+            "min": 50,
+            "max": 310,
+            "hint": "רוחב מברשת או רולר. בכותרות רוב הגדלים כתובים באינץ' (\"), שממירים למ\"מ",
+            "applies_to": ["brush", "roller"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*(?:[\"״”]|['׳’]{2})(?![\\p{L}])", "group": 1, "factor": 25.4 }
+        },
+        {
+            "key": "base",
+            "label": { "he": "בסיס", "en": "Base" },
+            "type": "enum",
+            "applies_to": ["wall_paint", "wood_paint", "metal_paint", "primer", "varnish", "spray_paint", "chalk_paint", "stain"],
+            "values": [
+                { "key": "water", "label": { "he": "על בסיס מים", "en": "Water based" }, "patterns": ["בסיס מים", "מבוסס מים", "הידרו"] },
+                { "key": "solvent", "label": { "he": "על בסיס ממיסים", "en": "Solvent based" }, "patterns": ["בסיס ממיסים", "בסיס שמן", "סינטטי"] }
+            ]
+        },
+        {
+            "key": "sheen",
+            "label": { "he": "גימור", "en": "Sheen" },
+            "type": "enum",
+            "applies_to": ["wall_paint", "wood_paint", "metal_paint", "varnish", "spray_paint", "chalk_paint", "stain"],
+            "values": [
+                { "key": "matte", "label": { "he": "מט", "en": "Matte" }, "patterns": ["(?<![\\p{L}])(?<!משי )מט(?![\\p{L}])(?! משי)"] },
+                { "key": "satin", "label": { "he": "מט משי", "en": "Satin" }, "patterns": ["מט משי", "משי מט", "סאטן"] },
+                { "key": "gloss", "label": { "he": "מבריק", "en": "Gloss" }, "patterns": ["מבריק", "גלוס"] }
+            ]
+        },
+        {
+            "key": "surface",
+            "label": { "he": "משטח יעד", "en": "Target surface" },
+            "type": "enum",
+            "applies_to": ["wall_paint", "wood_paint", "metal_paint", "primer", "varnish", "spray_paint", "chalk_paint", "stain"],
+            "values": [
+                { "key": "wood", "label": { "he": "לעץ", "en": "Wood" }, "patterns": ["לעץ"] },
+                { "key": "metal", "label": { "he": "למתכת", "en": "Metal" }, "patterns": ["למתכת", "לברזל", "לגילוון"] },
+                { "key": "wall", "label": { "he": "לקיר", "en": "Wall" }, "patterns": ["לקיר(?:ות)?", "לתקרה"] },
+                { "key": "multi", "label": { "he": "רב משטחי", "en": "Multi-surface" }, "patterns": ["רב[ -]?משטחי", "רב תכליתי", "לכל המשטחים", "אוניברסלי"] }
+            ]
+        },
+        {
+            "key": "color_family",
+            "label": { "he": "משפחת צבע", "en": "Color family" },
+            "type": "enum",
+            "applies_to": ["wall_paint", "wood_paint", "metal_paint", "primer", "varnish", "spray_paint", "chalk_paint"],
+            "values": [
+                { "key": "clear", "label": { "he": "שקוף", "en": "Clear" }, "patterns": ["שקוף", "שקופה"] },
+                { "key": "white", "label": { "he": "לבן", "en": "White" }, "patterns": ["לבן(?:ה)?"] },
+                { "key": "black", "label": { "he": "שחור", "en": "Black" }, "patterns": ["שחור(?:ה)?"] },
+                { "key": "custom_tint", "label": { "he": "גוון לבחירה", "en": "Custom tint" }, "patterns": ["במבחר גוונים", "גוון לבחירה", "התאמת גוון"] }
+            ]
+        }
+    ],
+    "tags": [
+        { "key": "outdoor", "label": { "he": "לשימוש בחוץ", "en": "Outdoor use" }, "patterns": ["חיצוני", "לחוץ", "עמיד בחוץ"] },
+        { "key": "anti_rust", "label": { "he": "מונע חלודה", "en": "Anti-rust" }, "patterns": ["אנטי[ -]?חלוד", "נגד חלודה", "מונע חלודה", "אנטי[ -]?קורוזיה"] },
+        { "key": "washable", "label": { "he": "ניתן לשטיפה", "en": "Washable" }, "patterns": ["ניתן לשטיפה", "עמיד לשטיפה", "רחיץ"] },
+        { "key": "fast_drying", "label": { "he": "מתייבש מהר", "en": "Fast drying" }, "patterns": ["ייבוש מהיר", "מתייבש מהר", "יובש מהיר"] }
+    ],
+    "uses": [
+        { "key": "furniture", "label": { "he": "נגרות ובניית רהיטים", "en": "Furniture making" }, "patterns": ["רהיט"], "types": ["wood_paint", "varnish", "chalk_paint", "stain", "primer"] },
+        { "key": "deck", "label": { "he": "בניית דק", "en": "Deck" }, "patterns": ["לדק", "דק "], "types": ["wood_paint", "varnish", "stain", "paint_stripper"] },
+        { "key": "fence", "label": { "he": "גדר", "en": "Fence" }, "patterns": ["גדר"], "types": ["metal_paint", "wood_paint", "primer", "spray_paint"] },
+        { "key": "pergola", "label": { "he": "פרגולה", "en": "Pergola" }, "patterns": ["פרגול"], "types": ["wood_paint", "varnish", "stain", "metal_paint"] },
+        { "key": "indoor_cladding", "label": { "he": "חיפוי קירות בבית", "en": "Indoor wall cladding" }, "patterns": ["חיפוי קיר", "חיפויי קיר"], "types": ["wall_paint", "primer", "varnish"] },
+        { "key": "gates_and_railings", "label": { "he": "שערים ומעקות", "en": "Gates and railings" }, "patterns": ["שער", "מעקה", "מעקות"], "types": ["metal_paint", "primer", "spray_paint"] },
+        { "key": "walls", "label": { "he": "צביעת קירות", "en": "Wall painting" }, "patterns": ["קיר", "קירות", "תקרה"], "types": ["wall_paint", "primer"] }
+    ]
+}

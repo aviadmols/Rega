@@ -1,0 +1,187 @@
+{
+    "schema_version": 1,
+    "key": "adhesives",
+    "name": {
+        "he": "הדבקה ואטימה",
+        "en": "Adhesives and sealants"
+    },
+    "root_category_external_id": "1749",
+    "excluded_category_external_ids": [],
+    "product_types": [
+        {
+            "key": "wood_glue",
+            "label": { "he": "דבק לעץ", "en": "Wood glue" },
+            "hint": "דבק נגרים לעבודות עץ, כמו אלמרס",
+            "patterns": ["דבק (?:ל)?עץ", "דבק נגרים", "אלמרס", "Elmer"]
+        },
+        {
+            "key": "contact_glue",
+            "label": { "he": "דבק מגע", "en": "Contact glue" },
+            "patterns": ["דבק מגע", "נאופרן"]
+        },
+        {
+            "key": "general_glue",
+            "label": { "he": "דבק כללי וסופר דבק", "en": "General purpose and instant glue" },
+            "hint": "דבקים רב שימושיים חזקים כמו גורילה גלו והייטק, לא לבנייה כבדה",
+            "patterns": ["גורילה", "Gorilla", "דבק הייטק", "היי[ -]?טק", "לאומנות", "PRIME", "דבק רב שימושי"]
+        },
+        {
+            "key": "construction_adhesive",
+            "label": { "he": "דבק לבנייה וחיבור חומרים", "en": "Construction adhesive" },
+            "hint": "דבק חזק מיוחד לבנייה, לשיש ולאבן, כולל PU למבני עץ",
+            "patterns": ["דבק (?:חזק )?לבניה", "Heavy Duty", "דבק אקסטרים", "FIX PU", "דבק שיש"]
+        },
+        {
+            "key": "epoxy",
+            "label": { "he": "אפוקסי דו רכיבי", "en": "Two-component epoxy" },
+            "patterns": ["אפוקסי", "פרופוקסי", "סיקהדור", "דו רכיבי"]
+        },
+        {
+            "key": "silicone_sealant",
+            "label": { "he": "סיליקון לאיטום", "en": "Silicone sealant" },
+            "patterns": ["סיליקון ניטרלי", "סיליקון אצטי", "RTV"]
+        },
+        {
+            "key": "acrylic_sealant",
+            "label": { "he": "מרק אקרילי לאיטום", "en": "Acrylic sealant" },
+            "hint": "כולל שפופרות מוכנות לשימוש כמו פעם אחת",
+            "patterns": ["מרק אקרילי", "אקרילי לאיטום", "פעם אחת"]
+        },
+        {
+            "key": "hybrid_sealant",
+            "label": { "he": "דבק איטום היברידי (MS פולימר)", "en": "Hybrid adhesive-sealant (MS polymer)" },
+            "hint": "משחות איטום והדבקה כמו סיקפלקס, סיקה וטי-רקס, גם דבק וגם אטם",
+            "patterns": ["MS POLYMER", "MS[ -]?פולימר", "סיקפלקס", "T-REX", "סיקה 11", "משחת איטום והדבקה"]
+        },
+        {
+            "key": "pu_foam",
+            "label": { "he": "קצף פוליאוריטן", "en": "PU foam" },
+            "patterns": ["קצף פוליאוריטן", "קצף פוליאוריטני", "קצף למילוי", "PU Foam"]
+        },
+        {
+            "key": "waterproofing_coating",
+            "label": { "he": "ציפוי איטום וזפת", "en": "Waterproofing coating" },
+            "hint": "כולל זפת קר, שרעף ומריס לאיטום גגות ומרתפים",
+            "patterns": ["זפת קר", "שרעף", "שראף", "מריס", "אמולביט", "טרמודריי", "לבידוד תרמי"]
+        },
+        {
+            "key": "tape",
+            "label": { "he": "סרט הדבקה ואיטום", "en": "Adhesive and sealing tape" },
+            "patterns": ["סרט הדבקה", "סרט בידוד", "סרט איטום", "WaterProof Patch"]
+        },
+        {
+            "key": "caulking_gun",
+            "label": { "he": "אקדח לדבק ולסיליקון", "en": "Glue and caulking gun" },
+            "patterns": ["אקדח דבק חם", "אקדח סיליקון", "אקדח למרק", "שפכטל.{0,15}לסיליקון"]
+        },
+        {
+            "key": "thread_locker",
+            "label": { "he": "דבק לנעילת ברגים", "en": "Thread locker" },
+            "hint": "דבק מיוחד המונע שחרור עצמי של בורג, כמו לוקטייט",
+            "patterns": ["לוקטייט", "Loctite", "נועל ברגים", "מונע שחרור ברגים"]
+        },
+        {
+            "key": "other",
+            "label": { "he": "אחר", "en": "Other" }
+        }
+    ],
+    "attributes": [
+        {
+            "key": "volume_ml",
+            "label": { "he": "נפח", "en": "Volume" },
+            "type": "number",
+            "dimension": "volume",
+            "min": 0.01,
+            "max": 1,
+            "hint": "נפח האריזה. כשיש כמה נפחים לבחירה, השאירו ריק",
+            "applies_to": ["contact_glue", "general_glue", "construction_adhesive", "epoxy", "silicone_sealant", "acrylic_sealant", "hybrid_sealant", "pu_foam"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]ל(?![\\p{L}])", "group": 1, "factor": 0.001 }
+        },
+        {
+            "key": "weight_g",
+            "label": { "he": "משקל", "en": "Weight" },
+            "type": "number",
+            "dimension": "mass",
+            "min": 0.005,
+            "max": 2,
+            "hint": "משקל אריזות קטנות כמו אפוקסי או שפופרת, כתוב בגרם בכותרת",
+            "applies_to": ["epoxy", "acrylic_sealant"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*(?:גרם|גר['’׳])(?![\\p{L}])", "group": 1, "factor": 0.001 }
+        },
+        {
+            "key": "length_m",
+            "label": { "he": "אורך הסרט", "en": "Tape length" },
+            "type": "number",
+            "dimension": "length",
+            "min": 300,
+            "max": 50000,
+            "hint": "אורך גליל הסרט במטרים",
+            "applies_to": ["tape"],
+            "title_capture": { "pattern": "(\\d+(?:[.,]\\d+)?)\\s*מטר(?![\\p{L}])", "group": 1, "factor": 1000 }
+        },
+        {
+            "key": "width_mm",
+            "label": { "he": "רוחב", "en": "Width" },
+            "type": "number",
+            "dimension": "length",
+            "min": 5,
+            "max": 500,
+            "hint": "רוחב הסרט, כתוב במ\"מ בכותרת. חלק מהכותרות נותנות רוחב באינץ' חלקי (1/2\") שלא ניתן לחלץ מהכותרת",
+            "applies_to": ["tape"],
+            "title_capture": { "pattern": "רוחב\\s*(\\d+(?:[.,]\\d+)?)\\s*מ[\"״”]מ(?![\\p{L}])", "group": 1 }
+        },
+        {
+            "key": "base",
+            "label": { "he": "בסיס", "en": "Base" },
+            "type": "enum",
+            "applies_to": ["contact_glue", "construction_adhesive", "hybrid_sealant", "pu_foam"],
+            "values": [
+                { "key": "water", "label": { "he": "על בסיס מים", "en": "Water based" }, "patterns": ["בסיס מים", "מבוסס מים"] },
+                { "key": "solvent", "label": { "he": "על בסיס ממס", "en": "Solvent based" }, "patterns": ["בסיס ממס", "בסיס ממיסים"] },
+                { "key": "polyurethane", "label": { "he": "פוליאוריתן", "en": "Polyurethane" }, "patterns": ["פוליאוריתן", "פוליאוריטני", "PU "] },
+                { "key": "ms_polymer", "label": { "he": "MS פולימר", "en": "MS polymer" }, "patterns": ["MS POLYMER", "MS[ -]?פולימר"] }
+            ]
+        },
+        {
+            "key": "color",
+            "label": { "he": "צבע", "en": "Color" },
+            "type": "enum",
+            "applies_to": ["silicone_sealant", "acrylic_sealant", "hybrid_sealant", "tape", "construction_adhesive", "general_glue"],
+            "values": [
+                { "key": "transparent", "label": { "he": "שקוף", "en": "Transparent" }, "patterns": ["שקוף", "קריסטל"] },
+                { "key": "white", "label": { "he": "לבן", "en": "White" }, "patterns": ["לבן"] },
+                { "key": "black", "label": { "he": "שחור", "en": "Black" }, "patterns": ["שחור"] },
+                { "key": "grey", "label": { "he": "אפור", "en": "Grey" }, "patterns": ["אפור"] },
+                { "key": "brown", "label": { "he": "חום", "en": "Brown" }, "patterns": ["חום"] }
+            ]
+        },
+        {
+            "key": "substrate",
+            "label": { "he": "מתאים ל", "en": "Suitable for" },
+            "type": "enum",
+            "applies_to": ["wood_glue", "contact_glue", "epoxy", "construction_adhesive", "general_glue", "silicone_sealant"],
+            "values": [
+                { "key": "wood", "label": { "he": "עץ", "en": "Wood" }, "patterns": ["לעץ", "עבודות עץ", "לרהיטי עץ", "מבני עץ"] },
+                { "key": "metal", "label": { "he": "מתכת", "en": "Metal" }, "patterns": ["למתכת", "מתכות"] },
+                { "key": "glass", "label": { "he": "זכוכית", "en": "Glass" }, "patterns": ["לזכוכית", "זכוכית"] },
+                { "key": "multi", "label": { "he": "רב שימושי (כל החומרים)", "en": "Multi-surface" }, "patterns": ["רב שימושי", "לכל החומרים", "מגוון חומרים", "וחומרים נוספים"] }
+            ]
+        }
+    ],
+    "tags": [
+        { "key": "waterproof", "label": { "he": "עמיד למים", "en": "Waterproof" }, "patterns": ["עמיד למים", "אטום למים", "WaterProof", "וואטרפרוף"] },
+        { "key": "fast_setting", "label": { "he": "מתקשה מהר", "en": "Fast setting" }, "patterns": ["תוך 3 שניות", "מהיר וחזק", "התקשות מהירה", "מגיב מהיר"] },
+        { "key": "outdoor", "label": { "he": "לשימוש חיצוני", "en": "For outdoor use" }, "patterns": ["לשימוש חיצוני", "אקסטיריור", "(?<![\\p{L}])חיצוני"] },
+        { "key": "food_safe", "label": { "he": "מתאים למגע עם מזון", "en": "Food safe" }, "patterns": ["מגע עם מזון", "מאושר למזון", "לאקווריום"] }
+    ],
+    "uses": [
+        { "key": "furniture", "label": { "he": "נגרות ובניית רהיטים", "en": "Furniture making" }, "patterns": ["רהיט", "ארונות", "נגרות"], "types": ["wood_glue", "contact_glue", "epoxy", "general_glue"] },
+        { "key": "deck", "label": { "he": "בניית דק", "en": "Deck" }, "patterns": ["לדק", "דק "], "types": ["construction_adhesive", "pu_foam"] },
+        { "key": "pergola", "label": { "he": "פרגולה", "en": "Pergola" }, "patterns": ["פרגול"], "types": ["construction_adhesive", "pu_foam"] },
+        { "key": "construction", "label": { "he": "בנייה, שלד וטפסנות", "en": "Construction and framing" }, "patterns": ["לבניין", "בנייה", "טפסנות", "שלד"], "types": ["construction_adhesive", "epoxy", "waterproofing_coating", "pu_foam"] },
+        { "key": "shelving", "label": { "he": "מדפים ואחסון", "en": "Shelving" }, "patterns": ["מדף", "מדפים"], "types": ["epoxy", "construction_adhesive"] },
+        { "key": "bathroom_sealing", "label": { "he": "איטום אמבטיה ומקלחת", "en": "Bathroom and shower sealing" }, "patterns": ["אמבטיה", "מקלחת", "חדר רטוב"], "types": ["silicone_sealant", "hybrid_sealant"] },
+        { "key": "windows_doors", "label": { "he": "איטום חלונות ודלתות", "en": "Windows and doors sealing" }, "patterns": ["חלונות", "דלתות", "חלון", "דלת"], "types": ["silicone_sealant", "acrylic_sealant", "pu_foam"] },
+        { "key": "flooring", "label": { "he": "רצפות ופרקט", "en": "Flooring" }, "patterns": ["רצפה", "רצפות", "פרקט", "למינציה"], "types": ["contact_glue", "epoxy", "waterproofing_coating"] }
+    ]
+}
