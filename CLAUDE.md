@@ -69,8 +69,16 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
   carry spare products for that, so trim to `widget.max_products` only there.
 - `Assistant` answers shoppers' questions (`/widget/{site}/ask`, `/widget/{site}/questions`): saved
   answers first, contact details and daily limits in code, a small model checks the question is
-  about the product, then the writer answers from approved facts, highlights and text only. Models
-  go through `Ai\Contracts\ChatModel` (panel keys) and `SpendGuard`; tests bind a fake ChatModel.
+  about the product, the writer answers from store information first and general knowledge second
+  (never "according to the page"), then code and a small model verify the answer is about this
+  product and quotes no number the store did not give. Models go through `Ai\Contracts\ChatModel`
+  (panel keys) and `SpendGuard`; tests bind a fake ChatModel. Answers with an older
+  `AnswerQuestion::PROMPT_VERSION` are asked again, except the team's own (source `team`), which the
+  operator writes in "Shopper questions".
+- The store team's say: `WidgetCuration` rows (pin or hide, per page, an item or a whole section)
+  are applied in `BuildPageBank::curated()` after `learned()`. A pin is shown first and never
+  dropped by the scores; a hidden section is never re-created by a pinned item. The operator page
+  "Page in the widget" builds the bank with `explain: true`, so every item carries `why` notes.
 - Highlights (`product_highlights`, facts of kind `highlight`) are written from longer text
   (`enrichment.max_highlight_text_chars`); a reviewer of highlights must read that same text.
 - A route under `api/*` gets `Access-Control-Allow-Origin: *` from Laravel's CORS config; origin

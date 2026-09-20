@@ -57,6 +57,20 @@ recorded in Agent activity.
     Inside a section, clicked items come first. After `analytics.drop_related_after_opens` openings
     on a page, products shown there and never clicked are dropped, and spare products take their
     place. Preview visits do not count. The run's output lists sections from best to worst.
+15. **The store team's say.** Operator panel, Widget, "Page in the widget"
+    (`/operator/widget/page?shop=&type=&id=`; a preview visit on the store links there with
+    "Why is this shown?"). It lists every section and item the widget would show on that page
+    with the reason each is there: the rule or link that found a complement, the family, the
+    guide's tie to the product, the score. The team pins an item or a whole section (shown first,
+    never dropped by the scores), hides one (never shown on that page again), or adds a product
+    the widget did not find. Nothing to recompute: pins and hides are read on every build.
+16. **Shopper questions.** Operator panel, Assistant, "Shopper questions": every question asked
+    on the shop's product pages, by product, unanswered first. The team's answer becomes the saved
+    answer for that product and question (source `team`); it is never asked of a model again and
+    survives prompt changes. An answer can also be hidden.
+
+The WhatsApp strip (feature `widget.whatsapp`, with the number, hours and message in Widget
+settings) needs no scan; it is on or off per shop.
 
 ## The log
 
