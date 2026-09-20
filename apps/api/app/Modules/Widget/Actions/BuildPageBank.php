@@ -1061,8 +1061,13 @@ final class BuildPageBank
 
     private function measure(float $value, ?string $unit): string
     {
+        // The unit a shopper reads: 1,200 mm is 1.2 m, 0.4 L is 400 ml, 0.25 kg is 250 g.
         if ($unit === 'mm' && $value >= 1000) {
             [$value, $unit] = [$value / 1000, 'm'];
+        } elseif ($unit === 'L' && $value > 0 && $value < 1) {
+            [$value, $unit] = [$value * 1000, 'ml'];
+        } elseif ($unit === 'kg' && $value > 0 && $value < 1) {
+            [$value, $unit] = [$value * 1000, 'g'];
         }
 
         $number = rtrim(rtrim(number_format($value, 2, '.', ','), '0'), '.');

@@ -53,6 +53,8 @@ return [
         'J' => 'J',
         'bar' => 'bar',
         'L' => 'L',
+        'ml' => 'ml',
+        'g' => 'g',
         'pcs' => 'pcs',
     ],
     'yes' => 'Yes',
