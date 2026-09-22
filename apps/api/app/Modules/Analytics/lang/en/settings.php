@@ -21,6 +21,18 @@ return [
         'label' => 'Drop related products that do not work',
         'description' => 'A product shown inside a section that nobody clicked after this many openings of the section on that page stops showing.',
     ],
+    'popularity_window_days' => [
+        'label' => 'Popularity period',
+        'description' => 'Adds to the cart and orders of these many days are counted per product every night.',
+    ],
+    'popular_min_score' => [
+        'label' => 'Threshold for a popular product',
+        'description' => 'Adds to the cart plus twice the orders. Below it a product is not marked popular even at the top of the list.',
+    ],
+    'popular_top_percent' => [
+        'label' => 'Share of products marked popular',
+        'description' => 'Only products in this top share of the whole live catalog, by the count, are marked popular.',
+    ],
     'retention_days' => [
         'label' => 'Keep events for',
         'description' => 'Older events are deleted every night. Orders are kept.',

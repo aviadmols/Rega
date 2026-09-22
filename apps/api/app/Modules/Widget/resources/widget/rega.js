@@ -181,6 +181,51 @@
     }
   }
 
+  // ---------------------------------------------------------------- the store's own add to cart
+
+  var lastAddAt = 0;
+
+  /** Counts an add to the cart once, whichever of the store's signals fired for it. */
+  function storeAdded(quantity) {
+    var now = Date.now();
+    if (PAGE_TYPE !== 'product' || now - lastAddAt < 1500) {
+      return;
+    }
+    lastAddAt = now;
+    track('add_to_cart', null, null, { source: 'page', product_id: PAGE_ID, quantity: quantity, result: 'added' });
+    // The form may leave the page right now: a beacon survives that.
+    flush(true);
+  }
+
+  function formQuantity(form) {
+    var input = form.querySelector('input[name="quantity"]');
+    var quantity = input ? parseInt(input.value, 10) : 1;
+    return quantity >= 1 && quantity <= 999 ? quantity : 1;
+  }
+
+  /**
+   * The store's own button on a product page: the product form's submit, or the theme's ajax add
+   * (WooCommerce's added_to_cart on jQuery, the blocks' wc-blocks_added_to_cart). Nothing about the
+   * shopper is read, only that the product on this page went into the cart.
+   */
+  function watchStoreAdds() {
+    if (PAGE_TYPE !== 'product') {
+      return;
+    }
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (form && form.matches && form.matches('form.cart')) {
+        storeAdded(formQuantity(form));
+      }
+    }, true);
+    document.body.addEventListener('wc-blocks_added_to_cart', function () { storeAdded(1); });
+    try {
+      if (window.jQuery) {
+        window.jQuery(document.body).on('added_to_cart', function () { storeAdded(1); });
+      }
+    } catch (e) { /* a theme without jQuery */ }
+  }
+
   setInterval(function () { flush(false); }, 4000);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {
@@ -380,6 +425,9 @@
     '.quote:hover,.quote:focus-visible{background:rgba(17,24,39,.07)}.quote:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
     '.quote .mark{flex:none;font-family:Georgia,serif;font-size:30px;line-height:.9;color:var(--accent)}',
     '.quote strong,.highlights strong{font-weight:700}',
+    '.pop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;color:var(--muted)}',
+    '.pop .hot{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:rgba(200,30,30,.09);color:#a51616;font-weight:600;font-size:12px}',
+    '.pop .hot svg{width:12px;height:12px}',
     '.highlights li{position:relative;padding-inline-start:18px;margin:6px 0}',
     '.highlights li:before{content:"";position:absolute;inset-inline-start:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--accent)}',
     '.chip-label{display:block;max-width:22ch;overflow:hidden;text-overflow:ellipsis}',
@@ -579,6 +627,8 @@
         status.textContent = '';
         if (result === 'added') {
           button.textContent = labels.added;
+          // The refresh below fires the store's own signals; this add is already counted.
+          lastAddAt = Date.now();
           refreshCartFragments();
           var cart = safeUrl(ctx.cartUrl);
           if (cart) {
@@ -1047,7 +1097,7 @@
       rendered.push({ section: askSection, body: askPanel(askSection, labels) });
     }
 
-    if (rendered.length === 0 && !bank.contact) {
+    if (rendered.length === 0 && !bank.contact && !bank.popularity) {
       return;
     }
 
@@ -1193,6 +1243,10 @@
     if (quote) {
       wrap.appendChild(quote);
     }
+    var pop = popularityLine();
+    if (pop) {
+      wrap.appendChild(pop);
+    }
     wrap.appendChild(chips);
     wrap.appendChild(panel);
 
@@ -1222,11 +1276,39 @@
         track('exposure', { candidate: 'contact', model: 'contact' }, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
+    if (pop) {
+      watchExposure(pop, function (ms, ratio) {
+        track('exposure', { candidate: 'popularity', model: 'popularity' }, 'teaser', { visible_ms: ms, ratio: ratio });
+      });
+    }
+  }
+
+  var FLAME = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2c.3 2.4-.3 4.5-1.7 6.2C10.2 10.1 8 11.5 8 14.5A4.5 4.5 0 0 0 12.5 19c2.6 0 4.5-1.9 4.5-4.5 0-1.6-.6-2.8-1.5-3.8-.3 1.1-.9 1.9-1.7 2.3.6-2 .3-4.8-.5-6.5C12.7 5 12.2 3.3 13.5 2z"/></svg>';
+
+  /** How wanted the product is: the nightly counts as one quiet line, with a mark when it is among the shop's most wanted. */
+  function popularityLine() {
+    var pop = bank.popularity;
+    if (!pop || (!pop.text && !pop.badge)) {
+      return null;
+    }
+    var line = el('div', 'pop');
+    if (pop.badge) {
+      var hot = el('span', 'hot');
+      hot.innerHTML = FLAME;
+      hot.appendChild(document.createTextNode(pop.badge));
+      line.appendChild(hot);
+    }
+    if (pop.text) {
+      line.appendChild(el('span', 'pop-text', pop.text));
+    }
+    return line;
   }
 
   // ---------------------------------------------------------------- start
 
   function start() {
+    watchStoreAdds();
+
     var query = '?type=' + PAGE_TYPE + '&id=' + encodeURIComponent(PAGE_ID) +
       '&locale=' + encodeURIComponent(String(ctx.locale || 'he').slice(0, 2)) +
       (previewKey ? '&preview=' + previewKey : '');
@@ -1249,7 +1331,7 @@
         var sections = data.sections || [];
 
         // In preview mode real visitors only count as page views; the widget is for the team.
-        if (!showWidget || (sections.length === 0 && !previous && !data.ask && !data.contact)) {
+        if (!showWidget || (sections.length === 0 && !previous && !data.ask && !data.contact && !data.popularity)) {
           rememberCurrent(null);
           return;
         }

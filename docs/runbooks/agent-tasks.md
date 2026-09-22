@@ -57,6 +57,12 @@ recorded in Agent activity.
     Inside a section, clicked items come first. After `analytics.drop_related_after_opens` openings
     on a page, products shown there and never clicked are dropped, and spare products take their
     place. Preview visits do not count. The run's output lists sections from best to worst.
+    The same command counts, per product, how many times it was added to the cart (the store's
+    own button, which the widget watches, and the widget's buttons) and how many orders held it
+    in the last `analytics.popularity_window_days`. The widget shows the counts above the circles
+    once they reach `widget.popularity_min_count`, and marks a product "popular in this store"
+    when adds + 2 × orders is at least `analytics.popular_min_score` and it ranks in the top
+    `analytics.popular_top_percent` of the live catalog. Flag: `widget.popularity`.
 15. **The store team's say.** Operator panel, Widget, "Page in the widget"
     (`/operator/widget/page?shop=&type=&id=`; a preview visit on the store links there with
     "Why is this shown?"). It lists every section and item the widget would show on that page

@@ -76,6 +76,14 @@ return [
         'online' => 'זמינים עכשיו',
         'offline' => 'לא זמינים כרגע',
     ],
+    // How wanted the product is, from the nightly counts.
+    'popularity' => [
+        'adds' => '{1} נוסף לסל פעם אחת|[2,*] נוסף לסל :count פעמים',
+        'orders' => '{1} הוזמן פעם אחת|[2,*] הוזמן :count פעמים',
+        'both' => ':adds ו:orders',
+        'sentence' => ':what ב־:days הימים האחרונים',
+        'badge' => 'פופולרי בחנות',
+    ],
     'ui' => [
         'close' => 'סגירה',
         'add_to_cart' => 'הוספה לסל',

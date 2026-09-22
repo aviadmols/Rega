@@ -67,6 +67,9 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - `analytics:scores` (nightly) writes `analytics_scores`; `BuildPageBank::learned()` applies them:
   section order, clicked items first, never-clicked products dropped after enough openings. Sections
   carry spare products for that, so trim to `widget.max_products` only there.
+- `ComputePopularity` (same nightly command) writes `analytics_popularity`: adds to the cart and
+  orders per product. rega.js reports the store's own add-to-cart button as `source: page`. The
+  widget's popularity line reads the table (`BuildPageBank::popularity()`), never the events.
 - `Assistant` answers shoppers' questions (`/widget/{site}/ask`, `/widget/{site}/questions`): saved
   answers first, contact details and daily limits in code, a small model checks the question is
   about the product, the writer answers from store information first and general knowledge second

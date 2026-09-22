@@ -5,6 +5,7 @@ namespace App\Modules\Widget\Actions;
 use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Analytics\Models\AnalyticsScore;
 use App\Modules\Catalog\Models\CatalogCategory;
 use App\Modules\Catalog\Models\CatalogContent;
@@ -153,6 +154,7 @@ final class BuildPageBank
         // The question box (Assistant module) on product pages, when the shop has it on.
         $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
         $bank['contact'] = $this->contact($shopId);
+        $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
 
         if ($this->explain) {
             $bank['explain'] = $this->why;
@@ -1147,6 +1149,61 @@ final class BuildPageBank
             ],
             'online_label' => (string) __('widget::bank.contact.online', [], $this->locale),
             'offline_label' => (string) __('widget::bank.contact.offline', [], $this->locale),
+        ];
+    }
+
+    /**
+     * How wanted this product is, from the nightly counts (ComputePopularity): how many times it
+     * was added to the cart and ordered lately, and a "popular" mark when it is among the shop's
+     * most wanted. A count under widget.popularity_min_count is kept from shoppers; two adds prove
+     * nothing. The team's page still sees the numbers.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function popularity(string $shopId, string $externalId): ?array
+    {
+        if (! Features::enabled('widget.popularity', $shopId)) {
+            return null;
+        }
+
+        $row = AnalyticsPopularity::query()->where('product_external_id', $externalId)->first();
+
+        if ($row === null) {
+            return null;
+        }
+
+        $min = (int) Settings::get('widget.popularity_min_count', $shopId);
+        $this->note('popularity', '', [
+            'adds' => $row->adds, 'orders' => $row->orders, 'units' => $row->units, 'score' => $row->score,
+            'rank' => $row->rank, 'popular' => $row->popular, 'days' => $row->window_days, 'min_count' => $min,
+        ]);
+
+        $parts = [];
+        if ($row->adds >= $min) {
+            $parts['adds'] = trans_choice('widget::bank.popularity.adds', $row->adds, ['count' => $row->adds], $this->locale);
+        }
+        if ($row->orders >= $min) {
+            $parts['orders'] = trans_choice('widget::bank.popularity.orders', $row->orders, ['count' => $row->orders], $this->locale);
+        }
+
+        $text = null;
+        if ($parts !== []) {
+            $what = count($parts) === 2 ? (string) __('widget::bank.popularity.both', $parts, $this->locale) : (string) reset($parts);
+            $text = (string) __('widget::bank.popularity.sentence', ['what' => $what, 'days' => $row->window_days], $this->locale);
+            $text = mb_strtoupper(mb_substr($text, 0, 1)).mb_substr($text, 1);
+        }
+
+        if ($text === null && ! $row->popular) {
+            return null;
+        }
+
+        return [
+            'popular' => $row->popular,
+            'adds' => $row->adds,
+            'orders' => $row->orders,
+            'days' => $row->window_days,
+            'text' => $text,
+            'badge' => $row->popular ? (string) __('widget::bank.popularity.badge', [], $this->locale) : null,
         ];
     }
 

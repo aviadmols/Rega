@@ -58,6 +58,21 @@
             @endforeach
         </x-filament::section>
 
+        @if ($bank['page']['type'] === 'product')
+            @php($pop = $why['popularity'][''] ?? null)
+            <x-filament::section :heading="__('widget::ui.page.popularity')" collapsible collapsed>
+                @if ($pop === null)
+                    <p style="{{ $small }}">{{ __('widget::ui.page.no_popularity') }}</p>
+                @else
+                    <p>{{ __('widget::ui.page.why_popularity', ['adds' => $pop['adds'], 'orders' => $pop['orders'], 'units' => $pop['units'], 'days' => $pop['days'], 'rank' => $pop['rank']]) }}</p>
+                    <p style="{{ $small }}">
+                        {{ __($pop['popular'] ? 'widget::ui.page.popular_yes' : 'widget::ui.page.popular_no') }}
+                        · {{ empty($bank['popularity']['text']) ? __('widget::ui.page.popularity_hidden', ['min' => $pop['min_count']]) : $bank['popularity']['text'] }}
+                    </p>
+                @endif
+            </x-filament::section>
+        @endif
+
         @foreach ($bank['sections'] as $position => $section)
             @php($candidate = $section['candidate'])
             @php($sectionWhy = $why[$candidate][''] ?? [])

@@ -345,7 +345,8 @@
         "family",
         "on_sale",
         "good_for",
-        "contact"
+        "contact",
+        "popularity"
       ]
     },
     "slot": {

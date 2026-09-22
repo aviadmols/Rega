@@ -82,9 +82,13 @@ final class BuildShopReport
      */
     private function daily(Builder $events, Builder $orders, Carbon $since, Carbon $until): array
     {
+        // Adds from the store's own button are counted too (for product popularity); this report
+        // is about what Rega did, so the line counts the widget's own adds only.
         $byDay = (clone $events)
             ->select(DB::raw('DATE(occurred_at) as day'), 'type', DB::raw('count(*) as n'))
             ->whereIn('type', ['page_view', 'open', 'add_to_cart'])
+            ->where(fn (Builder $q) => $q->where('type', '!=', 'add_to_cart')
+                ->orWhere(fn (Builder $add) => $add->where('source', 'widget')->where('result', 'added')))
             ->groupBy('day', 'type')
             ->get()
             ->groupBy(fn ($row): string => substr((string) $row->day, 0, 10));

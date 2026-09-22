@@ -76,6 +76,14 @@ return [
         'online' => 'Online now',
         'offline' => 'Offline now',
     ],
+    // How wanted the product is, from the nightly counts.
+    'popularity' => [
+        'adds' => '{1} added to the cart once|[2,*] added to the cart :count times',
+        'orders' => '{1} ordered once|[2,*] ordered :count times',
+        'both' => ':adds and :orders',
+        'sentence' => ':what in the last :days days',
+        'badge' => 'Popular in this store',
+    ],
     'ui' => [
         'close' => 'Close',
         'add_to_cart' => 'Add to cart',

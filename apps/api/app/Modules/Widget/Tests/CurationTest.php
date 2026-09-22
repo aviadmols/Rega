@@ -3,6 +3,7 @@
 namespace App\Modules\Widget\Tests;
 
 use App\Modules\Admin\Models\User;
+use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Analytics\Models\AnalyticsScore;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Models\EnrichmentProductRelation;
@@ -80,10 +81,17 @@ final class CurationTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('operator'));
         $this->actingAs(User::factory()->operator()->create());
 
+        $this->inShop(fn () => AnalyticsPopularity::query()->create([
+            'shop_id' => $this->shop->id, 'product_external_id' => '10', 'adds' => 9, 'orders' => 2, 'units' => 3,
+            'score' => 13, 'rank' => 1, 'popular' => true, 'window_days' => 30, 'computed_at' => now(),
+        ]));
+
         Livewire::test(ProductPage::class, ['shop' => $this->shop->id, 'type' => 'product', 'id' => '10'])
             ->assertSee('מסור אנכי')
             ->assertSee('מתאים לקנות יחד')
             ->assertSee('ציון קשר 100')
+            ->assertSee('נוסף לסל 9 פעמים והופיע ב־2 הזמנות (3 יחידות) ב־30 הימים האחרונים · מקום 1 בחנות')
+            ->assertSee('מסומן כפופולרי')
             ->call('hide', 'complement', '21')
             ->call('startAdding', 'complement')
             ->set('addSearch', 'הצוות')

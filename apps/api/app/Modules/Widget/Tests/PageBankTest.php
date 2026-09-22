@@ -6,6 +6,7 @@ use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Admin\Models\User;
+use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
 use App\Modules\Connections\Support\SiteKeys;
@@ -14,6 +15,7 @@ use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
+use App\Modules\Widget\Actions\BuildPageBank;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -144,6 +146,49 @@ final class PageBankTest extends TestCase
         $this->assertTrue($contact['hide_when_offline']);
 
         $this->assertNotNull($this->page('content', '900')->json('contact'), 'articles get the strip too');
+    }
+
+    public function test_the_popularity_line_says_how_often_the_product_was_added_and_bought(): void
+    {
+        $this->assertNull($this->page('product', '10')->json('popularity'), 'nothing counted yet');
+
+        $counted = function (array $row): void {
+            app(TenantContext::class)->run($this->shop->id, fn () => AnalyticsPopularity::query()->updateOrCreate(
+                ['shop_id' => $this->shop->id, 'product_external_id' => '10'],
+                $row + ['units' => 0, 'score' => 0, 'rank' => 1, 'window_days' => 30, 'computed_at' => now()],
+            ));
+            Cache::flush();
+        };
+
+        // Two adds prove nothing: kept from shoppers, but the team's page still sees the numbers.
+        $counted(['adds' => 2, 'orders' => 0, 'popular' => false]);
+        $this->assertNull($this->page('product', '10')->json('popularity'));
+        $explained = app(BuildPageBank::class)->handle($this->shop->id, 'product', '10', 'he', explain: true);
+        $this->assertSame(2, $explained['explain']['popularity']['']['adds']);
+        $this->assertSame(3, $explained['explain']['popularity']['']['min_count']);
+
+        $counted(['adds' => 27, 'orders' => 4, 'popular' => true]);
+        $popularity = $this->page('product', '10')->json('popularity');
+        $this->assertSame('נוסף לסל 27 פעמים והוזמן 4 פעמים ב־30 הימים האחרונים', $popularity['text']);
+        $this->assertSame('פופולרי בחנות', $popularity['badge']);
+        $this->assertTrue($popularity['popular']);
+        $this->assertSame('Added to the cart 27 times and ordered 4 times in the last 30 days', $this->page('product', '10', locale: 'en')->json('popularity.text'));
+
+        $counted(['adds' => 1, 'orders' => 5, 'popular' => false]);
+        $popularity = $this->page('product', '10')->json('popularity');
+        $this->assertSame('הוזמן 5 פעמים ב־30 הימים האחרונים', $popularity['text'], 'only the count that reached the minimum');
+        $this->assertNull($popularity['badge']);
+
+        $counted(['adds' => 2, 'orders' => 1, 'popular' => true]);
+        $popularity = $this->page('product', '10')->json('popularity');
+        $this->assertNull($popularity['text']);
+        $this->assertSame('פופולרי בחנות', $popularity['badge'], 'the mark alone when the numbers are small');
+
+        $this->assertNull($this->page('content', '900')->json('popularity'), 'products only');
+
+        Features::override('widget.popularity', false, $this->shop->id);
+        Cache::flush();
+        $this->assertNull($this->page('product', '10')->json('popularity'));
     }
 
     public function test_an_article_gets_its_matched_products(): void

@@ -46,6 +46,10 @@ return [
         'label' => 'Page content requests per minute, per visitor address',
         'description' => 'Beyond this, requests are refused until the minute ends.',
     ],
+    'popularity_min_count' => [
+        'label' => 'Smallest count shown',
+        'description' => 'Below this many adds to the cart or orders, the number is not shown to shoppers. Two adds prove nothing.',
+    ],
     'whatsapp_number' => [
         'label' => 'The shop WhatsApp number',
         'description' => 'International digits only, such as 972501234567. Without a number the strip is not shown.',
