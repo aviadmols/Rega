@@ -36,6 +36,7 @@ return [
         'store_attributes' => 'Store attributes',
         'spec_fields' => 'Spec fields',
         'relations' => 'Upsells and cross-sells',
+        'relations_help' => 'As the store itself set them. Rega only reads them and never changes them in the store — to decide what shoppers see, edit the page in the widget.',
         'type' => 'Type',
         'excerpt' => 'Excerpt',
         'body' => 'Text',
@@ -48,11 +49,13 @@ return [
     'relations' => [
         'upsell' => 'Upsell',
         'cross_sell' => 'Cross-sell',
+        'not_in_catalog' => 'not in the catalog',
     ],
     'actions' => [
         'sync' => 'Sync catalog',
         'sync_help' => 'Reads every category, published product and shared article from the store. Runs in the background and takes about a minute per thousand products.',
         'open_in_store' => 'Open in store',
+        'edit_widget_page' => 'Edit the products shown on this page',
     ],
     'notifications' => [
         'sync_queued' => 'Catalog sync started',

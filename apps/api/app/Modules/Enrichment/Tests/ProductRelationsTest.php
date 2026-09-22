@@ -143,11 +143,53 @@ final class ProductRelationsTest extends TestCase
         $complements = $this->relations($h4, RelationKind::Complement);
         $this->assertSame('category_affinity', $complements->first()->source);
         $this->assertSame([$handle1->id, $handle2->id], $complements->sortByDesc('score')->pluck('related_product_id')->take(2)->all(), 'the most linked handles first');
-        $this->assertSame(['affinity' => ['צירים', 'ידיות'], 'links' => 3], $complements->first()->reasons);
+        $this->assertSame(['affinity' => ['צירים', 'ידיות'], 'links' => 3, 'share' => 1], $complements->first()->reasons, 'all three hinges that link anywhere link to handles');
         $this->assertSame(1, $run->output['rules']['category_affinity']['pairs']);
 
         $this->assertTrue($this->relations($h1, RelationKind::Complement)->every(fn (EnrichmentProductRelation $r): bool => $r->source === 'merchant'), 'a product with its own links keeps them');
         $this->assertSame([], $this->relations($handle1, RelationKind::Complement)->where('source', 'category_affinity')->all(), 'one link from handles to hinges is not a habit');
+    }
+
+    public function test_the_store_habit_never_contradicts_a_rule_and_needs_more_than_a_few_links(): void
+    {
+        $tools = $this->category('1751', 'כלי עבודה חשמליים');
+        $saws = $this->category('1760', 'מסורים', '1751', ['כלי עבודה חשמליים', 'מסורים']);
+        $jigs = $this->category('1780', 'כלי עזר להתקנה', null, ['כלי עבודה ידניים', 'כלי עזר להתקנה']);
+
+        $link = fn (string ...$targets): array => ['payload' => [
+            'short_description' => '',
+            'relations' => array_map(fn (string $t): array => ['type' => 'cross_sell', 'target' => $t], $targets),
+            'categories' => [['id' => '1760', 'name' => 'מסורים', 'path' => ['כלי עבודה חשמליים', 'מסורים']]],
+        ]];
+
+        // Three cordless saws the store links to batteries: for them it is a habit and a rule.
+        foreach (['301', '302', '303'] as $i => $id) {
+            $this->tool($id, "מסור נטען {$id}", [$tools, $saws], ['type' => 'chainsaw', 'power_source' => 'cordless', 'voltage_v' => 18], brand: 'Stanley', overrides: $link('900'));
+        }
+        // A saw with a cable, in the same category and of the same type, that links nowhere.
+        $corded = $this->tool('310', 'מסור שרשרת חשמלי 2300W', [$tools, $saws], ['type' => 'chainsaw', 'power_source' => 'corded'], brand: 'Hunter');
+        $battery = $this->tool('900', 'סוללת ליתיום 18 וולט', [$tools], ['type' => 'battery', 'voltage_v' => 18], brand: 'Stanley');
+        // One saw links to a pocket-hole jig: one link out of four is not the habit of saws.
+        $jig = $this->tool('400', 'קרג ג׳יג 310 חורי כיס', [$jigs], ['type' => 'jig']);
+        $this->tool('304', 'מסור נטען נוסף', [$tools, $saws], ['type' => 'chainsaw', 'power_source' => 'cordless', 'voltage_v' => 18], brand: 'Stanley', overrides: $link('400'));
+
+        app(ReadProductsInCode::class)->handle($this->shop->id);
+        app(ImportRelationRules::class)->handle($this->shop->id, ImportRelationRules::template('hardware-store'), 'test');
+        $run = app(ComputeProductRelations::class)->handle($this->shop->id);
+        $this->assertSame(RunStatus::Succeeded, $run->status, (string) $run->error);
+
+        $complements = $this->relations($corded, RelationKind::Complement);
+
+        $this->assertFalse(
+            $complements->pluck('related_product_id')->contains($battery->id),
+            'a rule decides when a battery is a complement, so the store habit may not hand one to a tool with a cable',
+        );
+        $this->assertFalse($complements->pluck('related_product_id')->contains($jig->id), 'one saw out of four linking to a jig is not a habit');
+        $this->assertGreaterThan(0, $run->output['rules']['category_affinity']['refused_by_rule']);
+
+        // The rule itself still works for the saws that do run on a battery.
+        $cordless = $this->inShop(fn () => CatalogProduct::query()->where('external_id', '301')->sole());
+        $this->assertTrue($this->relations($cordless, RelationKind::Complement)->pluck('related_product_id')->contains($battery->id));
     }
 
     /** @return Collection<int, EnrichmentProductRelation> */

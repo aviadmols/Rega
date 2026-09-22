@@ -54,6 +54,9 @@ final class ComputeProductRelations
     /** Merchant links from one category to another, from this many products, make the pair a habit of the store. */
     private const AFFINITY_MIN_LINKS = 3;
 
+    /** Of the products of one kind that link anywhere, this share must link to the same kind. */
+    private const AFFINITY_MIN_SHARE = 0.25;
+
     private const AFFINITY_LIMIT = 3;
 
     /** A product with fewer complements than this gets its category's habitual partners. */
@@ -122,10 +125,9 @@ final class ComputeProductRelations
             $ruleStats[$rule['key']] = $this->applyRule($rule, $profiles);
         }
 
-        // 3b. What the store itself pairs: when products of one category link to another category
-        // often enough, products of the first category without complements get the second
-        // category's most linked products. No vocabulary needed; the store's own habit.
-        $ruleStats['category_affinity'] = $this->applyCategoryAffinity($products, $profiles);
+        // 3b. What the store itself pairs, for products the rules above left with nothing. It is a
+        // habit, not knowledge, so it never contradicts a rule.
+        $ruleStats['category_affinity'] = $this->applyCategoryAffinity($products, $profiles, $rules?->rules()->rules() ?? []);
 
         // 4. Other sizes of the same product.
         $families = collect($profiles)->filter(fn (array $p): bool => $p['family'] !== null)->groupBy('family');
@@ -413,18 +415,30 @@ final class ComputeProductRelations
      * @param  array<string, array<string, mixed>>  $profiles
      * @return array{pairs: int, from: int, related: int}
      */
-    private function applyCategoryAffinity(Collection $products, array $profiles): array
+    private function applyCategoryAffinity(Collection $products, array $profiles, array $rules): array
     {
         $byExternal = $products->keyBy('external_id');
+        $group = fn (array $profile): ?string => $profile['type'] !== null && $profile['type'] !== 'other'
+            ? 't:'.$profile['vocabulary'].'|'.$profile['type']
+            : ($profile['leaf'] === null ? null : 'c:'.$profile['leaf']);
+
         $pairs = [];
         $popularity = [];
+        $linkers = [];
 
         foreach ($products as $product) {
-            $from = $profiles[$product->id]['leaf'] ?? null;
+            $profile = $profiles[$product->id] ?? null;
+            $from = $profile === null ? null : $group($profile);
+            $links = $product->merchantRelations();
 
-            foreach ($product->merchantRelations() as $relation) {
+            if ($from !== null && $links !== []) {
+                $linkers[$from][$product->id] = true;
+            }
+
+            foreach ($links as $relation) {
                 $target = $byExternal->get($relation['target']);
-                $to = $target === null ? null : ($profiles[$target->id]['leaf'] ?? null);
+                $targetProfile = $target === null ? null : ($profiles[$target->id] ?? null);
+                $to = $targetProfile === null ? null : $group($targetProfile);
 
                 if ($from === null || $to === null || $from === $to) {
                     continue;
@@ -442,23 +456,30 @@ final class ComputeProductRelations
             }
         }
 
-        $stats = ['pairs' => 0, 'from' => 0, 'related' => 0];
-        $byLeaf = collect($profiles)->filter(fn (array $p): bool => $p['leaf'] !== null)->groupBy('leaf');
+        $gates = $this->complementGates($rules, $profiles);
+        $stats = ['pairs' => 0, 'weak' => 0, 'refused_by_rule' => 0, 'from' => 0, 'related' => 0];
+        $byGroup = collect($profiles)->filter(fn (array $p): bool => $group($p) !== null)->groupBy($group);
 
         foreach ($pairs as $from => $targets) {
             foreach ($targets as $to => $linking) {
-                if (count($linking) < self::AFFINITY_MIN_LINKS) {
+                // A habit, not a coincidence: enough products of this kind link there, and they are
+                // a real share of the ones that link anywhere.
+                $share = count($linking) / max(1, count($linkers[$from] ?? []));
+
+                if (count($linking) < self::AFFINITY_MIN_LINKS || $share < self::AFFINITY_MIN_SHARE) {
+                    $stats['weak']++;
+
                     continue;
                 }
 
                 $stats['pairs']++;
-                $partners = $byLeaf->get($to, collect())
+                $partners = $byGroup->get($to, collect())
                     ->filter(fn (array $p): bool => $p['in_stock'])
                     ->sortBy(fn (array $p): array => [-($popularity[$p['id']] ?? 0), $p['external_id']])
                     ->take(self::AFFINITY_LIMIT)
                     ->values();
 
-                foreach ($byLeaf->get($from, collect()) as $profile) {
+                foreach ($byGroup->get($from, collect()) as $profile) {
                     if (($complements[$profile['id']] ?? 0) >= self::AFFINITY_WHEN_FEWER_THAN || $partners->isEmpty()) {
                         continue;
                     }
@@ -469,10 +490,19 @@ final class ComputeProductRelations
                             continue;
                         }
 
+                        // A rule that says when this kind of product is a complement has the last
+                        // word: no battery for a tool with a cable, whatever the store links.
+                        if (self::refusedByRule($gates, $profile, $partner['id'])) {
+                            $stats['refused_by_rule']++;
+
+                            continue;
+                        }
+
                         $stats['related']++;
                         $this->add($profile['id'], $partner['id'], RelationKind::Complement, 'category_affinity', 70 - $i, [
-                            'affinity' => [$profile['leaf_name'], $partner['leaf_name']],
+                            'affinity' => [$profile['leaf_name'] ?? $profile['type'], $partner['leaf_name'] ?? $partner['type']],
                             'links' => count($linking),
+                            'share' => round($share, 2),
                         ]);
                     }
                 }
@@ -480,6 +510,63 @@ final class ComputeProductRelations
         }
 
         return $stats;
+    }
+
+    /**
+     * Which products only some products may be offered, and to whom. For every complement rule,
+     * the products its "to" side picks out are gated: only a product the rule's "from" side accepts
+     * may be offered one. A product no rule hands out is not gated at all.
+     *
+     * @param  list<array<string, mixed>>  $rules
+     * @param  array<string, array<string, mixed>>  $profiles
+     * @return list<array{to: array<string, bool>, from: array<string, mixed>}>
+     */
+    private function complementGates(array $rules, array $profiles): array
+    {
+        $gates = [];
+
+        foreach ($rules as $rule) {
+            if (($rule['kind'] ?? '') !== RelationKind::Complement->value) {
+                continue;
+            }
+
+            $to = [];
+            foreach ($profiles as $id => $profile) {
+                if (RelationRuleSet::meets((array) $rule['to'], $profile)) {
+                    $to[$id] = true;
+                }
+            }
+
+            if ($to !== []) {
+                $gates[] = ['to' => $to, 'from' => (array) $rule['from']];
+            }
+        }
+
+        return $gates;
+    }
+
+    /**
+     * @param  list<array{to: array<string, bool>, from: array<string, mixed>}>  $gates
+     * @param  array<string, mixed>  $profile
+     */
+    private static function refusedByRule(array $gates, array $profile, string $partnerId): bool
+    {
+        $gated = false;
+
+        foreach ($gates as $gate) {
+            if (! isset($gate['to'][$partnerId])) {
+                continue;
+            }
+
+            // Some rule hands this kind of product out; this product must qualify for one of them.
+            $gated = true;
+
+            if (RelationRuleSet::meets($gate['from'], $profile)) {
+                return false;
+            }
+        }
+
+        return $gated;
     }
 
     /**

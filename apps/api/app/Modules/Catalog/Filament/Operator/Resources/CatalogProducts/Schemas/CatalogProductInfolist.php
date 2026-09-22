@@ -3,14 +3,41 @@
 namespace App\Modules\Catalog\Filament\Operator\Resources\CatalogProducts\Schemas;
 
 use App\Modules\Catalog\Models\CatalogProduct;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
+use Filament\Support\Icons\Heroicon;
 
 final class CatalogProductInfolist
 {
+    /**
+     * The products the store itself links to this one, by name. A link can point at something the
+     * catalog does not hold — a product the store unpublished, or one outside what the plugin
+     * sends — and then only the number is left to show.
+     *
+     * @return list<string>
+     */
+    private static function relations(CatalogProduct $record): array
+    {
+        $links = $record->merchantRelations();
+        $titles = $links === []
+            ? collect()
+            : CatalogProduct::query()
+                ->where('shop_id', $record->shop_id)
+                ->whereIn('external_id', array_column($links, 'target'))
+                ->pluck('title', 'external_id');
+
+        return array_map(
+            fn (array $link): string => __("catalog::catalog.relations.{$link['type']}").': '
+                .($titles[$link['target']] ?? __('catalog::catalog.relations.not_in_catalog'))
+                .' #'.$link['target'],
+            $links,
+        );
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -76,12 +103,22 @@ final class CatalogProductInfolist
                             ->placeholder('-'),
                         TextEntry::make('relations')
                             ->label(__('catalog::catalog.fields.relations'))
-                            ->state(fn (CatalogProduct $record): array => array_map(
-                                fn (array $r): string => __("catalog::catalog.relations.{$r['type']}").' #'.$r['target'],
-                                $record->merchantRelations(),
-                            ))
+                            ->state(fn (CatalogProduct $record): array => self::relations($record))
                             ->listWithLineBreaks()
+                            ->helperText(__('catalog::catalog.fields.relations_help'))
                             ->placeholder('-'),
+                    ])
+                    ->footerActions([
+                        Action::make('edit_widget_page')
+                            ->label(__('catalog::catalog.actions.edit_widget_page'))
+                            ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                            // The Widget module's page, by its path: a module may not reach into
+                            // another module's screens.
+                            ->url(fn (CatalogProduct $record): string => url('/operator/widget/page').'?'.http_build_query([
+                                'shop' => $record->shop_id,
+                                'type' => 'product',
+                                'id' => $record->external_id,
+                            ])),
                     ]),
             ]);
     }
