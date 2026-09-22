@@ -19,5 +19,8 @@ final class WidgetServiceProvider extends ModuleServiceProvider
     {
         RateLimiter::for('widget-page', fn (Request $request): Limit => Limit::perMinute((int) Settings::get('widget.page_requests_per_minute'))
             ->by('widget-page:'.$request->ip().'|'.$request->route('site')));
+
+        RateLimiter::for('widget-recent', fn (Request $request): Limit => Limit::perMinute((int) Settings::get('widget.page_requests_per_minute'))
+            ->by('widget-recent:'.$request->ip().'|'.$request->route('site')));
     }
 }

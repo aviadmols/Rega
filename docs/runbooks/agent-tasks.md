@@ -78,6 +78,15 @@ recorded in Agent activity.
 The WhatsApp strip (feature `widget.whatsapp`, with the number, hours and message in Widget
 settings) needs no scan; it is on or off per shop.
 
+The "products you viewed" circle (feature `shoppers.recent_products`, on) needs no scan either: it
+counts the page views already collected. Leaving a phone or an email (feature `shoppers.signup`,
+off) adds a short form under it; every sign-up appears in the operator panel under "Sign-ups" with
+the products that person looked at. Turn it on only with consent wording the shop stands behind
+(`shoppers.signup_consent`). A shopper who signs up is remembered for
+`shoppers.recent_days_identified` instead of `shoppers.recent_days`, and once they type back a code
+their browsing follows them to their other browsers. Sending a code needs a channel that works:
+set `MAIL_MAILER` and the rest of the mail environment for email; phones wait for an SMS provider.
+
 ## The log
 
 Scan and check log shows one product's whole story: the code reading, every fact with origin,

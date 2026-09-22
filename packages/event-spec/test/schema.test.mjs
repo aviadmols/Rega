@@ -166,7 +166,7 @@ test('products shown for an article and a spec summary are display models', () =
 });
 
 test('circles for other sizes, sales and jobs are display models, and each circle has a slot', () => {
-  for (const model of ['family', 'on_sale', 'good_for', 'compare', 'contact', 'popularity']) {
+  for (const model of ['family', 'on_sale', 'good_for', 'compare', 'contact', 'popularity', 'recent']) {
     const beacon = base();
     find(beacon, byType('open')).candidate.model = model;
     expectValid(beacon, model);

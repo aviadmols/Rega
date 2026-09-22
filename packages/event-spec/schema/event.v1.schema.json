@@ -346,7 +346,8 @@
         "on_sale",
         "good_for",
         "contact",
-        "popularity"
+        "popularity",
+        "recent"
       ]
     },
     "slot": {

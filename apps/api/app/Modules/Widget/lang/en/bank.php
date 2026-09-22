@@ -76,6 +76,14 @@ return [
         'online' => 'Online now',
         'offline' => 'Offline now',
     ],
+    // What the shop can rewrite in its settings for the sign-up under "products you viewed".
+    'signup' => [
+        'title' => 'Shall we keep the products you viewed?',
+        'consent' => 'I agree that the shop keeps my contact and the products I looked at, and may reach out with offers.',
+        'placeholder' => 'Phone or email',
+        'button' => 'Keep them for me',
+    ],
+    'recent_views' => '{1} one visit|[2,*] :count visits',
     // How wanted the product is, from the nightly counts.
     'popularity' => [
         'adds' => '{1} added to the cart once|[2,*] added to the cart :count times',
@@ -116,5 +124,19 @@ return [
         'ask_note' => 'Answers are written automatically from the product information only.',
         'ask_error' => 'We could not answer right now. Please try again.',
         'ask_general' => 'A general answer for products like this. Check the manufacturer\'s instructions for exact details.',
+        'recent_chip' => 'Products you viewed',
+        'recent_title' => 'The products you viewed lately',
+        'signed_up_as' => 'We will keep the list for you. We have: :contact',
+        'signup_need_consent' => 'Tick the box so we may keep it.',
+        'signup_invalid' => 'That is not a phone or an email we can use.',
+        'signup_saved' => 'Kept. The list will be waiting next time.',
+        'signup_code_sent' => 'We sent a code to :contact. Type it in so we know you on other devices too.',
+        'signup_code_placeholder' => 'The code you got',
+        'signup_confirm' => 'Confirm',
+        'signup_verified' => 'Confirmed. We will know you on any device now.',
+        'signup_wrong_code' => 'That code is wrong. Try again.',
+        'signup_expired' => 'The code has expired. Ask for a new one.',
+        'signup_too_many' => 'Too many tries. Please try again later.',
+        'signup_error' => 'We could not keep it right now. Please try again.',
     ],
 ];

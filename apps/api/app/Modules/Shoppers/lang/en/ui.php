@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'mail' => [
+        'subject' => ':code — your verification code',
+        'greeting' => 'Hello, this is :shop.',
+        'body' => 'Here is the code that confirms your address. It is valid for :minutes minutes.',
+        'ignore' => 'Did not ask for it? Ignore this message; we keep nothing.',
+    ],
+    'signups' => [
+        'title' => 'Sign-ups',
+        'subheading' => 'Who left a phone or an email in the widget, and what they looked at. Contacts are stored encrypted and shown only here.',
+        'shop' => 'Shop',
+        'empty' => 'Nobody has signed up in this shop yet.',
+        'off' => 'The sign-up form is off in this shop. Turn it on in the module settings.',
+        'contact' => 'Contact',
+        'channel' => ['phone' => 'Phone', 'email' => 'Email'],
+        'verified' => 'Verified',
+        'not_verified' => 'Not verified',
+        'signed_up_at' => 'Signed up on :date',
+        'last_seen' => 'Last seen on :date',
+        'devices' => '{1} one browser|[2,*] :count browsers',
+        'viewed' => 'Products they viewed',
+        'views' => '{1} one visit|[2,*] :count visits',
+        'nothing_viewed' => 'No visits counted yet.',
+        'consent' => 'Agreed to consent wording :version',
+        'no_consent' => 'No consent recorded',
+        'total' => '{1} one sign-up|[2,*] :count sign-ups',
+        'no_sms' => 'No SMS provider is set, so a phone is kept without verification.',
+        'no_mail' => 'The server cannot send email, so an address is kept without verification.',
+    ],
+];

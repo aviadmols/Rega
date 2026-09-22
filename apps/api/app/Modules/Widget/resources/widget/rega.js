@@ -114,6 +114,7 @@
   var shop = null;
   var bank = null;
   var teamPreview = false;
+  var viewed = null;
 
   function pageContext() {
     var page = { type: PAGE_TYPE, path: (location.pathname || '/').slice(0, 512) };
@@ -466,6 +467,17 @@
     '.ask-send{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px}',
     '.ask-send[disabled]{opacity:.6;cursor:default}',
     '.ask-answer{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(17,24,39,.04)}',
+    '.signup{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:10px}',
+    '.signup-title{font-weight:600;margin-bottom:8px}',
+    '.signup-form{display:flex;gap:8px}',
+    '.signup-input{flex:1;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;font:inherit;font-size:16px}',
+    '.signup-input:focus{outline:2px solid var(--accent);outline-offset:1px}',
+    '.signup-send{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;white-space:nowrap}',
+    '.signup-send[disabled]{opacity:.6;cursor:default}',
+    '.signup-consent{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer}',
+    '.signup-consent input{margin:2px 0 0;flex:none}',
+    '.signup-status{margin-top:8px;font-size:13px}',
+    '.signup-note{font-size:13px;color:var(--muted)}',
     '.ask-q{font-weight:600;margin-bottom:3px}.ask-a{line-height:1.55}.ask-a.is-loading{color:var(--muted)}',
     '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
@@ -959,6 +971,135 @@
     return node;
   }
 
+  /**
+   * Under the products a shopper viewed: the invitation to leave a phone or an email so the list
+   * waits for them next time. Once they left one, the same place says so instead.
+   */
+  function signUpBox(section, labels) {
+    var box = el('div', 'signup');
+
+    if (section.signed_up) {
+      box.appendChild(el('div', 'signup-note', String(labels.signed_up_as || '').replace(':contact', section.signed_up.masked)));
+      return box;
+    }
+
+    var wording = section.signup;
+    if (!wording) {
+      return null;
+    }
+
+    box.appendChild(el('div', 'signup-title', wording.title));
+
+    var form = el('form', 'signup-form');
+    var input = el('input', 'signup-input');
+    input.type = 'text';
+    input.maxLength = 190;
+    input.placeholder = wording.placeholder || '';
+    input.setAttribute('aria-label', wording.title);
+    var send = el('button', 'signup-send', wording.button);
+    send.type = 'submit';
+    form.appendChild(input);
+    form.appendChild(send);
+    box.appendChild(form);
+
+    var consent = el('label', 'signup-consent');
+    var agreed = el('input');
+    agreed.type = 'checkbox';
+    consent.appendChild(agreed);
+    consent.appendChild(el('span', null, wording.consent));
+    box.appendChild(consent);
+
+    var status = el('div', 'signup-status');
+    status.setAttribute('aria-live', 'polite');
+    box.appendChild(status);
+
+    function post(path, body) {
+      return fetch(API + '/widget/' + ctx.site + '/' + path, {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(body)
+      })
+        .then(function (response) { return response.json(); })
+        .then(function (json) { return (json && json.data) || null; })
+        .catch(function () { return null; });
+    }
+
+    /** The second step: the code that proves the contact is theirs. */
+    function askForCode(masked) {
+      form.parentNode.removeChild(form);
+      consent.parentNode.removeChild(consent);
+      status.textContent = String(labels.signup_code_sent || '').replace(':contact', masked || '');
+
+      var codeForm = el('form', 'signup-form');
+      var code = el('input', 'signup-input');
+      code.type = 'text';
+      code.inputMode = 'numeric';
+      code.maxLength = 8;
+      code.placeholder = labels.signup_code_placeholder || '';
+      code.setAttribute('aria-label', labels.signup_code_placeholder || '');
+      var confirm = el('button', 'signup-send', labels.signup_confirm);
+      confirm.type = 'submit';
+      codeForm.appendChild(code);
+      codeForm.appendChild(confirm);
+      box.insertBefore(codeForm, status);
+
+      codeForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        confirm.disabled = true;
+        post('confirm', { vid: vid, code: code.value }).then(function (data) {
+          confirm.disabled = false;
+          var outcome = data && data.status;
+          if (outcome === 'verified') {
+            box.removeChild(codeForm);
+            status.textContent = labels.signup_verified;
+            return;
+          }
+          status.textContent = outcome === 'expired' ? labels.signup_expired
+            : outcome === 'too_many' ? labels.signup_too_many
+              : labels.signup_wrong_code;
+        });
+      });
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (!agreed.checked) {
+        status.textContent = labels.signup_need_consent;
+        return;
+      }
+
+      send.disabled = true;
+      status.textContent = '';
+
+      post('signup', { vid: vid, contact: input.value, consent: true, locale: String(ctx.locale || 'he').slice(0, 2) })
+        .then(function (data) {
+          send.disabled = false;
+          var outcome = data && data.status;
+
+          if (outcome === 'code_sent') {
+            track('click', section, 'panel');
+            askForCode(data.masked);
+            return;
+          }
+          if (outcome === 'saved') {
+            track('click', section, 'panel');
+            box.removeChild(form);
+            box.removeChild(consent);
+            status.textContent = labels.signup_saved;
+            return;
+          }
+          status.textContent = outcome === 'invalid_contact' ? labels.signup_invalid
+            : outcome === 'no_consent' ? labels.signup_need_consent
+              : outcome === 'too_many' ? labels.signup_too_many
+                : labels.signup_error;
+        });
+    });
+
+    return box;
+  }
+
   /** The body of one section, or null when nothing in it survives live data. */
   function renderBody(section, live, labels) {
     var node = el('div', 'body');
@@ -1037,6 +1178,13 @@
       }
     }
 
+    if (section.signup || section.signed_up) {
+      var box = signUpBox(section, labels);
+      if (box) {
+        node.appendChild(box);
+      }
+    }
+
     return node.firstChild ? node : null;
   }
 
@@ -1079,6 +1227,20 @@
         title: labels.compare_title,
         chip: String(labels.compare_chip || '').replace(':title', previous.title.length > 24 ? previous.title.slice(0, 22) + '…' : previous.title),
         previous: previous
+      });
+    }
+
+    // What this visitor looked at, and the invitation to have it kept for next time. Never part of
+    // the page bank: the bank is the same for everyone and cached, this is one person's own.
+    if (viewed && viewed.products && viewed.products.length) {
+      bank.sections.push({
+        candidate: 'recent',
+        model: 'recent',
+        title: labels.recent_title,
+        chip: labels.recent_chip,
+        products: viewed.products,
+        signed_up: viewed.signed_up || null,
+        signup: viewed.signed_up ? null : (bank.signup || null)
       });
     }
 
@@ -1331,29 +1493,67 @@
         var sections = data.sections || [];
 
         // In preview mode real visitors only count as page views; the widget is for the team.
-        if (!showWidget || (sections.length === 0 && !previous && !data.ask && !data.contact && !data.popularity)) {
+        if (!showWidget) {
           rememberCurrent(null);
           return;
         }
 
-        var ids = [];
-        sections.forEach(function (section) {
-          (section.products || []).forEach(function (product) { ids.push(String(product.id)); });
-        });
-        if (PAGE_TYPE === 'product') {
-          ids.push(PAGE_ID);
-        }
-        if (previous) {
-          ids.push(String(previous.id));
-        }
+        return fetchViewed().then(function (recent) {
+          viewed = recent;
+          var hasViewed = !!(recent && recent.products && recent.products.length);
 
-        return liveProducts(ids).then(function (live) {
-          reconcile(live);
-          render(live, previous);
-          rememberCurrent(live);
+          if (sections.length === 0 && !previous && !hasViewed && !data.ask && !data.contact && !data.popularity) {
+            rememberCurrent(null);
+            return;
+          }
+
+          var ids = [];
+          sections.forEach(function (section) {
+            (section.products || []).forEach(function (product) { ids.push(String(product.id)); });
+          });
+          if (hasViewed) {
+            recent.products.forEach(function (product) { ids.push(String(product.id)); });
+          }
+          if (PAGE_TYPE === 'product') {
+            ids.push(PAGE_ID);
+          }
+          if (previous) {
+            ids.push(String(previous.id));
+          }
+
+          return liveProducts(ids).then(function (live) {
+            reconcile(live);
+            render(live, previous);
+            rememberCurrent(live);
+          });
         });
       })
       .catch(function () { /* the page works without the widget */ });
+  }
+
+  /**
+   * The products this visitor looked at, for their own circle. Asked for separately from the page
+   * bank, which is cached and the same for everyone, and the visitor travels in the body, not the
+   * URL. The widget works without it.
+   */
+  function fetchViewed() {
+    if (!bank.recent) {
+      return Promise.resolve(null);
+    }
+
+    return fetch(API + '/widget/' + ctx.site + '/recent', {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        vid: vid,
+        id: PAGE_TYPE === 'product' ? PAGE_ID : '',
+        locale: String(ctx.locale || 'he').slice(0, 2)
+      })
+    })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (json) { return (json && json.data) || null; })
+      .catch(function () { return null; });
   }
 
   /** Remember this product for a later comparison, with its live title and link. */

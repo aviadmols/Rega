@@ -22,6 +22,7 @@ use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Widget\Models\WidgetCuration;
 use App\Modules\Widget\Support\GuideRelevance;
+use App\Modules\Widget\Support\ProductCard;
 use Illuminate\Support\Collection;
 
 /**
@@ -58,6 +59,8 @@ final class BuildPageBank
         'good_for' => 'good_for',
         'guides' => 'guide_card',
         'article_products' => 'article_products',
+        // Added by the widget itself from this visitor's own browsing, never from the page bank.
+        'recent' => 'recent',
     ];
 
     private const MAX_POSITIONS = 3;
@@ -155,6 +158,10 @@ final class BuildPageBank
         $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
         $bank['contact'] = $this->contact($shopId);
         $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
+        // The products this visitor viewed are their own, so the widget asks for them separately;
+        // the bank only says whether to ask, and what the sign-up under them should say.
+        $bank['recent'] = Features::enabled('shoppers.recent_products', $shopId);
+        $bank['signup'] = $this->signUp($shopId);
 
         if ($this->explain) {
             $bank['explain'] = $this->why;
@@ -662,19 +669,7 @@ final class BuildPageBank
      */
     private function cards(Collection $products, ?Collection $reasons = null): array
     {
-        return $products->values()->map(fn (CatalogProduct $p): array => array_filter([
-            'id' => $p->external_id,
-            'title' => $p->title,
-            'url' => $p->url,
-            'image' => $p->image_url,
-            'price' => $p->price === null ? null : (float) $p->price,
-            'currency' => $p->currency,
-            'type' => $p->type,
-            // Shown next to the price, e.g. "מחיר למטר": without it a price per meter reads as the item price.
-            'price_note' => self::priceNote($p),
-            'needs_options' => self::needsOptions($p) ?: null,
-            'reason' => $reasons?->get($p->id),
-        ], fn ($v): bool => $v !== null && $v !== ''))->all();
+        return ProductCard::many($products, $reasons);
     }
 
     /** @return Collection<int, CatalogProduct> */
@@ -1007,33 +1002,6 @@ final class BuildPageBank
         ];
     }
 
-    /**
-     * Whether the shopper must choose something on the product page before it can go in the cart.
-     * Some stores keep "simple" products with an attribute to choose, such as a length, and a
-     * plugin refuses the add without it.
-     */
-    private static function needsOptions(CatalogProduct $product): bool
-    {
-        if ($product->type !== 'simple') {
-            return true;
-        }
-
-        foreach ($product->storeAttributes() as $attribute) {
-            if ($attribute['for_variations'] && count($attribute['values']) > 1) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static function priceNote(CatalogProduct $product): ?string
-    {
-        $note = trim((string) ($product->payload['meta']['price_text'] ?? ''));
-
-        return $note === '' ? null : mb_substr(strip_tags($note), 0, 40);
-    }
-
     private function positionText(EnrichmentRanking $ranking): string
     {
         $vocabularyKey = explode('|', $ranking->set_key)[0];
@@ -1204,6 +1172,29 @@ final class BuildPageBank
             'days' => $row->window_days,
             'text' => $text,
             'badge' => $row->popular ? (string) __('widget::bank.popularity.badge', [], $this->locale) : null,
+        ];
+    }
+
+    /**
+     * The invitation to leave a phone or an email, under the products the visitor viewed. The shop
+     * can write its own sentence and its own consent wording; both fall back to the built-in text.
+     *
+     * @return array<string, string>|null
+     */
+    private function signUp(string $shopId): ?array
+    {
+        if (! Features::enabled('shoppers.signup', $shopId)) {
+            return null;
+        }
+
+        $text = fn (string $name): string => trim((string) Settings::get("shoppers.signup_{$name}", $shopId))
+            ?: (string) __("widget::bank.signup.{$name}", [], $this->locale);
+
+        return [
+            'title' => $text('title'),
+            'consent' => $text('consent'),
+            'placeholder' => (string) __('widget::bank.signup.placeholder', [], $this->locale),
+            'button' => (string) __('widget::bank.signup.button', [], $this->locale),
         ];
     }
 

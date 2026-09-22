@@ -1,0 +1,110 @@
+<?php
+
+namespace App\Modules\Shoppers\Filament\Operator\Pages;
+
+use App\Core\Facades\Features;
+use App\Core\Tenancy\TenantContext;
+use App\Modules\Catalog\Models\CatalogProduct;
+use App\Modules\Shoppers\Contracts\VisitHistory;
+use App\Modules\Shoppers\Models\ShopperIdentity;
+use App\Modules\Shoppers\Support\Channels;
+use App\Modules\Tenancy\Models\Shop;
+use BackedEnum;
+use Filament\Pages\Page;
+use Filament\Support\Icons\Heroicon;
+use Livewire\Attributes\Url;
+
+/**
+ * Everyone who left a phone or an email in one store, newest first, with the products they looked
+ * at. The contact is decrypted only here, for the person who runs the store.
+ */
+final class ShopSignUps extends Page
+{
+    private const PER_PAGE = 50;
+
+    private const PRODUCTS_EACH = 6;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
+
+    protected static ?int $navigationSort = 16;
+
+    protected static ?string $slug = 'shoppers/signups';
+
+    protected string $view = 'shoppers::operator.signups';
+
+    #[Url]
+    public ?string $shop = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('shoppers::ui.signups.title');
+    }
+
+    public function getTitle(): string
+    {
+        return __('shoppers::ui.signups.title');
+    }
+
+    public function getSubheading(): ?string
+    {
+        return __('shoppers::ui.signups.subheading');
+    }
+
+    public function mount(): void
+    {
+        $this->shop ??= Shop::query()->orderBy('name')->value('id');
+    }
+
+    /** @return array<string, string> */
+    public function shops(): array
+    {
+        return Shop::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** @return array{on: bool, can_verify: array<string, bool>, people: list<array<string, mixed>>}|null */
+    public function signUps(): ?array
+    {
+        if ($this->shop === null) {
+            return null;
+        }
+
+        $shopId = $this->shop;
+        $history = app(VisitHistory::class);
+
+        return app(TenantContext::class)->run($shopId, function () use ($shopId, $history): array {
+            $identities = ShopperIdentity::query()->withCount('visitors')->latest('id')->limit(self::PER_PAGE)->get();
+
+            $viewed = [];
+            foreach ($identities as $identity) {
+                $viewed[$identity->id] = $history->topProductsForIdentity($shopId, $identity->id, self::PRODUCTS_EACH);
+            }
+
+            $ids = collect($viewed)->flatten(1)->pluck('id')->unique()->all();
+            $titles = $ids === []
+                ? collect()
+                : CatalogProduct::query()->whereIn('external_id', $ids)->pluck('title', 'external_id');
+
+            return [
+                'on' => Features::enabled('shoppers.signup', $shopId),
+                'can_verify' => [
+                    'email' => Channels::canSendEmail(),
+                    'phone' => Channels::canVerify('phone', $shopId),
+                ],
+                'people' => $identities->map(fn (ShopperIdentity $identity): array => [
+                    'contact' => $identity->contact,
+                    'channel' => $identity->channel,
+                    'verified' => $identity->isVerified(),
+                    'devices' => (int) $identity->visitors_count,
+                    'signed_up_at' => $identity->created_at,
+                    'last_seen_at' => $identity->last_seen_at,
+                    'consent_version' => $identity->consent_version,
+                    'viewed' => array_map(fn (array $row): array => [
+                        'id' => $row['id'],
+                        'title' => $titles[$row['id']] ?? $row['id'],
+                        'views' => $row['views'],
+                    ], $viewed[$identity->id]),
+                ])->all(),
+            ];
+        });
+    }
+}

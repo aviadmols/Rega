@@ -82,6 +82,15 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
   are applied in `BuildPageBank::curated()` after `learned()`. A pin is shown first and never
   dropped by the scores; a hidden section is never re-created by a pinned item. The operator page
   "Page in the widget" builds the bank with `explain: true`, so every item carries `why` notes.
+- `Shoppers` owns the people behind the anonymous ids. A shopper who leaves a phone or an email
+  gets a `ShopperIdentity` (contact encrypted, looked up by a hash salted per shop) and a
+  `ShopperVisitor` per browser. Browsing follows them between browsers only between links they
+  proved with a code, so typing someone else's phone shows nothing of theirs. No code is created
+  for a channel that cannot deliver it (`Support\Channels`): email needs a real mailer, phones wait
+  for an SMS provider. The Widget reads history through `Shoppers\Contracts\VisitHistory`, never
+  the tables. The "products you viewed" circle is one visitor's own, so it can never be in the page
+  bank, which is cached and shared: `POST widget/{site}/recent` serves it and the widget adds the
+  circle itself, like `compare`.
 - Highlights (`product_highlights`, facts of kind `highlight`) are written from longer text
   (`enrichment.max_highlight_text_chars`); a reviewer of highlights must read that same text.
 - A route under `api/*` gets `Access-Control-Allow-Origin: *` from Laravel's CORS config; origin

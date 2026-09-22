@@ -76,6 +76,14 @@ return [
         'online' => 'זמינים עכשיו',
         'offline' => 'לא זמינים כרגע',
     ],
+    // What the shop can rewrite in its settings for the sign-up under "products you viewed".
+    'signup' => [
+        'title' => 'רוצים שנשמור לכם את המוצרים שראיתם?',
+        'consent' => 'אני מאשר/ת שהחנות תשמור את הפרטים ואת המוצרים שהסתכלתי עליהם, ותוכל לפנות אליי בהצעות.',
+        'placeholder' => 'טלפון או אימייל',
+        'button' => 'שמרו לי',
+    ],
+    'recent_views' => '{1} צפייה אחת|[2,*] :count צפיות',
     // How wanted the product is, from the nightly counts.
     'popularity' => [
         'adds' => '{1} נוסף לסל פעם אחת|[2,*] נוסף לסל :count פעמים',
@@ -116,5 +124,19 @@ return [
         'ask_note' => 'התשובות נכתבות אוטומטית מהמידע על המוצר בלבד.',
         'ask_error' => 'לא הצלחנו לענות כרגע. נסו שוב.',
         'ask_general' => 'תשובה כללית למוצרים מסוג זה. לפרטים מדויקים כדאי לבדוק בהוראות היצרן.',
+        'recent_chip' => 'מוצרים שראיתם',
+        'recent_title' => 'המוצרים שראיתם לאחרונה',
+        'signed_up_as' => 'נשמור לכם את הרשימה. הפרטים אצלנו: :contact',
+        'signup_need_consent' => 'צריך לאשר את התיבה כדי שנשמור.',
+        'signup_invalid' => 'לא זיהינו טלפון או אימייל תקין.',
+        'signup_saved' => 'נשמר. הרשימה תחכה לכם גם בכניסה הבאה.',
+        'signup_code_sent' => 'שלחנו קוד ל־:contact. הקלידו אותו כדי שנזהה אתכם גם במכשירים אחרים.',
+        'signup_code_placeholder' => 'הקוד שקיבלתם',
+        'signup_confirm' => 'אישור',
+        'signup_verified' => 'אומת. מעכשיו נזהה אתכם בכל מכשיר.',
+        'signup_wrong_code' => 'הקוד לא נכון. אפשר לנסות שוב.',
+        'signup_expired' => 'הקוד פג. בקשו קוד חדש.',
+        'signup_too_many' => 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.',
+        'signup_error' => 'לא הצלחנו לשמור כרגע. נסו שוב.',
     ],
 ];
