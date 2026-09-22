@@ -138,6 +138,10 @@ return [
         'signup_expired' => 'The code has expired. Ask for a new one.',
         'signup_too_many' => 'Too many tries. Please try again later.',
         'signup_error' => 'We could not keep it right now. Please try again.',
+        'ask_team' => 'Want a sure answer? The store team will reply on WhatsApp, with the question you wrote.',
+        'ask_team_message' => 'Hello, I have a question about :product
+:question
+:url',
         'view_slider' => 'Slider view',
         'view_list' => 'List view',
         'view_prev' => 'Previous',

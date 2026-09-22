@@ -552,6 +552,10 @@
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
     '.ask-note{margin-top:10px;font-size:11px;color:var(--muted)}',
     '.ask-general{margin-top:4px;font-size:12px;color:var(--muted)}',
+    // When the assistant has nothing verified: the way to the store team, with the question in hand.
+    '.handover{margin-top:10px;padding:12px;border:1px solid transparent;border-radius:14px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box}',
+    '.handover-title{font-size:13.5px;line-height:1.45;margin-bottom:8px}',
+    '.handover-when{margin-top:8px;font-size:12px;color:var(--muted)}',
     '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}',
     '.contact-head{display:flex;align-items:center;gap:8px;flex:1 1 200px;min-width:0}',
     '.contact-title{font-size:14px;line-height:1.4}',
@@ -934,7 +938,54 @@
    * The question box: questions to tap (asked most about this product, then common ones), a field
    * for a free question, the answer, and what earlier shoppers asked. Loaded on first open.
    */
-  function askPanel(section, labels) {
+  /** The outcomes where the assistant has nothing of its own to say. */
+  var NO_ANSWER = { no_info: true, limit: true, unavailable: true };
+
+  /**
+   * The way out when the assistant cannot answer: one WhatsApp button that opens a chat with the
+   * store, carrying the product, its page and the question the shopper just asked. Shown whether
+   * the shop is open or closed — a message left at night is still a message — but it says which.
+   */
+  function askTheTeam(question, live, labels) {
+    var contact = bank.contact;
+
+    if (!contact) {
+      return null;
+    }
+
+    var data = live && live[PAGE_ID];
+    var heading = document.querySelector('h1');
+    var title = data ? decodeEntities(data.name) : (heading ? heading.textContent.trim().slice(0, 120) : document.title);
+    var link = safeUrl(data ? data.permalink : location.href.split('?')[0]) || location.href.split('?')[0];
+    var online = shopIsOnline(contact);
+
+    var box = el('div', 'handover');
+    box.appendChild(el('div', 'handover-title', labels.ask_team));
+
+    var button = el('a', 'contact-button');
+    button.href = 'https://wa.me/' + contact.number + '?text=' + encodeURIComponent(
+      String(labels.ask_team_message || '')
+        .replace(':product', title)
+        .replace(':question', question)
+        .replace(':url', link)
+    );
+    button.target = '_blank';
+    button.rel = 'noopener';
+    button.appendChild(el('span', null, contact.button));
+    box.appendChild(button);
+
+    var when = el('div', 'handover-when', online ? contact.online_label : (contact.offline_note || contact.offline_label));
+    box.appendChild(when);
+
+    var section = { candidate: 'contact', model: 'contact' };
+    button.addEventListener('click', function () {
+      track('click', section, 'panel', PAGE_TYPE === 'product' ? { product_id: PAGE_ID } : { content_id: PAGE_ID });
+    });
+
+    return box;
+  }
+
+  function askPanel(section, labels, live) {
     var node = el('div', 'body ask');
     var suggested = el('div', 'ask-suggested');
     var form = el('form', 'ask-form');
@@ -984,6 +1035,14 @@
           reply.textContent = data ? data.answer : labels.ask_error;
           if (data && data.source === 'general') {
             answer.appendChild(el('div', 'ask-general', labels.ask_general));
+          }
+          // Nothing verified to answer with: hand the shopper to the store team, with the
+          // product and their own question already written into the message.
+          if (data && NO_ANSWER[data.outcome]) {
+            var handover = askTheTeam(question, live, labels);
+            if (handover) {
+              answer.appendChild(handover);
+            }
           }
           track('chat_question', section, 'panel', {
             length: Math.min(2000, question.length),
@@ -1426,7 +1485,7 @@
     // The question box is always the last circle.
     if (bank.ask) {
       var askSection = { candidate: 'ask', model: 'chat', title: labels.ask_title, chip: labels.ask_chip };
-      rendered.push({ section: askSection, body: askPanel(askSection, labels) });
+      rendered.push({ section: askSection, body: askPanel(askSection, labels, live) });
     }
 
     if (rendered.length === 0 && !bank.contact && !bank.popularity) {
