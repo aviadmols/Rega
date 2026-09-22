@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * POST /api/v1/widget/{site}/ask   {"id": "<product id>", "question": "...", "vid": "anon-...", "locale": "he"}
+ * POST /api/v1/widget/{site}/ask   {"id": "<page id>", "type": "product"|"content", "question": "...", "vid": "anon-...", "locale": "he"}
  *
  * Sent as text/plain from the storefront so the browser sends no preflight; the body is JSON.
  */
@@ -37,13 +37,15 @@ final class AskController
         $question = is_array($body) ? (string) ($body['question'] ?? '') : '';
         $visitor = is_array($body) ? (string) ($body['vid'] ?? '') : '';
         $locale = is_array($body) && ($body['locale'] ?? 'he') === 'en' ? 'en' : 'he';
+        // A widget still cached from before guides could be asked about sends no type.
+        $pageType = is_array($body) && ($body['type'] ?? 'product') === 'content' ? 'content' : 'product';
 
         if (! preg_match(self::ID_PATTERN, $id) || ! preg_match(self::VISITOR_PATTERN, $visitor) || $question === '') {
             return response()->json(['error' => 'invalid_question'], 422);
         }
 
         // The visitor only counts toward a daily limit, as a hash salted per shop, like analytics.
-        $result = $answer->handle($connection->shop_id, $id, $question, hash('sha256', $connection->shop_id.'|'.$visitor), $locale);
+        $result = $answer->handle($connection->shop_id, $pageType, $id, $question, hash('sha256', $connection->shop_id.'|'.$visitor), $locale);
 
         return response()->json(['data' => $result])->header('Cache-Control', 'no-store');
     }

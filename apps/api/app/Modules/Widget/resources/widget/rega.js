@@ -1056,7 +1056,7 @@
         method: 'POST',
         credentials: 'omit',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ id: PAGE_ID, question: question, vid: vid, locale: String(ctx.locale || 'he').slice(0, 2) })
+        body: JSON.stringify({ id: PAGE_ID, type: PAGE_TYPE, question: question, vid: vid, locale: String(ctx.locale || 'he').slice(0, 2) })
       })
         .then(function (response) { return response.ok ? response.json() : null; })
         .then(function (json) {
@@ -1097,7 +1097,7 @@
 
     node.load = function () {
       node.load = null;
-      fetch(API + '/widget/' + ctx.site + '/questions?id=' + encodeURIComponent(PAGE_ID) + '&locale=' + encodeURIComponent(String(ctx.locale || 'he').slice(0, 2)), { credentials: 'omit' })
+      fetch(API + '/widget/' + ctx.site + '/questions?id=' + encodeURIComponent(PAGE_ID) + '&type=' + PAGE_TYPE + '&locale=' + encodeURIComponent(String(ctx.locale || 'he').slice(0, 2)), { credentials: 'omit' })
         .then(function (response) { return response.ok ? response.json() : null; })
         .then(function (json) {
           var data = json && json.data;

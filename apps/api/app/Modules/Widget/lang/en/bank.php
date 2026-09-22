@@ -200,5 +200,15 @@ return [
         'banner_label_seen' => 'You also saw',
         'banner_label_promise' => 'What the store promises',
         'banner_label_made' => 'What it is made of',
+        // On a guide, the assistant names the guide instead of a product. BuildPageBank swaps
+        // each of these over the label it shadows.
+        'ask_chip_article' => 'Ask about this guide',
+        'ask_title_article' => 'Ask about this guide',
+        'ask_placeholder_article' => 'For example: sum this guide up for me',
+        'chat_greeting_article' => 'Hi! I read this guide. Would you like a short summary?',
+        'chat_placeholder_article' => 'Ask me about this guide…',
+        'chat_line_ask_article' => 'Ask me anything about this guide',
+        'banner_opener_article' => 'I went over this guide. Here is what I found',
+        'ask_note_article' => 'Answers are written automatically from the guide only.',
     ],
 ];

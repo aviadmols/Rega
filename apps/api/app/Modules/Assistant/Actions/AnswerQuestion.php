@@ -13,27 +13,27 @@ use App\Modules\Ai\Contracts\SpendGuard;
 use App\Modules\Ai\Enums\AiProviderName;
 use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Assistant\Support\Question;
+use App\Modules\Assistant\Support\Subject;
+use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
-use App\Modules\Enrichment\Enums\FactKind;
-use App\Modules\Enrichment\Enums\FactStatus;
-use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Runs\Contracts\RecordsRuns;
 use App\Modules\Runs\Contracts\RunContext;
 use App\Modules\Runs\Enums\RunTrigger;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * Answers a shopper's question about one product.
+ * Answers a shopper's question about one page: a product, or a guide the store published. The
+ * Subject says which, carries what the writer may answer from, and picks the prompts for it.
  *
- * 1. The same question asked before about this product: the saved answer, no model. An answer
+ * 1. The same question asked before about this page: the saved answer, no model. An answer
  *    saved by an older prompt version is asked again.
  * 2. Contact details, too short, over the visitor's or the shop's daily questions: refused in code.
- * 3. A small model decides whether the question is about the product. When it is not, a fixed
+ * 3. A small model decides whether the question is about the page. When it is not, a fixed
  *    refusal, and the writing model never sees the question.
- * 4. The writing model answers from the store's information about the product first, and from
- *    general knowledge about products exactly like it when that does not say.
+ * 4. The writing model answers from the store's own information first — the product's checked
+ *    facts, or the guide's text — and from general knowledge when that does not say.
  * 5. Code refuses an answer with contact details, a price, or a number the store's information
- *    does not have. The small model then checks the answer is about this product, consistent with
+ *    does not have. The small model then checks the answer is about this page, consistent with
  *    the store's information and on topic. Only then the shopper sees it.
  *
  * Every call asks SpendGuard first and records tokens and cost on one run. Every answer is saved.
@@ -63,22 +63,27 @@ final class AnswerQuestion
      * @return array{outcome: string, answer: string, from: string, source?: string} outcome: answered, no_info,
      *                                                                               out_of_scope, invalid, limit or unavailable; from: bank, model or none
      */
-    public function handle(string $shopId, string $productExternalId, string $question, string $visitorHash, string $locale = 'he'): array
+    public function handle(string $shopId, string $pageType, string $externalId, string $question, string $visitorHash, string $locale = 'he'): array
     {
         $question = Question::clean($question, (int) Settings::get('assistant.max_question_chars', $shopId));
+        $onArticle = $pageType === 'content';
 
-        if (! Features::enabled('assistant.on_products', $shopId) || mb_strlen(Question::normalize($question)) < self::MIN_CHARS) {
+        if (! Features::enabled($onArticle ? 'assistant.on_content' : 'assistant.on_products', $shopId)
+            || mb_strlen(Question::normalize($question)) < self::MIN_CHARS) {
             return $this->fixed('invalid', $locale);
         }
 
-        return $this->tenant->run($shopId, function () use ($shopId, $productExternalId, $question, $visitorHash, $locale): array {
-            $product = CatalogProduct::query()->whereNull('removed_at')->where('external_id', $productExternalId)->first();
+        return $this->tenant->run($shopId, function () use ($shopId, $onArticle, $externalId, $question, $visitorHash, $locale): array {
+            $maxTextChars = (int) Settings::get('assistant.max_text_chars', $shopId);
+            $subject = $onArticle
+                ? ($article = CatalogContent::query()->active()->where('external_id', $externalId)->first()) === null ? null : Subject::article($article, $maxTextChars)
+                : (($product = CatalogProduct::query()->whereNull('removed_at')->where('external_id', $externalId)->first()) === null ? null : Subject::product($product, $maxTextChars));
 
-            if ($product === null) {
+            if ($subject === null) {
                 return $this->fixed('invalid', $locale);
             }
 
-            $saved = AssistantAnswer::query()->where('product_id', $product->id)->where('question_key', Question::key($question))->first();
+            $saved = AssistantAnswer::query()->where($subject->column(), $subject->id)->where('question_key', Question::key($question))->first();
 
             // An answer from an older prompt is asked again: the rules for what shoppers see changed.
             // The team's own answers stay.
@@ -103,12 +108,12 @@ final class AnswerQuestion
                 return $this->fixed('limit', $locale);
             }
 
-            return $this->ask($shopId, $product, $question, $locale);
+            return $this->ask($shopId, $subject, $question, $locale);
         });
     }
 
     /** @return array{outcome: string, answer: string, from: string, source?: string} */
-    private function ask(string $shopId, CatalogProduct $product, string $question, string $locale): array
+    private function ask(string $shopId, Subject $subject, string $question, string $locale): array
     {
         $result = $this->fixed('unavailable', $locale);
 
@@ -117,16 +122,15 @@ final class AnswerQuestion
             action: self::ACTION,
             shopId: $shopId,
             trigger: RunTrigger::Webhook,
-            input: ['product' => $product->external_id, 'question' => $question],
-            work: function (RunContext $run) use ($shopId, $product, $question, $locale, &$result): void {
+            input: [$subject->kind => $subject->externalId, 'question' => $question],
+            work: function (RunContext $run) use ($subject, $question, $locale, &$result): void {
                 $answerModel = (string) Settings::get('assistant.answer_model');
                 $checkModel = (string) Settings::get('assistant.scope_model');
                 $maxOutput = (int) Settings::get('assistant.answer_max_output_tokens');
                 $effort = (string) Settings::get('assistant.reasoning_effort');
                 $effort = $effort === 'model_default' ? null : $effort;
 
-                $context = $this->context($product, (int) Settings::get('assistant.max_text_chars', $shopId));
-                $contextJson = (string) json_encode($context, JSON_UNESCAPED_UNICODE);
+                $contextJson = (string) json_encode($subject->context, JSON_UNESCAPED_UNICODE);
                 $estimatedInput = (int) ceil(mb_strlen($contextJson) / 2) + 800;
                 /** @var list<array{0: ModelReply, 1: string}> $replies */
                 $replies = [];
@@ -137,18 +141,18 @@ final class AnswerQuestion
                         + ($estimatedInput + 1200) * $this->price('scope_input') + 2 * self::CHECK_OUTPUT_TOKENS * $this->price('scope_output')
                     ) / 1_000_000);
 
-                    $scope = $this->call($run, $checkModel, 'scope', ['product' => ['title' => $context['title'], 'category' => $context['category']], 'question' => $question], self::CHECK_OUTPUT_TOKENS, $effort);
+                    $scope = $this->call($run, $checkModel, $subject->prompt('scope'), [$subject->kind => $subject->brief, 'question' => $question], self::CHECK_OUTPUT_TOKENS, $effort);
                     $replies[] = [$scope, 'scope'];
 
                     if (($scope->data['about_product'] ?? null) !== true) {
-                        $this->save($product, $question, AssistantAnswer::OUT_OF_SCOPE, null, null, $checkModel, $replies, $run);
+                        $this->save($subject, $question, AssistantAnswer::OUT_OF_SCOPE, null, null, $checkModel, $replies, $run);
                         $result = $this->fixed('out_of_scope', $locale, 'model');
                         $run->output(['outcome' => AssistantAnswer::OUT_OF_SCOPE])->summary('assistant::runs.out_of_scope');
 
                         return;
                     }
 
-                    $reply = $this->call($run, $answerModel, 'answer', ['product' => $context, 'question' => $question], $maxOutput, $effort, 'answer');
+                    $reply = $this->call($run, $answerModel, $subject->prompt('answer'), [$subject->kind => $subject->context, 'question' => $question], $maxOutput, $effort, 'answer');
                     $replies[] = [$reply, 'answer'];
 
                     $answer = mb_substr(trim((string) ($reply->data['answer'] ?? '')), 0, self::MAX_ANSWER_CHARS);
@@ -162,7 +166,7 @@ final class AnswerQuestion
                     };
 
                     if ($refusal === null) {
-                        $check = $this->call($run, $checkModel, 'verify', ['product' => $context, 'question' => $question, 'answer' => $answer], self::CHECK_OUTPUT_TOKENS, $effort);
+                        $check = $this->call($run, $checkModel, $subject->prompt('verify'), [$subject->kind => $subject->context, 'question' => $question, 'answer' => $answer], self::CHECK_OUTPUT_TOKENS, $effort);
                         $replies[] = [$check, 'scope'];
 
                         $refusal = match (false) {
@@ -183,7 +187,7 @@ final class AnswerQuestion
                 }
 
                 $outcome = $refusal === null ? AssistantAnswer::ANSWERED : AssistantAnswer::NO_INFO;
-                $this->save($product, $question, $outcome, $refusal === null ? $answer : null, $refusal === null ? $source : null, $answerModel, $replies, $run);
+                $this->save($subject, $question, $outcome, $refusal === null ? $answer : null, $refusal === null ? $source : null, $answerModel, $replies, $run);
 
                 $result = $refusal === null
                     ? ['outcome' => $outcome, 'answer' => $answer, 'from' => 'model', 'source' => (string) $source]
@@ -204,46 +208,6 @@ final class AnswerQuestion
         return $reply;
     }
 
-    /** @return array<string, mixed> what the writer may answer from */
-    private function context(CatalogProduct $product, int $maxTextChars): array
-    {
-        $facts = EnrichmentFact::query()
-            ->with('vocabulary')
-            ->where('product_id', $product->id)
-            ->where('status', FactStatus::Approved)
-            ->orderBy('kind')->orderBy('key')
-            ->get();
-
-        $lines = [];
-        $highlights = [];
-        foreach ($facts as $fact) {
-            if ($fact->kind === FactKind::Highlight) {
-                $highlights[] = $fact->key.': '.$fact->value_text;
-
-                continue;
-            }
-
-            $definition = $fact->vocabulary?->definition();
-            $lines[] = match ($fact->kind) {
-                FactKind::Type => $definition?->label('type', (string) $fact->value_text, 'he') ?? (string) $fact->value_text,
-                FactKind::Choice => ($definition?->label('attribute', $fact->key, 'he') ?? $fact->key).': '.($definition?->label('attribute', $fact->key, 'he', (string) $fact->value_text) ?? $fact->value_text),
-                FactKind::Spec => ($definition?->label('attribute', $fact->key, 'he') ?? $fact->key).': '.rtrim(rtrim(number_format((float) $fact->value_number, 3, '.', ''), '0'), '.').' '.$fact->unit,
-                FactKind::Use => ($definition?->label('use', (string) $fact->value_text, 'he') ?? (string) $fact->value_text),
-                default => $fact->key.': '.$fact->value_text,
-            };
-        }
-
-        $text = trim(implode("\n", array_filter([$product->shortDescription(), $product->description()])));
-
-        return [
-            'title' => $product->title,
-            'category' => implode(' > ', $product->categoryPaths()[0] ?? []),
-            'facts' => array_values(array_unique($lines)),
-            'highlights' => $highlights,
-            'text' => mb_substr($text, 0, $maxTextChars),
-        ];
-    }
-
     private function withinDailyLimits(string $shopId, string $visitorHash): bool
     {
         $visitorKey = "assistant:visitor:{$shopId}:{$visitorHash}";
@@ -261,7 +225,7 @@ final class AnswerQuestion
     }
 
     /** @param list<array{0: ModelReply, 1: string}> $replies each reply with the prices it is charged at */
-    private function save(CatalogProduct $product, string $question, string $outcome, ?string $answer, ?string $source, string $model, array $replies, RunContext $run): void
+    private function save(Subject $subject, string $question, string $outcome, ?string $answer, ?string $source, string $model, array $replies, RunContext $run): void
     {
         $cost = 0.0;
         $input = 0;
@@ -273,8 +237,8 @@ final class AnswerQuestion
         }
 
         AssistantAnswer::query()->create([
-            'shop_id' => $product->shop_id,
-            'product_id' => $product->id,
+            'shop_id' => $subject->shopId,
+            $subject->column() => $subject->id,
             'question_key' => Question::key($question),
             'question' => $question,
             'answer' => $answer,

@@ -8,4 +8,11 @@ return [
         'How do I install or use it?',
         'How do I take care of it?',
     ],
+    // Shown before readers have asked anything about a guide. Summing it up comes first.
+    'article' => [
+        'Sum this guide up for me in a few words',
+        'What is the most important thing here?',
+        'Who is this guide for?',
+        'What should I do after reading it?',
+    ],
 ];

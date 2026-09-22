@@ -200,5 +200,15 @@ return [
         'banner_label_seen' => 'ראית גם',
         'banner_label_promise' => 'מה החנות מבטיחה',
         'banner_label_made' => 'ממה הוא עשוי',
+        // On a guide, the assistant names the guide instead of a product. BuildPageBank swaps
+        // each of these over the label it shadows.
+        'ask_chip_article' => 'שאלה על המאמר',
+        'ask_title_article' => 'שאלו על המאמר',
+        'ask_placeholder_article' => 'למשל: תסכם לי את המאמר בכמה מילים',
+        'chat_greeting_article' => 'היי! קראתי את המאמר הזה. רוצים סיכום קצר?',
+        'chat_placeholder_article' => 'שאלו אותי על המאמר…',
+        'chat_line_ask_article' => 'שאלו אותי כל שאלה על המאמר',
+        'banner_opener_article' => 'עברתי על המאמר הזה. הנה מה שמצאתי',
+        'ask_note_article' => 'התשובות נכתבות אוטומטית מהמאמר בלבד.',
     ],
 ];

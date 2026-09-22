@@ -150,10 +150,38 @@ final class AnswerQuestionTest extends TestCase
         $this->call('POST', '/api/v1/widget/'.SiteKeys::site(self::TOKEN).'/ask', server: ['HTTP_ORIGIN' => 'https://evil.test'], content: '{}')->assertStatus(403);
     }
 
-    private function ask(string $question): TestResponse
+    public function test_a_reader_can_ask_a_guide_to_sum_itself_up(): void
+    {
+        $guide = $this->article('900', 'איך בוחרים מקדחה', 'הספק חשוב פחות ממה שנדמה. לעבודה בבטון צריך פטישון, לעץ מספיקה מקדחה רגילה.');
+        $this->model->replies = [['about_product' => true], ['answer' => 'בקצרה: לבטון פטישון, לעץ מקדחה רגילה, וההספק פחות קריטי.', 'source' => 'store'], self::VERIFIED];
+
+        $answer = $this->ask('תסכם לי את המאמר בכמה מילים', 'content', '900')->assertOk()->json('data');
+
+        $this->assertSame('answered', $answer['outcome']);
+        $this->assertSame('בקצרה: לבטון פטישון, לעץ מקדחה רגילה, וההספק פחות קריטי.', $answer['answer']);
+        $this->assertStringContainsString('פטישון', $this->model->calls[1]['user'], 'the writer gets the guide itself');
+        $this->assertStringContainsString('"article"', $this->model->calls[1]['user'], 'and is told it is a guide, not a product');
+
+        // Saved against the guide, so the next reader gets it without a model.
+        $saved = app(TenantContext::class)->run($this->shop->id, fn () => AssistantAnswer::query()->firstWhere('content_id', $guide->id));
+        $this->assertNotNull($saved);
+        $this->assertNull($saved->product_id);
+
+        $this->model->calls = [];
+        $again = $this->ask('תסכם לי את המאמר בכמה מילים', 'content', '900')->assertOk()->json('data');
+        $this->assertSame('bank', $again['from']);
+        $this->assertSame([], $this->model->calls, 'no model the second time');
+
+        // What the question box offers a reader before they type.
+        $suggested = $this->getJson('/api/v1/widget/'.SiteKeys::site(self::TOKEN).'/questions?id=900&type=content')->json('data.suggested');
+        $this->assertContains('תסכם לי את המאמר בכמה מילים', $suggested);
+        $this->assertNotContains('מה עוד צריך לקנות יחד איתו?', $suggested, 'a guide is not a product');
+    }
+
+    private function ask(string $question, string $type = 'product', string $id = '31538'): TestResponse
     {
         return $this->call('POST', '/api/v1/widget/'.SiteKeys::site(self::TOKEN).'/ask', server: [
             'HTTP_ORIGIN' => 'https://store.test', 'CONTENT_TYPE' => 'text/plain',
-        ], content: json_encode(['id' => '31538', 'question' => $question, 'vid' => self::VID, 'locale' => 'he'], JSON_UNESCAPED_UNICODE));
+        ], content: json_encode(['id' => $id, 'type' => $type, 'question' => $question, 'vid' => self::VID, 'locale' => 'he'], JSON_UNESCAPED_UNICODE));
     }
 }

@@ -38,7 +38,7 @@
             @else
                 <div style="display:grid;gap:14px">
                     @foreach ($q['open'] as $rows)
-                        @php($product = $rows->first()->product)
+                        @php($product = $rows->first()->page())
                         <div>
                             <div style="font-weight:600;margin-bottom:6px">
                                 @if ($product?->url)<a href="{{ $product->url }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ $product->title }}</a>@else{{ $product?->title }}@endif
@@ -68,7 +68,7 @@
             @else
                 <div style="display:grid;gap:14px">
                     @foreach ($q['answered'] as $rows)
-                        @php($product = $rows->first()->product)
+                        @php($product = $rows->first()->page())
                         <div>
                             <div style="font-weight:600;margin-bottom:6px">
                                 @if ($product?->url)<a href="{{ $product->url }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ $product->title }}</a>@else{{ $product?->title }}@endif
@@ -106,7 +106,7 @@
             @else
                 <ul style="display:grid;gap:6px">
                     @foreach ($q['refused'] as $row)
-                        <li>{{ $row->question }} <span style="{{ $small }}">· {{ $row->product?->title }}</span>
+                        <li>{{ $row->question }} <span style="{{ $small }}">· {{ $row->page()?->title }}</span>
                             <details style="display:inline-block;margin-inline-start:6px"><summary style="{{ $small }};cursor:pointer;display:inline">{{ __('assistant::ui.questions.answer_anyway') }}</summary>
                                 <div style="display:flex;gap:8px;margin-top:6px">
                                     <textarea wire:model="drafts.{{ $row->id }}" rows="2" style="flex:1;padding:6px 10px;border:1px solid #d4d4d8;border-radius:8px;font:inherit"></textarea>
@@ -123,7 +123,7 @@
             <x-filament::section :heading="__('assistant::ui.questions.hidden_heading')" collapsible collapsed>
                 <ul style="display:grid;gap:6px">
                     @foreach ($q['hidden'] as $row)
-                        <li>{{ $row->question }} <span style="{{ $small }}">· {{ $row->product?->title }}</span>
+                        <li>{{ $row->question }} <span style="{{ $small }}">· {{ $row->page()?->title }}</span>
                             <button type="button" wire:click="show('{{ $row->id }}')" style="{{ $btn }}">{{ __('assistant::ui.questions.show') }}</button>
                         </li>
                     @endforeach

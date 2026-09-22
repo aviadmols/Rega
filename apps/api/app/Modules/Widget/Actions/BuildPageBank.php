@@ -134,7 +134,7 @@ final class BuildPageBank
             'teaser' => null,
             'sections' => [],
             'compare' => null,
-            'labels' => $this->labels(),
+            'labels' => $this->labels($type),
         ];
 
         if (! Features::enabled($type === 'product' ? 'widget.on_products' : 'widget.on_content', $shopId)) {
@@ -159,10 +159,11 @@ final class BuildPageBank
         $bank['bank_version'] = max(1, $version);
         $bank['teaser'] = $bank['sections'] === [] ? null : $this->teaser($bank['sections'][0]);
         $bank['compare'] = $compare;
-        // The question box (Assistant module) on product pages, when the shop has it on, and how
-        // many questions shoppers already asked here: the assistant's line says so.
-        $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
-        $bank['asked'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): int => $this->asked($externalId)) : 0;
+        // The question box (Assistant module), when the shop has it on for this kind of page, and
+        // how many questions were already asked here: the assistant's line says so. On a guide the
+        // question is about the guide — "sum this up for me" — not about a product.
+        $bank['ask'] = Features::enabled($type === 'product' ? 'assistant.on_products' : 'assistant.on_content', $shopId);
+        $bank['asked'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): int => $this->asked($type, $externalId)) : 0;
         $bank['contact'] = $this->contact($shopId);
         $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
         $bank['assurances'] = $this->tenant->run($shopId, fn (): array => $this->assurances($shopId, $type === 'product' ? $externalId : null));
@@ -1140,16 +1141,18 @@ final class BuildPageBank
     }
 
     /** How many questions shoppers asked about this product and got an answer to. */
-    private function asked(string $externalId): int
+    private function asked(string $type, string $externalId): int
     {
         if (app(ModuleRepository::class)->get('Assistant')?->enabled !== true) {
             return 0;
         }
 
-        $product = CatalogProduct::query()->where('external_id', $externalId)->first();
+        $page = $type === 'product'
+            ? CatalogProduct::query()->where('external_id', $externalId)->first()
+            : CatalogContent::query()->where('external_id', $externalId)->first();
 
-        return $product === null ? 0 : AssistantAnswer::query()
-            ->where('product_id', $product->id)
+        return $page === null ? 0 : AssistantAnswer::query()
+            ->where($type === 'product' ? 'product_id' : 'content_id', $page->id)
             ->where('status', AssistantAnswer::SHOWN)
             ->whereNotNull('answer')
             ->count();
@@ -1235,9 +1238,25 @@ final class BuildPageBank
     }
 
     /** @return array<string, string> */
-    private function labels(): array
+    /**
+     * The widget's own words. On a guide, the sentences that name a product are replaced by the
+     * ones that name the guide, so the assistant says "ask me about this guide" where it should.
+     */
+    private function labels(string $type): array
     {
-        return (array) __('widget::bank.ui', [], $this->locale);
+        $labels = (array) __('widget::bank.ui', [], $this->locale);
+
+        if ($type === 'product') {
+            return $labels;
+        }
+
+        foreach ($labels as $key => $value) {
+            if (str_ends_with($key, '_article')) {
+                $labels[substr($key, 0, -8)] = $value;
+            }
+        }
+
+        return $labels;
     }
 
     /** What the shop promises, in the order a shopper cares about it, then what a product is. */

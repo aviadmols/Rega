@@ -3,6 +3,7 @@
 namespace App\Modules\Assistant\Models;
 
 use App\Core\Tenancy\BelongsToTenant;
+use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -63,5 +64,17 @@ class AssistantAnswer extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(CatalogProduct::class, 'product_id');
+    }
+
+    /** @return BelongsTo<CatalogContent, $this> */
+    public function content(): BelongsTo
+    {
+        return $this->belongsTo(CatalogContent::class, 'content_id');
+    }
+
+    /** The page the question was asked on: a product, or a guide the store published. */
+    public function page(): CatalogProduct|CatalogContent|null
+    {
+        return $this->product ?? $this->content;
     }
 }

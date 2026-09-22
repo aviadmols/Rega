@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
 
 /**
- * Every question shoppers asked in one store, by product: the ones nobody could answer first, so
+ * Every question shoppers asked in one store, by the page it was asked on: the ones nobody could answer first, so
  * the store team can write the answer, then the answered ones. A team answer is what the next
  * shopper who asks gets, and it never gets replaced by a model.
  */
@@ -79,13 +79,14 @@ class ShopQuestions extends Page
         }
 
         return app(TenantContext::class)->run($this->shop, function (): array {
-            $all = AssistantAnswer::query()->with('product:id,external_id,title,url')
+            $all = AssistantAnswer::query()->with(['product:id,external_id,title,url', 'content:id,external_id,title,url'])
                 ->where('last_asked_at', '>=', now()->subDays(self::RECENT_DAYS))
                 ->orderByDesc('asked_count')->orderByDesc('last_asked_at')
                 ->get();
 
             $shown = $all->where('status', AssistantAnswer::SHOWN);
-            $byProduct = fn (Collection $rows): Collection => $rows->groupBy('product_id')
+            // By the page the question was asked on: a product, or a guide.
+            $byProduct = fn (Collection $rows): Collection => $rows->groupBy(fn (AssistantAnswer $row): string => (string) ($row->product_id ?? $row->content_id))
                 ->sortByDesc(fn (Collection $group): array => [$group->sum('asked_count'), (string) $group->max('last_asked_at')]);
 
             return [
