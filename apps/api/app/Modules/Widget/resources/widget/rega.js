@@ -432,6 +432,9 @@
     '.highlights li{position:relative;padding-inline-start:18px;margin:6px 0}',
     '.highlights li:before{content:"";position:absolute;inset-inline-start:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--accent)}',
     '.chip-label{display:block;max-width:22ch;overflow:hidden;text-overflow:ellipsis}',
+    // How much waits inside a circle: "+4" products, "3" points. Quiet on a closed circle, lit on the open one.
+    '.count{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:rgba(17,24,39,.07);color:var(--muted);font-size:11px;font-weight:700;line-height:1}',
+    '.pill[aria-expanded="true"] .count{background:rgba(255,255,255,.28);color:#fff}',
     '.panel{margin-top:8px;padding:6px 16px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:#111827}',
     ':host(.is-floating) .panel{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.18)}',
     '.panel[hidden]{display:none}',
@@ -1388,6 +1391,10 @@
         pill.innerHTML = SPARK;
       }
       pill.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
+      var count = pillCount(item.body);
+      if (count) {
+        pill.appendChild(el('span', 'count', count));
+      }
       pill.title = item.section.title;
 
       pill.addEventListener('click', function () { setOpen(index, 'closed'); });
@@ -1446,6 +1453,23 @@
   }
 
   var FLAME = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2c.3 2.4-.3 4.5-1.7 6.2C10.2 10.1 8 11.5 8 14.5A4.5 4.5 0 0 0 12.5 19c2.6 0 4.5-1.9 4.5-4.5 0-1.6-.6-2.8-1.5-3.8-.3 1.1-.9 1.9-1.7 2.3.6-2 .3-4.8-.5-6.5C12.7 5 12.2 3.3 13.5 2z"/></svg>';
+
+  /**
+   * What a circle holds, counted from what was really rendered (live stock already applied):
+   * "+4" for products or guides, "3" for points. Nothing for a comparison or the question box.
+   */
+  function pillCount(body) {
+    var products = body.querySelectorAll('.card').length;
+    if (products) {
+      return '+' + products;
+    }
+    var guides = body.querySelectorAll('.guides li').length;
+    if (guides) {
+      return '+' + guides;
+    }
+    var points = body.querySelectorAll('.highlights li').length;
+    return points ? String(points) : null;
+  }
 
   /** How wanted the product is: the nightly counts as one quiet line, with a mark when it is among the shop's most wanted. */
   function popularityLine() {
