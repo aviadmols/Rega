@@ -4,9 +4,11 @@ namespace App\Modules\Widget\Actions;
 
 use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
+use App\Core\Modules\ModuleRepository;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Analytics\Models\AnalyticsScore;
+use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogCategory;
 use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
@@ -156,8 +158,10 @@ final class BuildPageBank
         $bank['bank_version'] = max(1, $version);
         $bank['teaser'] = $bank['sections'] === [] ? null : $this->teaser($bank['sections'][0]);
         $bank['compare'] = $compare;
-        // The question box (Assistant module) on product pages, when the shop has it on.
+        // The question box (Assistant module) on product pages, when the shop has it on, and how
+        // many questions shoppers already asked here: the assistant's line says so.
         $bank['ask'] = $type === 'product' && Features::enabled('assistant.on_products', $shopId);
+        $bank['asked'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): int => $this->asked($externalId)) : 0;
         $bank['contact'] = $this->contact($shopId);
         $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
         // The products this visitor viewed are their own, so the widget asks for them separately;
@@ -1120,6 +1124,22 @@ final class BuildPageBank
             'online_label' => (string) __('widget::bank.contact.online', [], $this->locale),
             'offline_label' => (string) __('widget::bank.contact.offline', [], $this->locale),
         ];
+    }
+
+    /** How many questions shoppers asked about this product and got an answer to. */
+    private function asked(string $externalId): int
+    {
+        if (app(ModuleRepository::class)->get('Assistant')?->enabled !== true) {
+            return 0;
+        }
+
+        $product = CatalogProduct::query()->where('external_id', $externalId)->first();
+
+        return $product === null ? 0 : AssistantAnswer::query()
+            ->where('product_id', $product->id)
+            ->where('status', AssistantAnswer::SHOWN)
+            ->whereNotNull('answer')
+            ->count();
     }
 
     /**

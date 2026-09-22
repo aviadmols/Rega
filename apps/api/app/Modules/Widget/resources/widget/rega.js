@@ -463,7 +463,24 @@
     '.specs dt{color:var(--muted)}.specs dd{margin:0;font-weight:500}',
     '.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}',
     '.tag{padding:3px 10px;border-radius:999px;background:rgba(17,24,39,.06);font-size:13px}',
+    // Products: a slider by default (swipe, or the arrows on a mouse), or a list; the shopper's pick is kept in this browser.
+    '.view{display:flex;justify-content:flex-end;gap:4px;margin:0 0 8px}',
+    '.view button{all:unset;box-sizing:border-box;width:30px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted);cursor:pointer}',
+    '.view button svg{width:16px;height:16px}.view button[aria-pressed="true"]{background:rgba(17,24,39,.08);color:#1f1f1f}',
+    '.cards-wrap{position:relative}',
     '.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}',
+    '.cards.is-slider{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 6px;margin:0 -2px;-webkit-overflow-scrolling:touch}',
+    '.cards.is-slider::-webkit-scrollbar{display:none}',
+    '.cards.is-slider .card{flex:0 0 clamp(150px,44%,190px);scroll-snap-align:start}',
+    '.cards-nav{all:unset;box-sizing:border-box;position:absolute;top:34%;width:32px;height:32px;border-radius:50%;background:#fff;color:#1f1f1f;box-shadow:0 2px 10px rgba(0,0,0,.16);display:grid;place-items:center;cursor:pointer;z-index:1}',
+    '.cards-nav svg{width:16px;height:16px}.cards-nav.prev{inset-inline-start:-8px}.cards-nav.next{inset-inline-end:-8px}.cards-nav[hidden]{display:none}',
+    '.cards.is-list{display:flex;flex-direction:column;gap:8px}',
+    '.cards.is-list .card{display:grid;grid-template-columns:64px minmax(0,1fr) auto;column-gap:10px;row-gap:2px;align-items:center}',
+    '.cards.is-list .card>a{display:contents}',
+    '.cards.is-list .card img{grid-column:1;grid-row:1/span 5;width:64px;height:64px}',
+    '.cards.is-list .card .title,.cards.is-list .card .reason,.cards.is-list .card .price,.cards.is-list .card .note-price{grid-column:2}',
+    '.cards.is-list .card .badge{position:static;grid-column:2;justify-self:start;width:fit-content}',
+    '.cards.is-list .card .add,.cards.is-list .card .status{grid-column:3;grid-row:1/span 5;margin-top:0;align-self:center;white-space:nowrap}',
     '.card{position:relative;display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fff}',
     '.card a{color:inherit;text-decoration:none}',
     '.card img{display:block;width:100%;aspect-ratio:1;object-fit:contain;background:#f6f6f7;border-radius:6px}',
@@ -506,7 +523,9 @@
     '.quick{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}.quick[hidden]{display:none}',
     '.quick .pill{height:30px;padding:0 10px;font-size:12px;gap:5px;color:var(--muted)}',
     '.quick .count{min-width:16px;height:16px;padding:0 4px;font-size:10px}',
-    '.teaser-text{flex:1;min-width:0}.teaser .go{flex:none;font-size:12px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
+    '.teaser-text{flex:1;min-width:0}.teaser-text.is-typing:after{content:"";display:inline-block;width:2px;height:1em;margin-inline-start:2px;background:currentColor;vertical-align:-2px;animation:rega-caret 1s steps(1) infinite}',
+    '@keyframes rega-caret{0%,50%{opacity:1}51%,100%{opacity:0}}',
+    '.teaser .go{flex:none;font-size:12px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
     '.spark-g{flex:none;width:20px;height:20px}',
     '.chat{position:relative;padding:14px;border:1px solid transparent;border-radius:22px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;',
     'background-size:auto,auto,220% 220%;animation:rega-drift 9s ease-in-out infinite alternate;box-shadow:0 14px 40px rgba(var(--g2),.10)}',
@@ -1158,6 +1177,108 @@
     return box;
   }
 
+  // ---------------------------------------------------------------- products as a slider or a list
+
+  var VIEW_KEY = 'rega_view';
+  var viewers = [];
+
+  function savedView() {
+    try {
+      return window.localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'slider';
+    } catch (e) {
+      return 'slider';
+    }
+  }
+
+  /** One choice for the whole page, kept in this browser: every product list follows it. */
+  function chooseView(mode) {
+    try {
+      window.localStorage.setItem(VIEW_KEY, mode);
+    } catch (e) { /* private mode */ }
+    viewers.forEach(function (apply) { apply(mode); });
+  }
+
+  /**
+   * Puts the cards into the section as a slider (the default: swipe, or arrows on a mouse) or a
+   * list, with the two-button switch above them when there is more than one product. The arrows
+   * are measured when the section is shown, since a hidden panel has no width.
+   */
+  function productViews(node, cards, labels) {
+    var count = cards.children.length;
+    var rtl = (bank.dir || 'rtl') === 'rtl';
+    var wrapCards = el('div', 'cards-wrap');
+    var prev = el('button', 'cards-nav prev');
+    var next = el('button', 'cards-nav next');
+    prev.type = 'button';
+    next.type = 'button';
+    prev.innerHTML = rtl ? CHEVRON_RIGHT : CHEVRON_LEFT;
+    next.innerHTML = rtl ? CHEVRON_LEFT : CHEVRON_RIGHT;
+    prev.setAttribute('aria-label', labels.view_prev || '');
+    next.setAttribute('aria-label', labels.view_next || '');
+    prev.hidden = true;
+    next.hidden = true;
+
+    function step() {
+      return Math.max(120, Math.round(cards.clientWidth * 0.8));
+    }
+    prev.addEventListener('click', function () { cards.scrollBy({ left: (rtl ? 1 : -1) * step(), behavior: 'smooth' }); });
+    next.addEventListener('click', function () { cards.scrollBy({ left: (rtl ? -1 : 1) * step(), behavior: 'smooth' }); });
+
+    var buttons = {};
+    var view = null;
+    if (count > 1) {
+      view = el('div', 'view');
+      [['slider', ICON_SLIDER, labels.view_slider], ['list', ICON_LIST, labels.view_list]].forEach(function (option) {
+        var button = el('button');
+        button.type = 'button';
+        button.innerHTML = option[1];
+        button.setAttribute('aria-label', option[2] || option[0]);
+        button.title = option[2] || option[0];
+        button.addEventListener('click', function () { chooseView(option[0]); });
+        buttons[option[0]] = button;
+        view.appendChild(button);
+      });
+    }
+
+    var current = 'slider';
+    function apply(mode) {
+      current = count > 1 ? mode : 'slider';
+      cards.className = 'cards is-' + current;
+      Object.keys(buttons).forEach(function (key) {
+        buttons[key].setAttribute('aria-pressed', key === current ? 'true' : 'false');
+      });
+      var overflow = current === 'slider' && cards.scrollWidth > cards.clientWidth + 4;
+      prev.hidden = !overflow;
+      next.hidden = !overflow;
+    }
+    viewers.push(apply);
+    apply(savedView());
+
+    // Measured again each time the section is shown (a panel opens, a bubble appears), on the
+    // next frame, once the browser has laid it out.
+    node.load = function () {
+      var measure = function () { apply(current); };
+      if (window.requestAnimationFrame) {
+        window.requestAnimationFrame(measure);
+      } else {
+        setTimeout(measure, 0);
+      }
+    };
+
+    if (view) {
+      node.appendChild(view);
+    }
+    wrapCards.appendChild(prev);
+    wrapCards.appendChild(cards);
+    wrapCards.appendChild(next);
+    node.appendChild(wrapCards);
+  }
+
+  var ICON_SLIDER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="7" y="5" width="10" height="14" rx="2"/><path d="M3 8v8M21 8v8"/></svg>';
+  var ICON_LIST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>';
+  var CHEVRON_LEFT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
+  var CHEVRON_RIGHT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+
   /** The body of one section, or null when nothing in it survives live data. */
   function renderBody(section, live, labels) {
     var node = el('div', 'body');
@@ -1208,7 +1329,7 @@
       if (!cards.firstChild) {
         return null;
       }
-      node.appendChild(cards);
+      productViews(node, cards, labels);
 
       // The store's own category pages for more of the same kind.
       var browse = el('div', 'browse');
@@ -1385,10 +1506,10 @@
       heading.textContent = item.section.title;
       holder.textContent = '';
       holder.appendChild(item.body);
+      panel.hidden = false;
       if (typeof item.body.load === 'function') {
         item.body.load();
       }
-      panel.hidden = false;
       track('open', item.section, CHIP_SLOTS[Math.min(index, CHIP_SLOTS.length - 1)]);
 
       if (!exposed[item.section.candidate]) {
@@ -1529,10 +1650,10 @@
       var teaser = el('button', 'teaser');
       teaser.type = 'button';
       teaser.innerHTML = SPARK_G;
-      teaser.appendChild(el('span', 'teaser-text', rendered.length === 1
-        ? String(labels.chat_teaser_one || '')
-        : String(labels.chat_teaser || '').replace(':count', String(rendered.length))));
+      var line = el('span', 'teaser-text');
+      teaser.appendChild(line);
       teaser.appendChild(el('span', 'go', labels.chat_open));
+      var stopTyping = typeLines(line, teaserLines(rendered, previous, labels));
 
       var card = el('div', 'chat');
       card.hidden = true;
@@ -1607,10 +1728,10 @@
           var reply = el('div', 'bubble');
           reply.appendChild(el('div', 'bubble-lead', item.section.title));
           reply.appendChild(item.body);
+          thread.insertBefore(reply, suggestions);
           if (typeof item.body.load === 'function') {
             item.body.load();
           }
-          thread.insertBefore(reply, suggestions);
           offer(index);
           track('open', item.section, CHIP_SLOTS[Math.min(index, CHIP_SLOTS.length - 1)]);
           if (!exposed[item.section.candidate]) {
@@ -1670,6 +1791,7 @@
         if (!card.hidden) {
           return;
         }
+        stopTyping();
         teaser.hidden = true;
         quick.hidden = true;
         card.hidden = false;
@@ -1713,6 +1835,96 @@
         track('exposure', chatSection, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
+  }
+
+  /**
+   * What the closed line says, one sentence per thing this page really has: the comparison with
+   * what the shopper viewed before, the questions already asked here, the products that go with
+   * it, and the standing invitation to ask. Nothing is claimed that is not on the page.
+   */
+  function teaserLines(rendered, previous, labels) {
+    var lines = [];
+    var count = function (candidate, selector) {
+      for (var i = 0; i < rendered.length; i++) {
+        if (rendered[i].section.candidate === candidate) {
+          return rendered[i].body.querySelectorAll(selector || '.card').length;
+        }
+      }
+      return 0;
+    };
+    var say = function (one, many, n) {
+      if (n > 0) {
+        lines.push(n === 1 ? String(labels[one] || '') : String(labels[many] || '').replace(':count', String(n)));
+      }
+    };
+
+    if (previous && previous.title) {
+      lines.push(String(labels.chat_line_compare || '').replace(':title', previous.title));
+    }
+    say('chat_line_complement_one', 'chat_line_complement', count('complement'));
+    say('chat_line_similar_one', 'chat_line_similar', count('alternatives'));
+    say('chat_line_viewed_one', 'chat_line_viewed', count('recent'));
+    say('chat_line_points_one', 'chat_line_points', count('highlights', '.highlights li'));
+    say('chat_line_asked_one', 'chat_line_asked', Math.max(0, parseInt(bank.asked, 10) || 0));
+    if (bank.ask) {
+      lines.push(String(labels.chat_line_ask || ''));
+    }
+
+    if (!lines.length) {
+      lines.push(rendered.length === 1
+        ? String(labels.chat_teaser_one || '')
+        : String(labels.chat_teaser || '').replace(':count', String(rendered.length)));
+    }
+
+    return lines.filter(function (text) { return text; });
+  }
+
+  /**
+   * The line writes itself out, waits, erases and moves to the next, the way a chat does. One
+   * line, or a shopper who asked for less motion, just gets the text.
+   *
+   * @return {function} stops it
+   */
+  function typeLines(target, lines) {
+    var still = false;
+    try {
+      still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) { /* old browser */ }
+
+    if (lines.length < 2 || still) {
+      target.textContent = lines[0] || '';
+      return function () {};
+    }
+
+    var timer = null;
+    var index = 0;
+    var at = 0;
+    var erasing = false;
+    target.className = 'teaser-text is-typing';
+
+    function tick() {
+      var text = lines[index];
+      at = erasing ? at - 1 : at + 1;
+      target.textContent = text.slice(0, at);
+
+      var wait = erasing ? 16 : 32;
+      if (!erasing && at >= text.length) {
+        erasing = true;
+        wait = 2800;
+      } else if (erasing && at <= 0) {
+        erasing = false;
+        index = (index + 1) % lines.length;
+        wait = 320;
+      }
+      timer = setTimeout(tick, wait);
+    }
+    tick();
+
+    return function () {
+      clearTimeout(timer);
+      target.className = 'teaser-text';
+      target.textContent = lines[index];
+    };
   }
 
   var SPARK_G = '<svg class="spark-g" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rega-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285F4"/><stop offset=".6" stop-color="#8B5CF6"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs><path fill="url(#rega-g)" d="M12 2l2.3 6.4 6.4 2.3-6.4 2.3L12 19.4l-2.3-6.4L3.3 10.7l6.4-2.3z"/><path fill="url(#rega-g)" opacity=".7" d="M19 15l.9 2.4 2.4.9-2.4.9L19 21.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg>';
