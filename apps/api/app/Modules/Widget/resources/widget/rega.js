@@ -502,6 +502,10 @@
     '.teaser:hover,.teaser:focus-visible{box-shadow:0 14px 36px rgba(var(--g2),.18)}.teaser:focus-visible{outline:2px solid rgba(var(--g2),.5);outline-offset:2px}',
     // all:unset above also unsets the browser's [hidden], so say it again.
     '.teaser[hidden]{display:none}',
+    // The small tags under the closed line: the product lists and their counts, before anything opens.
+    '.quick{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}.quick[hidden]{display:none}',
+    '.quick .pill{height:30px;padding:0 10px;font-size:12px;gap:5px;color:var(--muted)}',
+    '.quick .count{min-width:16px;height:16px;padding:0 4px;font-size:10px}',
     '.teaser-text{flex:1;min-width:0}.teaser .go{flex:none;font-size:12px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
     '.spark-g{flex:none;width:20px;height:20px}',
     '.chat{position:relative;padding:14px;border:1px solid transparent;border-radius:22px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;',
@@ -1662,19 +1666,47 @@
       }
       card.appendChild(el('div', 'chat-foot', labels.chat_foot));
 
-      teaser.addEventListener('click', function () {
+      function openChat() {
+        if (!card.hidden) {
+          return;
+        }
         teaser.hidden = true;
+        quick.hidden = true;
         card.hidden = false;
         track('open', chatSection, 'teaser');
         if (card.scrollIntoView) {
           card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
+      }
+      teaser.addEventListener('click', openChat);
+
+      // Under the closed line, the product lists as small tags with their counts — similar
+      // products, what the shopper viewed — so the numbers show before anything is opened.
+      // A tag opens the conversation straight on that section.
+      var quick = el('div', 'quick');
+      rendered.forEach(function (item, index) {
+        var count = item.body.querySelector('.card') ? pillCount(item.body) : null;
+        if (!count) {
+          return;
+        }
+        var tag = el('button', 'pill');
+        tag.type = 'button';
+        tag.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
+        tag.appendChild(el('span', 'count', count));
+        tag.addEventListener('click', function () {
+          openChat();
+          pick(index);
+        });
+        quick.appendChild(tag);
       });
 
       if (pop) {
         wrap.appendChild(pop);
       }
       wrap.appendChild(teaser);
+      if (quick.firstChild) {
+        wrap.appendChild(quick);
+      }
       wrap.appendChild(card);
 
       watchExposure(teaser, function (ms, ratio) {
