@@ -44,6 +44,12 @@
                                     {{ __($person['verified'] ? 'shoppers::ui.signups.verified' : 'shoppers::ui.signups.not_verified') }}
                                 </x-filament::badge>
                                 <span style="{{ $small }}">{{ trans_choice('shoppers::ui.signups.devices', $person['devices'], ['count' => $person['devices']]) }}</span>
+                                <button
+                                    type="button"
+                                    wire:click="forget({{ $person['id'] }})"
+                                    wire:confirm="{{ __('shoppers::ui.signups.forget_confirm') }}"
+                                    style="margin-inline-start:auto;font-size:12px;padding:2px 10px;border:1px solid #d4d4d8;border-radius:999px;background:#fff"
+                                >{{ __('shoppers::ui.signups.forget') }}</button>
                             </div>
 
                             <p style="margin-top:6px;{{ $small }}">

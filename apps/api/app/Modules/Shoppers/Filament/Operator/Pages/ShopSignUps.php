@@ -10,6 +10,7 @@ use App\Modules\Shoppers\Models\ShopperIdentity;
 use App\Modules\Shoppers\Support\Channels;
 use App\Modules\Tenancy\Models\Shop;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Url;
@@ -61,6 +62,24 @@ final class ShopSignUps extends Page
         return Shop::query()->orderBy('name')->pluck('name', 'id')->all();
     }
 
+    /**
+     * Forget one shopper: the contact, the consent and the browsers tied to it. What they browsed
+     * stays as it was before they ever signed up — anonymous, per browser, and no longer theirs.
+     * The wording they agreed to says they may ask for this.
+     */
+    public function forget(int $id): void
+    {
+        if ($this->shop === null) {
+            return;
+        }
+
+        app(TenantContext::class)->run($this->shop, function () use ($id): void {
+            ShopperIdentity::query()->whereKey($id)->delete();
+        });
+
+        Notification::make()->success()->title(__('shoppers::ui.signups.forgotten'))->send();
+    }
+
     /** @return array{on: bool, can_verify: array<string, bool>, people: list<array<string, mixed>>}|null */
     public function signUps(): ?array
     {
@@ -91,6 +110,7 @@ final class ShopSignUps extends Page
                     'phone' => Channels::canVerify('phone', $shopId),
                 ],
                 'people' => $identities->map(fn (ShopperIdentity $identity): array => [
+                    'id' => $identity->id,
                     'contact' => $identity->contact,
                     'channel' => $identity->channel,
                     'verified' => $identity->isVerified(),

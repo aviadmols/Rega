@@ -79,7 +79,7 @@ return [
     // What the shop can rewrite in its settings for the sign-up under "products you viewed".
     'signup' => [
         'title' => 'Shall we keep the products you viewed?',
-        'consent' => 'I agree that the shop keeps my contact and the products I looked at, and may reach out with offers.',
+        'consent' => 'I agree that the shop keeps my contact and the products I looked at, and may contact me with offers. I can ask to be removed at any time.',
         'placeholder' => 'Phone or email',
         'button' => 'Keep them for me',
     ],

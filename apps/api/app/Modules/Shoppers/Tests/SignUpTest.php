@@ -147,12 +147,20 @@ final class SignUpTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('operator'));
         $this->actingAs(User::factory()->operator()->create());
 
-        Livewire::test(ShopSignUps::class, ['shop' => $this->shop->id])
+        $page = Livewire::test(ShopSignUps::class, ['shop' => $this->shop->id])
             ->assertSee('972501234567')
             ->assertSee('לא אומת')
             ->assertSee('תומך מדף')
             ->assertSee('3 צפיות')
             ->assertSee('אישר את נוסח ההסכמה v1');
+
+        // The shopper asks to be forgotten: the contact and the link go; the browsing stays anonymous.
+        $identity = $this->inShop(fn () => ShopperIdentity::query()->sole());
+        $page->call('forget', $identity->id)->assertDontSee('972501234567');
+
+        $this->assertSame(0, $this->inShop(fn () => ShopperIdentity::query()->count()));
+        $this->assertSame(0, $this->inShop(fn () => ShopperVisitor::query()->count()));
+        $this->assertSame(['11'], $this->topFor($visitor), 'their own browser still sees its own browsing');
     }
 
     private function signUp(string $visitor, string $contact, bool $consent = true): TestResponse
