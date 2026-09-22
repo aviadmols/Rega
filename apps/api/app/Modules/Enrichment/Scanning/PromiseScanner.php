@@ -20,8 +20,43 @@ final class PromiseScanner
     /** Longest sentence worth keeping as a quote: past this the page is describing, not promising. */
     private const MAX_QUOTE = 220;
 
-    /** Words that follow "100%" without saying what the thing is made of. */
-    private const NOT_A_MATERIAL = ['מהמחיר', 'מהסכום', 'מהערך', 'מהכסף', 'החזר', 'שביעות', 'refund', 'money', 'back', 'satisfaction', 'guarantee', 'guaranteed', 'secure'];
+    /**
+     * "100%" in a store's text is usually a boast, not a material: 100% sealing, 100% power
+     * transfer, 100% satisfaction. Only a word from this list is read as what the thing is made
+     * of, so the widget never tells a shopper the product is "100% protection".
+     *
+     * @var list<string>
+     */
+    private const MATERIALS = [
+        'כותנה', 'פשתן', 'צמר', 'משי', 'עור', 'במבוק', 'נחושת', 'פליז', 'אלומיניום', 'נירוסטה',
+        'פלדה', 'ברזל', 'אבץ', 'טיטניום', 'עץ', 'אורן', 'אלון', 'בוק', 'טיק', 'מלמין',
+        'מיקרופייבר', 'פוליאסטר', 'פוליאוריטן', 'פוליאוריתן', 'אקריל', 'אקרילי', 'סיליקון',
+        'גומי', 'לטקס', 'זכוכית', 'קרמיקה', 'ניילון', 'פוליפרופילן', 'ויסקוזה',
+        'cotton', 'linen', 'wool', 'silk', 'leather', 'bamboo', 'copper', 'brass', 'aluminium',
+        'aluminum', 'stainless', 'steel', 'iron', 'titanium', 'wood', 'oak', 'pine', 'teak',
+        'microfiber', 'microfibre', 'polyester', 'polyurethane', 'acrylic', 'silicone', 'rubber',
+        'latex', 'glass', 'ceramic', 'nylon', 'polypropylene', 'viscose',
+    ];
+
+    /**
+     * "תוצרת" means "made by" as often as "made in", and a store writes "תוצרת Makita" far more
+     * often than "תוצרת איטליה". Only a place is read as where the thing was made; a brand is
+     * already known from the product's own brand fact.
+     *
+     * @var list<string>
+     */
+    private const PLACES = [
+        'ישראל', 'אנגליה', 'בריטניה', 'סקוטלנד', 'אירלנד', 'איטליה', 'גרמניה', 'צרפת', 'ספרד',
+        'פורטוגל', 'הולנד', 'בלגיה', 'שוויץ', 'אוסטריה', 'פולין', 'צ׳כיה', 'סלובניה', 'רומניה',
+        'הונגריה', 'יוון', 'טורקיה', 'סין', 'יפן', 'קוריאה', 'טייוואן', 'תאילנד', 'וייטנאם',
+        'הודו', 'אמריקה', 'קנדה', 'מקסיקו', 'ברזיל', 'שוודיה', 'פינלנד', 'דנמרק', 'נורווגיה',
+        'אוסטרליה', 'אוקראינה', 'רוסיה', 'סלובקיה', 'בולגריה', 'ליטא', 'לטביה', 'אסטוניה',
+        'israel', 'england', 'britain', 'scotland', 'ireland', 'italy', 'germany', 'france',
+        'spain', 'portugal', 'netherlands', 'holland', 'belgium', 'switzerland', 'austria',
+        'poland', 'czechia', 'slovenia', 'romania', 'hungary', 'greece', 'turkey', 'china',
+        'japan', 'korea', 'taiwan', 'thailand', 'vietnam', 'india', 'usa', 'america', 'canada',
+        'mexico', 'brazil', 'sweden', 'finland', 'denmark', 'norway', 'australia', 'ukraine',
+    ];
 
     /**
      * What the shop promises, from one page's text.
@@ -65,7 +100,7 @@ final class PromiseScanner
                     $detail = trim(preg_replace('/\s+/u', ' ', (string) ($matches['d'] ?? '')) ?? '');
                     $detail = $detail === '' ? null : $detail;
 
-                    if ($key === 'pure_material' && $detail !== null && in_array($detail, self::NOT_A_MATERIAL, true)) {
+                    if (! self::detailFits($key, $detail)) {
                         continue;
                     }
 
@@ -76,6 +111,18 @@ final class PromiseScanner
         }
 
         return array_values($found);
+    }
+
+    /** A material must be a material and a place must be a place; anything else is a boast. */
+    private static function detailFits(string $key, ?string $detail): bool
+    {
+        $word = mb_strtolower((string) $detail);
+
+        return match ($key) {
+            'pure_material' => in_array($word, array_map('mb_strtolower', self::MATERIALS), true),
+            'made_in' => in_array($word, array_map('mb_strtolower', self::PLACES), true),
+            default => true,
+        };
     }
 
     /**
@@ -146,17 +193,20 @@ final class PromiseScanner
      * @var array<string, list<string>>
      */
     private const PRODUCT_PATTERNS = [
+        // A making word is required: a store that sells materials for hand-built projects is not
+        // telling a shopper that this product was made by hand.
         'handmade' => [
-            '/(?:עבודת|בעבודת)\s+יד/u',
-            '/עשוי\s+ביד/u',
+            '/(?:מיוצר|מיוצרת|עשוי|עשויה|נוצר|נוצרה|מעוצב|מעוצבת|נבנה|נבנתה)[^.]{0,20}?(?:בעבודת|עבודת)\s+יד/u',
+            '/(?:עשוי|עשויה|מיוצר|מיוצרת)\s+ביד/u',
+            '/מלאכת\s+יד/u',
             '/hand[\- ]?made|handcrafted/iu',
         ],
         'pure_material' => [
-            '/100%\s*(?<d>[\p{L}]{3,20})/u',
-            '/(?<d>[\p{L}]{3,20})\s*100%/u',
+            '/100%\s*(?<d>[\p{L}]{2,20})/u',
+            '/(?<d>[\p{L}]{2,20})\s*100%/u',
         ],
         'made_in' => [
-            '/תוצרת\s+(?<d>[\p{L}]{3,20})/u',
+            '/(?:תוצרת|מיוצר\s+ב|מיוצרת\s+ב)\s*(?<d>[\p{L}]{3,20})/u',
             '/made\s+in\s+(?<d>[\p{L}]{3,20})/iu',
         ],
     ];

@@ -44,7 +44,7 @@ final class PromisesTest extends TestCase
 
     public function test_a_product_says_how_it_was_made_and_what_it_is_made_of(): void
     {
-        $promises = collect(PromiseScanner::product('שמיכה בעבודת יד, 100% כותנה, תוצרת פורטוגל. מתאימה למיטה זוגית.'))->keyBy('key');
+        $promises = collect(PromiseScanner::product('שמיכה עשויה בעבודת יד, 100% כותנה, תוצרת פורטוגל. מתאימה למיטה זוגית.'))->keyBy('key');
 
         $this->assertNull($promises['handmade']['detail']);
         $this->assertSame('כותנה', $promises['pure_material']['detail']);
@@ -55,6 +55,32 @@ final class PromisesTest extends TestCase
     {
         $this->assertSame([], PromiseScanner::product('100% שביעות רצון מובטחת ללקוחות שלנו.'));
         $this->assertSame([], PromiseScanner::shop('הבטחה: 100% החזר על כל פריט.'));
+
+        // What the pilot store really writes. A boast is not a material.
+        foreach (['100% אטימות בפני מים בכל תנאי אקלים', '100% העברת כוח לביצועים', '100% הגנה מפני מים בשימוש נכון', 'עמיד 100% מפני מים.'] as $boast) {
+            $this->assertSame([], PromiseScanner::product($boast), $boast);
+        }
+
+        $this->assertSame('מיקרופייבר', PromiseScanner::product('מטלית רצפה 100% מיקרופייבר מבית וילדה')[0]['detail']);
+        $this->assertSame('עץ', PromiseScanner::product('עשוי 100% עץ אורן טבעי')[0]['detail'], 'a two-letter material still counts');
+    }
+
+    public function test_a_brand_after_toceret_is_not_where_the_product_was_made(): void
+    {
+        // "תוצרת Makita" is who made it, not where. The brand is already a fact of its own.
+        $this->assertSame([], PromiseScanner::product('אימפקט 18V מנוע BL דגם DTD153 מתוצרת Makita'));
+        $this->assertSame([], PromiseScanner::product('לרשימת כל כלי עבודה חשמליים מתוצרת STANLEY לחץ כאן'));
+
+        $this->assertSame('אנגליה', PromiseScanner::product('פד איכותי, תוצרת אנגליה, שאינו מתפרק!')[0]['detail']);
+    }
+
+    public function test_a_store_that_sells_materials_for_hand_built_projects_is_not_selling_hand_work(): void
+    {
+        $this->assertSame([], PromiseScanner::product('פרויקטים של בנייה בעבודת יד (DIY)'));
+
+        $made = collect(PromiseScanner::product('השמיכה מיוצרת בעבודת יד מ-100% כותנה.'))->keyBy('key');
+        $this->assertTrue($made->has('handmade'));
+        $this->assertSame('כותנה', $made['pure_material']['detail']);
     }
 
     public function test_english_pages_are_read_too(): void
@@ -79,7 +105,7 @@ final class PromisesTest extends TestCase
         $this->buildShop();
         $page = $this->page('900', 'תקנון', 'ניתן להחזיר מוצר תוך 14 יום. משלוח חינם מעל 500 ש"ח.');
         $this->article('901', 'איך בוחרים מקדחה', 'מחזירים מקדחה תוך 7 ימים.');
-        $product = $this->product('100', 'שמיכת כותנה', 'שמיכה בעבודת יד, 100% כותנה.', []);
+        $product = $this->product('100', 'שמיכת כותנה', 'שמיכה עשויה בעבודת יד, 100% כותנה.', []);
 
         app(ReadPromisesInCode::class)->handle($this->shop->id);
 
