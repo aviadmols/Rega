@@ -527,26 +527,28 @@
     '@keyframes rega-caret{0%,50%{opacity:1}51%,100%{opacity:0}}',
     '.teaser .go{flex:none;font-size:12px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
     '.spark-g{flex:none;width:20px;height:20px}',
-    '.chat{position:relative;padding:14px;border:1px solid transparent;border-radius:22px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;',
+    '.chat{position:relative;padding:12px;border:1px solid transparent;border-radius:20px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;',
     'background-size:auto,auto,220% 220%;animation:rega-drift 9s ease-in-out infinite alternate;box-shadow:0 14px 40px rgba(var(--g2),.10)}',
     '.chat[hidden]{display:none}',
     '.chat-head{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.chat-head .who{font-weight:500}.chat-head .aside{margin-inline-start:auto;font-size:11px;color:#a1a1aa}',
-    '.thread{display:flex;flex-direction:column;gap:10px;margin-top:12px}',
-    '.bubble{align-self:flex-start;max-width:94%;box-sizing:border-box;padding:10px 13px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid #ececee;font-size:14px;line-height:1.5;animation:rega-in .3s ease-out}',
+    '.thread{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:60vh;overflow-y:auto;scrollbar-width:thin}',
+    '.bubble{align-self:flex-start;max-width:94%;box-sizing:border-box;padding:9px 12px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid #ececee;font-size:14px;line-height:1.5;animation:rega-in .3s ease-out}',
     '.bubble.me{align-self:flex-end;max-width:78%;border-radius:16px 16px 4px 16px;background:#f4f4f5;border:0}',
     '.bubble .mark{font-family:Georgia,serif;font-size:22px;line-height:.5;color:rgba(var(--g2),.85);margin-inline-end:6px;vertical-align:-4px}',
     '.bubble-lead{font-weight:600;margin-bottom:6px}.bubble .body{margin-top:0}.bubble .ask-form,.bubble .ask-note{display:none}',
     '.dots{display:flex;gap:5px;padding:12px 14px}.dots span{width:6px;height:6px;border-radius:50%;background:rgb(var(--g2));animation:rega-dot 1.1s infinite ease-in-out}',
     '.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}',
-    '.more{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.more .lead{font-size:12px;color:#a1a1aa}',
-    '.composer{display:flex;align-items:center;gap:8px;margin-top:12px}',
-    '.composer input{flex:1;min-width:0;box-sizing:border-box;height:44px;padding:0 16px;border:0;border-radius:999px;background:#f4f4f5;color:inherit;font:inherit;font-size:16px}',
+    '.more{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}.more .lead{font-size:12px;color:#a1a1aa}',
+    '.more .pill{height:32px;padding:0 11px;font-size:12.5px}.more .count{min-width:17px;height:17px;padding:0 4px;font-size:10px}',
+    '.composer{display:flex;align-items:center;gap:8px;margin-top:10px}',
+    '.composer input{flex:1;min-width:0;box-sizing:border-box;height:40px;padding:0 14px;border:0;border-radius:999px;background:#f4f4f5;color:inherit;font:inherit;font-size:16px}',
     '.composer input:focus{outline:2px solid rgba(var(--g2),.5);outline-offset:1px}',
-    '.composer button{all:unset;box-sizing:border-box;flex:none;width:44px;height:44px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(var(--g2),.25)}',
+    '.composer button{all:unset;box-sizing:border-box;flex:none;width:40px;height:40px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(var(--g2),.25)}',
     '.composer button svg{width:18px;height:18px}.rega[dir="ltr"] .composer button svg{transform:scaleX(-1)}',
-    '.chat .contact.in-chat{margin-top:12px;padding:12px 0 0;border:0;border-top:1px solid #f0f0f2;border-radius:0;background:transparent}',
-    '.chat .signup{margin-top:12px}',
-    '.chat-foot{margin-top:8px;font-size:11px;color:#a1a1aa;text-align:center}',
+    '.chat .contact.in-chat{margin-top:10px;padding:10px 0 0;border:0;border-top:1px solid #f0f0f2;border-radius:0;background:transparent}',
+    '.chat .signup{margin-top:10px;padding:10px}',
+    '.chat-foot{margin-top:7px;font-size:11px;color:#a1a1aa;text-align:center}',
+    '.teaser{padding:10px 13px}',
     '.ask-q{font-weight:600;margin-bottom:3px}.ask-a{line-height:1.55}.ask-a.is-loading{color:var(--muted)}',
     '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
@@ -1730,8 +1732,8 @@
         said.appendChild(document.createTextNode(quoteText));
         thread.appendChild(said);
       }
+      // What to ask sits under the field, where a thumb already is, not above the conversation.
       var suggestions = el('div', 'more');
-      thread.appendChild(suggestions);
       card.appendChild(thread);
 
       var askItem = null;
@@ -1773,12 +1775,12 @@
         }
         busy = true;
         var item = rendered[index];
-        thread.insertBefore(el('div', 'bubble me', item.section.chip || item.section.title), suggestions);
+        thread.appendChild(el('div', 'bubble me', item.section.chip || item.section.title));
         var dots = el('div', 'bubble dots');
         dots.appendChild(el('span'));
         dots.appendChild(el('span'));
         dots.appendChild(el('span'));
-        thread.insertBefore(dots, suggestions);
+        thread.appendChild(dots);
         suggestions.textContent = '';
 
         // A moment of "thinking": the answer was ready before the page finished loading.
@@ -1787,7 +1789,7 @@
           var reply = el('div', 'bubble');
           reply.appendChild(el('div', 'bubble-lead', item.section.title));
           reply.appendChild(item.body);
-          thread.insertBefore(reply, suggestions);
+          thread.appendChild(reply);
           if (typeof item.body.load === 'function') {
             item.body.load();
           }
@@ -1839,6 +1841,9 @@
         });
         card.appendChild(composer);
       }
+
+      // Under the field: what there is to ask about, so the thread above stays the conversation.
+      card.appendChild(suggestions);
 
       if (strip) {
         strip.className += ' in-chat';
