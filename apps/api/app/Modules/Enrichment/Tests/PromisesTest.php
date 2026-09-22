@@ -61,6 +61,10 @@ final class PromisesTest extends TestCase
             $this->assertSame([], PromiseScanner::product($boast), $boast);
         }
 
+        // A stripper that removes acrylic finishes is not made of acrylic.
+        $this->assertSame([], PromiseScanner::product('מסיר את כל סוגי הגימורים כולל 100% אקרילי'));
+        $this->assertSame('אקרילי', PromiseScanner::product('על בסיס 100% אקרילי בשילוב פוליאוריתן.')[0]['detail']);
+
         $this->assertSame('מיקרופייבר', PromiseScanner::product('מטלית רצפה 100% מיקרופייבר מבית וילדה')[0]['detail']);
         $this->assertSame('עץ', PromiseScanner::product('עשוי 100% עץ אורן טבעי')[0]['detail'], 'a two-letter material still counts');
     }

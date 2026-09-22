@@ -100,7 +100,7 @@ final class PromiseScanner
                     $detail = trim(preg_replace('/\s+/u', ' ', (string) ($matches['d'] ?? '')) ?? '');
                     $detail = $detail === '' ? null : $detail;
 
-                    if (! self::detailFits($key, $detail)) {
+                    if (! self::detailFits($key, $detail, $sentence)) {
                         continue;
                     }
 
@@ -113,13 +113,20 @@ final class PromiseScanner
         return array_values($found);
     }
 
+    /**
+     * A sentence about what the product acts on, not what it is: a stripper that removes 100%
+     * acrylic finishes is not made of acrylic.
+     */
+    private const ACTS_ON = '/מסיר|להסיר|מנקה|לניקוי|מוריד|ממיס|מתאים\s+ל|מיועד\s+ל|removes?|strips?|cleans?|dissolves?/u';
+
     /** A material must be a material and a place must be a place; anything else is a boast. */
-    private static function detailFits(string $key, ?string $detail): bool
+    private static function detailFits(string $key, ?string $detail, string $sentence): bool
     {
         $word = mb_strtolower((string) $detail);
 
         return match ($key) {
-            'pure_material' => in_array($word, array_map('mb_strtolower', self::MATERIALS), true),
+            'pure_material' => in_array($word, array_map('mb_strtolower', self::MATERIALS), true)
+                && preg_match(self::ACTS_ON, $sentence) !== 1,
             'made_in' => in_array($word, array_map('mb_strtolower', self::PLACES), true),
             default => true,
         };
