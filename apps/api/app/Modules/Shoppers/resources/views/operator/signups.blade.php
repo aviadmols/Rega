@@ -3,11 +3,13 @@
     @php($small = 'font-size:12px;opacity:.7')
 
     <div>
+        @if ($this->picksShop())
         <select wire:model.live="shop" style="padding:6px 10px;border:1px solid #d4d4d8;border-radius:8px;min-width:220px">
             @foreach ($this->shops() as $id => $name)
                 <option value="{{ $id }}">{{ $name }}</option>
             @endforeach
         </select>
+        @endif
     </div>
 
     @if ($data === null)

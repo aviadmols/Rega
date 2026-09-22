@@ -19,7 +19,7 @@ use Livewire\Attributes\Url;
  * Everyone who left a phone or an email in one store, newest first, with the products they looked
  * at. The contact is decrypted only here, for the person who runs the store.
  */
-final class ShopSignUps extends Page
+class ShopSignUps extends Page
 {
     private const PER_PAGE = 50;
 
@@ -54,6 +54,12 @@ final class ShopSignUps extends Page
     public function mount(): void
     {
         $this->shop ??= Shop::query()->orderBy('name')->value('id');
+    }
+
+    /** False in the merchant panel, where the shop is the one in the address and cannot change. */
+    public function picksShop(): bool
+    {
+        return true;
     }
 
     /** @return array<string, string> */

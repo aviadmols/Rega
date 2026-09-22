@@ -27,7 +27,7 @@ use Livewire\Attributes\Url;
  * and the store team's say: pin a product first, hide one, hide a circle, or add a product code
  * did not pick. What the team decides overrides code and learning (BuildPageBank::curated()).
  */
-final class ProductPage extends Page
+class ProductPage extends Page
 {
     private const SEARCH_RESULTS = 12;
 
@@ -69,6 +69,12 @@ final class ProductPage extends Page
     public function getSubheading(): ?string
     {
         return __('widget::ui.page.subheading');
+    }
+
+    /** False in the merchant panel, where every search is inside the one shop in the address. */
+    public function picksShop(): bool
+    {
+        return true;
     }
 
     public function pick(string $shopId, string $type, string $externalId): void

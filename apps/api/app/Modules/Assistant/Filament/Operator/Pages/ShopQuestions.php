@@ -17,7 +17,7 @@ use Livewire\Attributes\Url;
  * the store team can write the answer, then the answered ones. A team answer is what the next
  * shopper who asks gets, and it never gets replaced by a model.
  */
-final class ShopQuestions extends Page
+class ShopQuestions extends Page
 {
     public const TEAM = 'team';
 
@@ -55,6 +55,12 @@ final class ShopQuestions extends Page
     public function mount(): void
     {
         $this->shop ??= Shop::query()->orderBy('name')->value('id');
+    }
+
+    /** False in the merchant panel, where the shop is the one in the address and cannot change. */
+    public function picksShop(): bool
+    {
+        return true;
     }
 
     /** @return array<string, string> */

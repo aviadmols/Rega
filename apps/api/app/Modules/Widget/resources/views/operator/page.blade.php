@@ -11,7 +11,7 @@
                 @foreach ($this->matches() as $match)
                     <li>
                         <button type="button" wire:click="pick('{{ $match['shop_id'] }}', '{{ $match['type'] }}', '{{ $match['external_id'] }}')" style="text-decoration:underline;text-align:start">{{ $match['title'] }}</button>
-                        <span style="{{ $small }}">#{{ $match['external_id'] }} · {{ __('widget::ui.preview.page_types.'.$match['type']) }} · {{ $match['shop'] }}</span>
+                        <span style="{{ $small }}">#{{ $match['external_id'] }} · {{ __('widget::ui.preview.page_types.'.$match['type']) }}@if ($this->picksShop()) · {{ $match['shop'] }}@endif</span>
                     </li>
                 @endforeach
             </ul>

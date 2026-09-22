@@ -3,11 +3,13 @@
     @php($pct = fn ($v) => $v === null ? '–' : number_format($v * 100, 1).'%')
 
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        @if ($this->picksShop())
         <select wire:model.live="shop" style="padding:6px 10px;border:1px solid #d4d4d8;border-radius:8px;min-width:220px">
             @foreach ($this->shops() as $id => $name)
                 <option value="{{ $id }}">{{ $name }}</option>
             @endforeach
         </select>
+        @endif
         <select wire:model.live="days" style="padding:6px 10px;border:1px solid #d4d4d8;border-radius:8px">
             @foreach (\App\Modules\Analytics\Actions\BuildShopReport::PERIODS as $period)
                 <option value="{{ $period }}">{{ __('analytics::analytics.last_days', ['days' => $period]) }}</option>

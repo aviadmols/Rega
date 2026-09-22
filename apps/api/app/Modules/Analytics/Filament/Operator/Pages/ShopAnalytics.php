@@ -10,7 +10,7 @@ use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Url;
 
 /** The same report a store sees in its plugin, for any shop. */
-final class ShopAnalytics extends Page
+class ShopAnalytics extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
@@ -39,6 +39,12 @@ final class ShopAnalytics extends Page
     public function mount(): void
     {
         $this->shop ??= Shop::query()->orderBy('name')->value('id');
+    }
+
+    /** False in the merchant panel, where the shop is the one in the address and cannot change. */
+    public function picksShop(): bool
+    {
+        return true;
     }
 
     /** @return array<string, string> */
