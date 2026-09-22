@@ -34,7 +34,7 @@ use Livewire\Attributes\Url;
  * one shop. Built from the registries, so a module that declares a new cap gets it on this
  * screen without anyone touching this class.
  */
-final class Configuration extends Page implements HasForms
+class Configuration extends Page implements HasForms
 {
     use InteractsWithForms;
 
@@ -180,7 +180,7 @@ final class Configuration extends Page implements HasForms
     }
 
     /** @return list<Component> */
-    private function moduleSections(): array
+    protected function moduleSections(): array
     {
         $sections = [];
 
@@ -274,7 +274,7 @@ final class Configuration extends Page implements HasForms
     }
 
     /** @return list<FeatureDefinition> */
-    private function features(?ModuleManifest $module = null): array
+    protected function features(?ModuleManifest $module = null): array
     {
         $registry = app(FeatureRegistry::class);
 
@@ -286,7 +286,7 @@ final class Configuration extends Page implements HasForms
      *
      * @return list<SettingDefinition>
      */
-    private function settings(?ModuleManifest $module = null): array
+    protected function settings(?ModuleManifest $module = null): array
     {
         $registry = app(SettingRegistry::class);
         $definitions = $module === null ? $registry->all() : $registry->forModule($module->slug);

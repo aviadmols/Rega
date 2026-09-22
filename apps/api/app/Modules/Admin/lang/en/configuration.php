@@ -12,4 +12,6 @@ return [
     'range' => 'Allowed range: :min to :max.',
     'save' => 'Save',
     'saved' => 'Settings saved',
+    'display_title' => 'How it shows in your store',
+    'display_help' => 'What shows in your store, where it sits and how it is worded. A change is saved at once and reaches shoppers within a few minutes.',
 ];
