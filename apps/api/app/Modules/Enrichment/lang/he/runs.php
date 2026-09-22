@@ -12,6 +12,7 @@ return [
     'article_products_matched' => 'נבחרו :links מוצרים ל־:articles מאמרים. :skipped מאמרים לא קיבלו מוצרים: דפי חנות, בלי ערך לקונה, או שעוד לא נבדקו.',
     'vocabulary_invalid' => 'אוצר המילים לא נשמר: :count בעיות.',
     'read_in_code' => 'הקוד קרא :products מוצרים (:changed השתנו): מותג ל־:brands, :families משפחות מידות, :types סוגים לפי קטגוריה, :specs מידות מהכותרת.',
+    'read_promises' => 'הקוד קרא :pages עמודים: :shop_promises הבטחות של החנות ו־:product_promises נקודות מתוך טקסט המוצרים.',
     'relations_computed' => ':relations קשרים: :complements מוצרים משלימים ל־:products מוצרים, :families מידות נוספות, :alternatives חלופות.',
     'relation_rules_saved' => 'נשמרו כללי ההתאמה, גרסה :version: :rules כללים.',
     'relation_rules_invalid' => 'כללי ההתאמה לא נשמרו: :count בעיות.',

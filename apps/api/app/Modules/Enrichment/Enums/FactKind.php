@@ -37,6 +37,13 @@ enum FactKind: string
     /** What a shopper should know, from the product's own text: a short phrase (key) and one sentence. */
     case Highlight = 'highlight';
 
+    /**
+     * Something that helps a shopper decide, quoted from the store's own words: a refund window
+     * or free delivery from the shop's pages, hand work or a material from the product's text.
+     * The key says which promise it is and the value holds the detail, exactly as written.
+     */
+    case Promise = 'promise';
+
     public function label(): string
     {
         return __("enrichment::enrichment.fact_kinds.{$this->value}");

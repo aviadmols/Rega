@@ -85,6 +85,20 @@ trait BuildsCatalog
         ]));
     }
 
+    /** A page of the shop itself: the terms, shipping, returns. Not a guide. */
+    protected function page(string $externalId, string $title, string $body): CatalogContent
+    {
+        return $this->inShop(fn () => CatalogContent::query()->create([
+            'shop_id' => $this->shop->id,
+            'type' => 'page',
+            'external_id' => $externalId,
+            'title' => $title,
+            'excerpt' => mb_substr($body, 0, 100),
+            'body' => $body,
+            'hash' => md5($title.$body),
+        ]));
+    }
+
     protected function powerToolsVocabulary(): EnrichmentVocabulary
     {
         $data = ImportVocabulary::template('power-tools');

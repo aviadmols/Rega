@@ -25,6 +25,7 @@ return [
         'shopper_value' => 'ערך לקונה',
         'category' => 'קטגוריה',
         'highlight' => 'נקודה חשובה',
+        'promise' => 'הבטחה של החנות',
     ],
     'fact_statuses' => [
         'approved' => 'מאושר',

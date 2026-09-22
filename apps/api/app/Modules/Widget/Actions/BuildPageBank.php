@@ -25,6 +25,7 @@ use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Widget\Models\WidgetCuration;
 use App\Modules\Widget\Support\GuideRelevance;
 use App\Modules\Widget\Support\ProductCard;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -164,6 +165,7 @@ final class BuildPageBank
         $bank['asked'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): int => $this->asked($externalId)) : 0;
         $bank['contact'] = $this->contact($shopId);
         $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
+        $bank['assurances'] = $this->tenant->run($shopId, fn (): array => $this->assurances($shopId, $type === 'product' ? $externalId : null));
         // The products this visitor viewed are their own, so the widget asks for them separately;
         // the bank only says whether to ask, and what the sign-up under them should say.
         $bank['recent'] = Features::enabled('shoppers.recent_products', $shopId);
@@ -300,12 +302,21 @@ final class BuildPageBank
             ->limit(self::MAX_POSITIONS)
             ->get();
 
-        $lines = $rankings->map(fn (EnrichmentRanking $r): array => array_filter([
-            'text' => $this->positionText($r),
-            'metric' => $r->metric,
-            // The widget hides a price superlative when the live price is not this one.
-            'price' => $r->metric === 'price' ? (float) $r->value : null,
-        ], fn ($v): bool => $v !== null))->values()->all();
+        $lines = $rankings->map(function (EnrichmentRanking $r): array {
+            // The banner shows a first place as a tile, so it needs the sentence without the
+            // measurement and the size of the set on their own. A tie is no one's first place.
+            $measure = $r->metric === 'price' ? null : $this->measure((float) $r->value, $r->unit);
+
+            return array_filter([
+                'text' => $this->positionText($r),
+                'short' => $measure === null ? null : $this->positionText($r, false),
+                'note' => $measure,
+                'of' => $r->tied || $r->set_size < 3 ? null : $r->set_size,
+                'metric' => $r->metric,
+                // The widget hides a price superlative when the live price is not this one.
+                'price' => $r->metric === 'price' ? (float) $r->value : null,
+            ], fn ($v): bool => $v !== null);
+        })->values()->all();
 
         if ($definition !== null) {
             $lines = [...$lines, ...$this->levelLines($product, $facts, $definition, $rankings->pluck('metric')->all())];
@@ -1008,7 +1019,7 @@ final class BuildPageBank
         ];
     }
 
-    private function positionText(EnrichmentRanking $ranking): string
+    private function positionText(EnrichmentRanking $ranking, bool $withMeasure = true): string
     {
         $vocabularyKey = explode('|', $ranking->set_key)[0];
         $definition = $this->vocabularies[$vocabularyKey] ??= EnrichmentVocabulary::query()
@@ -1032,7 +1043,9 @@ final class BuildPageBank
             'set' => implode(' · ', $set),
         ], $this->locale);
 
-        return $ranking->metric === 'price' ? $text : $text.' · '.$this->measure((float) $ranking->value, $ranking->unit);
+        return $ranking->metric === 'price' || ! $withMeasure
+            ? $text
+            : $text.' · '.$this->measure((float) $ranking->value, $ranking->unit);
     }
 
     private function measure(float $value, ?string $unit): string
@@ -1225,5 +1238,68 @@ final class BuildPageBank
     private function labels(): array
     {
         return (array) __('widget::bank.ui', [], $this->locale);
+    }
+
+    /** What the shop promises, in the order a shopper cares about it, then what a product is. */
+    private const PROMISE_ORDER = ['returns', 'free_shipping', 'warranty', 'delivery', 'payments', 'handmade', 'pure_material', 'made_in'];
+
+    /**
+     * What helps a shopper decide beyond the product itself: the shop's own promises, read from
+     * its pages, and what this product is made of, read from its text. Two lines at most — the
+     * strongest promise leads and the rest follow it quietly — and every one of them was quoted
+     * from the store's own words before it was approved.
+     *
+     * @return list<array{scope: string, text: string, note: string}>
+     */
+    private function assurances(string $shopId, ?string $productExternalId): array
+    {
+        if (! Features::enabled('widget.promises', $shopId)) {
+            return [];
+        }
+
+        $product = $productExternalId === null ? null
+            : CatalogProduct::query()->active()->where('external_id', $productExternalId)->first();
+
+        $facts = EnrichmentFact::query()
+            ->where('kind', FactKind::Promise)
+            ->where('status', FactStatus::Approved)
+            ->where(fn (Builder $q) => $q->whereNull('product_id')->when($product, fn (Builder $p) => $p->orWhere('product_id', $product->id)))
+            ->get()
+            ->unique(fn (EnrichmentFact $f): string => ($f->product_id === null ? 'shop' : 'product').'|'.$f->key)
+            ->sortBy(fn (EnrichmentFact $f): int => (int) array_search($f->key, self::PROMISE_ORDER, true));
+
+        $assurances = [];
+
+        foreach (['shop', 'product'] as $scope) {
+            $lines = $facts
+                ->filter(fn (EnrichmentFact $f): bool => ($f->product_id === null ? 'shop' : 'product') === $scope)
+                ->map(fn (EnrichmentFact $f): string => $this->promiseText($f))
+                ->filter()
+                ->values();
+
+            if ($lines->isEmpty()) {
+                continue;
+            }
+
+            $source = (string) __("widget::bank.promises.from_{$scope}", [], $this->locale);
+            $assurances[] = [
+                'scope' => $scope,
+                'text' => $scope === 'product' ? $lines->implode(' · ') : (string) $lines->first(),
+                'note' => $scope === 'product' ? $source : trim($source.' · '.$lines->slice(1)->implode(' · '), " ·\u{00A0}"),
+            ];
+            $this->note('assurances', $scope, ['promises' => $lines->all()]);
+        }
+
+        return $assurances;
+    }
+
+    /** One promise in words, with the detail exactly as the store wrote it. */
+    private function promiseText(EnrichmentFact $fact): ?string
+    {
+        $detail = trim((string) $fact->value_text);
+        $key = $detail === '' ? $fact->key.'_any' : $fact->key;
+        $line = (string) __("widget::bank.promises.{$key}", ['detail' => $detail], $this->locale);
+
+        return str_starts_with($line, 'widget::bank.') ? null : $line;
     }
 }

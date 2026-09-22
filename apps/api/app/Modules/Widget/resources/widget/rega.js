@@ -513,20 +513,50 @@
     '.signup-consent input{margin:2px 0 0;flex:none;accent-color:rgb(var(--g2))}',
     '.signup-status{margin-top:8px;font-size:13px}',
     '.signup-note{font-size:13px;color:var(--muted)}',
-    // The assistant layout: a closed line that invites a click, then a conversation card.
-    '.teaser{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:11px 14px;border:1px solid transparent;border-radius:999px;cursor:pointer;font:inherit;font-size:14px;line-height:1.4;color:inherit;',
-    'background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;background-size:auto,auto,220% 220%;animation:rega-drift 6s ease-in-out infinite alternate;box-shadow:0 10px 30px rgba(var(--g2),.12);transition:box-shadow .2s}',
-    '.teaser:hover,.teaser:focus-visible{box-shadow:0 14px 36px rgba(var(--g2),.18)}.teaser:focus-visible{outline:2px solid rgba(var(--g2),.5);outline-offset:2px}',
-    // all:unset above also unsets the browser's [hidden], so say it again.
-    '.teaser[hidden]{display:none}',
-    // The small tags under the closed line: the product lists and their counts, before anything opens.
+    // The assistant layout: a banner that turns while it is closed, then a conversation card.
+    // The small tags under it: the product lists and their counts, before anything opens.
     '.quick{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}.quick[hidden]{display:none}',
     '.quick .pill{height:30px;padding:0 10px;font-size:12px;gap:5px;color:var(--muted)}',
     '.quick .count{min-width:16px;height:16px;padding:0 4px;font-size:10px}',
-    '.teaser-text{flex:1;min-width:0}.teaser-text.is-typing:after{content:"";display:inline-block;width:2px;height:1em;margin-inline-start:2px;background:currentColor;vertical-align:-2px;animation:rega-caret 1s steps(1) infinite}',
     '@keyframes rega-caret{0%,50%{opacity:1}51%,100%{opacity:0}}',
-    '.teaser .go{flex:none;font-size:12px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
     '.spark-g{flex:none;width:20px;height:20px}',
+    // The banner: one card that changes what it holds, the way an ad board does. Compact on purpose.
+    '.bn{margin:0 0 8px;padding:9px 11px;border:1px solid transparent;border-radius:16px;',
+    'background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;background-size:auto,auto,220% 220%;',
+    'animation:rega-drift 9s ease-in-out infinite alternate;box-shadow:0 10px 30px rgba(var(--g2),.09)}',
+    '.bn[hidden]{display:none}',
+    '.bn-head{display:flex;align-items:center;gap:6px;margin-bottom:5px}',
+    '.bn-head .spark-g{width:15px;height:15px}',
+    '.bn-who{font-size:10.5px;font-weight:500;color:#9ca3af}',
+    '.bn-stage{min-height:54px}',
+    '.bn-frame{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;font:inherit;color:inherit;text-align:start;animation:rega-in .34s ease-out}',
+    '.bn-frame[hidden]{display:none}',
+    '.bn-frame:focus-visible{outline:2px solid rgba(var(--g2),.5);outline-offset:3px;border-radius:10px}',
+    '.bn-row{display:flex;align-items:center;gap:9px}',
+    '.bn-tile{flex:none;width:38px;height:38px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}',
+    '.bn-tile svg{width:19px;height:19px}',
+    '.bn-tile.is-rank{background:var(--grad);color:#fff}',
+    '.bn-tile.is-rank b{font-size:14px;font-weight:700}.bn-tile.is-rank i{font-style:normal;font-size:8px;opacity:.9;margin-top:1px}',
+    '.bn-tile.is-hot{background:rgba(200,30,30,.08);color:#a51616}',
+    '.bn-tile.is-promise{background:rgba(16,185,129,.10);color:#0f766e}',
+    '.bn-tile.is-made{background:rgba(217,119,6,.10);color:#b45309}',
+    '.bn-bubbles{display:flex;flex:none;padding-inline-start:8px}',
+    '.bn-bubbles img,.bn-bubbles .bn-more{width:32px;height:32px;border-radius:50%;margin-inline-start:-8px;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.10)}',
+    '.bn-bubbles img{object-fit:contain;background:#f6f6f7}',
+    '.bn-bubbles .bn-more{display:flex;align-items:center;justify-content:center;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:600;box-shadow:0 0 0 2px #fff}',
+    '.bn-text{min-width:0}',
+    '.bn-title{font-size:13px;font-weight:600;line-height:1.3}.bn-title.is-plain{font-weight:500}',
+    '.bn-sub{margin-top:1px;font-size:11px;color:var(--muted);line-height:1.35}',
+    '.bn-type{font-size:13px;line-height:1.45;min-height:1.45em}',
+    '.bn-type.is-typing:after{content:"";display:inline-block;width:2px;height:1em;margin-inline-start:2px;background:currentColor;vertical-align:-2px;animation:rega-caret 1s steps(1) infinite}',
+    '.bn-feet{display:flex;align-items:center;gap:6px;margin-top:6px}',
+    '.bn-dot{all:unset;box-sizing:border-box;cursor:pointer;width:4px;height:4px;border-radius:999px;background:rgba(17,24,39,.16);transition:width .3s,background .3s}',
+    '.bn-dot[aria-current="true"]{width:20px;background:var(--grad)}',
+    '.bn-dot:focus-visible{outline:2px solid rgba(var(--g2),.5);outline-offset:3px}',
+    '.bn-play{all:unset;box-sizing:border-box;margin-inline-start:auto;cursor:pointer;font-size:10.5px;color:#a1a1aa}',
+    '.bn-play:focus-visible{outline:2px solid rgba(var(--g2),.5);outline-offset:2px}',
+    // The offer stands on its own, under the banner, never inside what the assistant found.
+    '.rega>.signup{margin:0 0 10px;padding:10px 11px}',
     '.chat{position:relative;padding:12px;border:1px solid transparent;border-radius:20px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;',
     'background-size:auto,auto,220% 220%;animation:rega-drift 9s ease-in-out infinite alternate;box-shadow:0 14px 40px rgba(var(--g2),.10)}',
     '.chat[hidden]{display:none}',
@@ -547,8 +577,6 @@
     '.composer button svg{width:18px;height:18px}.rega[dir="ltr"] .composer button svg{transform:scaleX(-1)}',
     '.chat .contact.in-chat{margin-top:10px;padding:10px 0 0;border:0;border-top:1px solid #f0f0f2;border-radius:0;background:transparent}',
     '.chat .signup{margin-top:10px;padding:10px}',
-    '.chat-foot{margin-top:7px;font-size:11px;color:#a1a1aa;text-align:center}',
-    '.teaser{padding:10px 13px}',
     '.ask-q{font-weight:600;margin-bottom:3px}.ask-a{line-height:1.55}.ask-a.is-loading{color:var(--muted)}',
     '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
@@ -1619,7 +1647,7 @@
         track('exposure', { candidate: 'contact', model: 'contact' }, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
-    if (pop) {
+    if (pop && pop.parentNode) {
       watchExposure(pop, function (ms, ratio) {
         track('exposure', { candidate: 'popularity', model: 'popularity' }, 'teaser', { visible_ms: ms, ratio: ratio });
       });
@@ -1708,13 +1736,30 @@
     function renderChat() {
       var chatSection = { candidate: 'chat', model: 'chat' };
 
-      var teaser = el('button', 'teaser');
-      teaser.type = 'button';
-      teaser.innerHTML = SPARK_G;
-      var line = el('span', 'teaser-text');
-      teaser.appendChild(line);
-      teaser.appendChild(el('span', 'go', labels.chat_open));
-      var stopTyping = typeLines(line, teaserLines(rendered, previous, labels));
+      // Closed, the assistant is a banner that changes what it holds: the opening line, what
+      // goes with this product, where it stands, what the shop promises. A click opens the
+      // conversation, and a click on a frame opens it straight on what that frame showed.
+      var banner = el('div', 'bn');
+      banner.setAttribute('aria-live', 'polite');
+      var bhead = el('div', 'bn-head');
+      bhead.innerHTML = SPARK_G;
+      bhead.appendChild(el('span', 'bn-who', labels.chat_who));
+      banner.appendChild(bhead);
+      var stage = el('div', 'bn-stage');
+      banner.appendChild(stage);
+      var feet = el('div', 'bn-feet');
+      banner.appendChild(feet);
+
+      var frames = bannerFrames(rendered, labels, previous);
+      var stopTurning = bannerRotate(stage, feet, frames, labels);
+      frames.forEach(function (frame) {
+        frame.node.addEventListener('click', function () {
+          openChat();
+          if (frame.index !== null) {
+            pick(frame.index);
+          }
+        });
+      });
 
       var card = el('div', 'chat');
       card.hidden = true;
@@ -1808,10 +1853,6 @@
         }, 600);
       }
 
-      if (signup) {
-        card.appendChild(signup);
-      }
-
       if (askItem) {
         var composer = el('form', 'composer');
         var input = el('input');
@@ -1849,14 +1890,13 @@
         strip.className += ' in-chat';
         card.appendChild(strip);
       }
-      card.appendChild(el('div', 'chat-foot', labels.chat_foot));
 
       function openChat() {
         if (!card.hidden) {
           return;
         }
-        stopTyping();
-        teaser.hidden = true;
+        stopTurning();
+        banner.hidden = true;
         quick.hidden = true;
         card.hidden = false;
         track('open', chatSection, 'teaser');
@@ -1864,7 +1904,6 @@
           card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
       }
-      teaser.addEventListener('click', openChat);
 
       // Under the closed line, the product lists as small tags with their counts — similar
       // products, what the shopper viewed — so the numbers show before anything is opened.
@@ -1886,16 +1925,17 @@
         quick.appendChild(tag);
       });
 
-      if (pop) {
-        wrap.appendChild(pop);
-      }
-      wrap.appendChild(teaser);
+      wrap.appendChild(banner);
       if (quick.firstChild) {
         wrap.appendChild(quick);
       }
+      // The offer stands on its own, under the banner, and stays there once the chat opens.
+      if (signup) {
+        wrap.appendChild(signup);
+      }
       wrap.appendChild(card);
 
-      watchExposure(teaser, function (ms, ratio) {
+      watchExposure(banner, function (ms, ratio) {
         track('exposure', chatSection, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
@@ -1949,13 +1989,14 @@
    *
    * @return {function} stops it
    */
-  function typeLines(target, lines) {
+  function typeLines(target, lines, base) {
     var still = false;
+    base = base || 'teaser-text';
     try {
       still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch (e) { /* old browser */ }
 
-    if (lines.length < 2 || still) {
+    if (!lines.length || still) {
       target.textContent = lines[0] || '';
       return function () {};
     }
@@ -1964,7 +2005,7 @@
     var index = 0;
     var at = 0;
     var erasing = false;
-    target.className = 'teaser-text is-typing';
+    target.className = base + ' is-typing';
 
     function tick() {
       var text = lines[index];
@@ -1973,6 +2014,11 @@
 
       var wait = erasing ? 16 : 32;
       if (!erasing && at >= text.length) {
+        // One line writes itself out and stays; several take turns.
+        if (lines.length < 2) {
+          target.className = base;
+          return;
+        }
         erasing = true;
         wait = 2800;
       } else if (erasing && at <= 0) {
@@ -1986,8 +2032,275 @@
 
     return function () {
       clearTimeout(timer);
-      target.className = 'teaser-text';
+      target.className = base;
       target.textContent = lines[index];
+    };
+  }
+
+  /** A frame's row: a tile or a stack of pictures, then a line, and a quieter one under it. */
+  function bannerRow(lead, title, sub, plain) {
+    var row = el('div', 'bn-row');
+    if (lead) {
+      row.appendChild(lead);
+    }
+    var text = el('div', 'bn-text');
+    text.appendChild(el('div', 'bn-title' + (plain ? ' is-plain' : ''), title));
+    if (sub) {
+      text.appendChild(el('div', 'bn-sub', sub));
+    }
+    row.appendChild(text);
+    return row;
+  }
+
+  /** Up to three of a list's own pictures, overlapping, and "+N" for the rest. */
+  function bannerBubbles(body, max) {
+    var images = body.querySelectorAll('.card img');
+    var shown = Math.min(images.length, max || 3);
+
+    if (!shown) {
+      return null;
+    }
+
+    var wrap = el('div', 'bn-bubbles');
+    for (var i = 0; i < shown; i++) {
+      var picture = el('img');
+      picture.src = images[i].src;
+      picture.alt = '';
+      picture.loading = 'lazy';
+      wrap.appendChild(picture);
+    }
+    if (images.length > shown) {
+      wrap.appendChild(el('span', 'bn-more', '+' + (images.length - shown)));
+    }
+    return wrap;
+  }
+
+  var SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>';
+  var STAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.1 4.6 5 .6-3.7 3.4 1 4.9L12 14.1 7.6 16.5l1-4.9L4.9 8.2l5-.6z"/></svg>';
+
+  /** The square at the start of a frame: an icon, or where the product stands in its set. */
+  function bannerTile(kind, icon) {
+    var tile = el('div', 'bn-tile is-' + kind);
+    tile.innerHTML = icon;
+    return tile;
+  }
+
+  function bannerRank(of, labels) {
+    var tile = el('div', 'bn-tile is-rank');
+    tile.appendChild(el('b', null, '#1'));
+    if (of) {
+      tile.appendChild(el('i', null, String(labels.banner_of || '').replace(':count', String(of))));
+    }
+    return tile;
+  }
+
+  /**
+   * What the banner can show on this page. Every frame stands on something the page really has —
+   * the complements with their pictures, where the product stands, how wanted it is, what the
+   * shopper saw, what the shop promises and what the product is made of. Nothing else joins the
+   * round, so a quiet page simply turns fewer frames, and a page with one frame turns none.
+   *
+   * @return {Array} each {key, label, node, index (a section to open, or null), enter, leave}
+   */
+  function bannerFrames(rendered, labels, previous) {
+    var frames = [];
+    var at = function (candidate) {
+      for (var i = 0; i < rendered.length; i++) {
+        if (rendered[i].section.candidate === candidate) {
+          return { item: rendered[i], index: i };
+        }
+      }
+      return null;
+    };
+    var add = function (key, row, index) {
+      var node = el('button', 'bn-frame');
+      node.type = 'button';
+      node.appendChild(row);
+      frames.push({ key: key, label: labels['banner_label_' + key] || '', node: node, index: index === undefined ? null : index });
+      return frames[frames.length - 1];
+    };
+    var shorten = function (text) {
+      text = String(text || '').replace(/\s+/g, ' ').trim();
+      return text.length > 22 ? text.slice(0, 20).replace(/\s+$/, '') + '…' : text;
+    };
+
+    // What goes with it, in its own pictures.
+    var goes = at('complement');
+    if (goes) {
+      var bubbles = bannerBubbles(goes.item.body, 3);
+      var cards = goes.item.body.querySelectorAll('.card');
+      var firstTitle = cards.length ? shorten(cards[0].querySelector('.title') ? cards[0].querySelector('.title').textContent : '') : '';
+      if (bubbles && firstTitle) {
+        add('goes', bannerRow(
+          bubbles,
+          cards.length === 1
+            ? String(labels.banner_goes_one || '').replace(':title', firstTitle)
+            : String(labels.banner_goes || '').replace(':title', firstTitle).replace(':count', String(cards.length - 1)),
+          labels.banner_all,
+          true
+        ), goes.index);
+      }
+    }
+
+    // Where it stands among its kind: only a real first place, never a tie.
+    var best = at('highlights');
+    if (best) {
+      var lines = best.item.section.lines || [];
+      for (var l = 0; l < lines.length; l++) {
+        if (lines[l].of) {
+          add('best', bannerRow(bannerRank(lines[l].of, labels), lines[l].short || lines[l].text, lines[l].note), best.index);
+          break;
+        }
+      }
+    }
+
+    // How wanted it is, from the nightly counts.
+    var pop = bank.popularity;
+    if (pop && (pop.badge || pop.text)) {
+      add('hot', bannerRow(bannerTile('hot', FLAME), pop.badge || pop.text, pop.badge ? pop.text : null));
+    }
+
+    // What the shop promises, read from its own pages, and what this product is made of.
+    (bank.assurances || []).forEach(function (assurance) {
+      var kind = assurance.scope === 'product' ? 'made' : 'promise';
+      add(kind, bannerRow(bannerTile(kind, kind === 'made' ? STAR : SHIELD), assurance.text, assurance.note));
+    });
+
+    // What this shopper looked at before.
+    var seen = at('recent');
+    if (seen) {
+      var faces = bannerBubbles(seen.item.body, 3);
+      var many = seen.item.body.querySelectorAll('.card').length;
+      if (faces && many) {
+        add('seen', bannerRow(
+          faces,
+          many === 1 ? labels.banner_seen_one : String(labels.banner_seen || '').replace(':count', String(many)),
+          labels.banner_list,
+          true
+        ), seen.index);
+      }
+    }
+
+    // The opening line comes first, and carries the whole invitation when it is alone.
+    var typed = el('div', 'bn-type');
+    var lines = frames.length ? [String(labels.banner_opener || '')] : teaserLines(rendered, previous, labels);
+    var stop = null;
+    var opener = add('open', typed);
+    opener.node.className = 'bn-frame';
+    opener.node.textContent = '';
+    opener.node.appendChild(typed);
+    opener.enter = function () {
+      if (stop) {
+        stop();
+      }
+      stop = typeLines(typed, lines, 'bn-type');
+    };
+    opener.leave = function () {
+      if (stop) {
+        stop();
+        stop = null;
+      }
+    };
+    frames.unshift(frames.pop());
+
+    return frames;
+  }
+
+  /** How long a frame stays before the next one takes its place. The opener reads longer. */
+  function bannerHold(frame) {
+    return frame.key === 'open' ? 5600 : 4200;
+  }
+
+  /**
+   * The banner turns itself, softly: one frame fades in, the dots say where it is, and a word
+   * stops it for whoever wants to read. One frame, or a shopper who asked for less motion,
+   * simply stays still.
+   *
+   * @return {function} stops the turning for good
+   */
+  function bannerRotate(stage, feet, frames, labels) {
+    var index = 0;
+    var timer = null;
+    var playing = true;
+    var still = false;
+    try {
+      still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) { /* old browser */ }
+
+    var dots = [];
+    var turning = frames.length > 1 && !still;
+
+    frames.forEach(function (frame, i) {
+      frame.node.hidden = i !== 0;
+      stage.appendChild(frame.node);
+
+      if (frames.length < 2) {
+        return;
+      }
+      var dot = el('button', 'bn-dot');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', frame.label);
+      dot.setAttribute('aria-current', i === 0 ? 'true' : 'false');
+      dot.addEventListener('click', function () {
+        show(i);
+        wait();
+      });
+      dots.push(dot);
+      feet.appendChild(dot);
+    });
+
+    function show(next) {
+      if (next === index) {
+        return;
+      }
+      var leaving = frames[index];
+      if (typeof leaving.leave === 'function') {
+        leaving.leave();
+      }
+      leaving.node.hidden = true;
+
+      index = next;
+      frames[index].node.hidden = false;
+      if (typeof frames[index].enter === 'function') {
+        frames[index].enter();
+      }
+      dots.forEach(function (dot, i) {
+        dot.setAttribute('aria-current', i === index ? 'true' : 'false');
+      });
+    }
+
+    function wait() {
+      clearTimeout(timer);
+      if (playing && turning) {
+        timer = setTimeout(function () {
+          show((index + 1) % frames.length);
+          wait();
+        }, bannerHold(frames[index]));
+      }
+    }
+
+    if (turning) {
+      var toggle = el('button', 'bn-play', labels.banner_pause);
+      toggle.type = 'button';
+      toggle.addEventListener('click', function () {
+        playing = !playing;
+        toggle.textContent = playing ? labels.banner_pause : labels.banner_play;
+        wait();
+      });
+      feet.appendChild(toggle);
+    }
+
+    if (typeof frames[0].enter === 'function') {
+      frames[0].enter();
+    }
+    wait();
+
+    return function () {
+      playing = false;
+      clearTimeout(timer);
+      if (typeof frames[index].leave === 'function') {
+        frames[index].leave();
+      }
     };
   }
 

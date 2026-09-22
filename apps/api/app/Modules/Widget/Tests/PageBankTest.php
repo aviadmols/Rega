@@ -10,6 +10,9 @@ use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
 use App\Modules\Connections\Support\SiteKeys;
+use App\Modules\Enrichment\Enums\FactKind;
+use App\Modules\Enrichment\Enums\FactOrigin;
+use App\Modules\Enrichment\Enums\FactStatus;
 use App\Modules\Enrichment\Models\EnrichmentContentProduct;
 use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
@@ -211,6 +214,54 @@ final class PageBankTest extends TestCase
         Features::override('widget.popularity', false, $this->shop->id);
         Cache::flush();
         $this->assertNull($this->page('product', '10')->json('popularity'));
+    }
+
+    public function test_the_banner_carries_what_the_shop_promises_and_what_the_product_is_made_of(): void
+    {
+        $this->assertSame([], $this->page('product', '10')->json('assurances'), 'nothing read yet');
+
+        $promise = function (array $row): void {
+            app(TenantContext::class)->run($this->shop->id, fn () => EnrichmentFact::query()->create($row + [
+                'shop_id' => $this->shop->id,
+                'kind' => FactKind::Promise,
+                'origin' => FactOrigin::Code,
+                'status' => FactStatus::Approved,
+                'input_hash' => bin2hex(random_bytes(8)),
+                'model' => 'code',
+            ]));
+            Cache::flush();
+        };
+
+        $product = app(TenantContext::class)->run($this->shop->id, fn () => CatalogProduct::query()->where('external_id', '10')->firstOrFail());
+
+        $promise(['key' => 'free_shipping', 'value_text' => '500', 'quote' => 'משלוח חינם מעל 500 ש"ח.']);
+        $promise(['key' => 'returns', 'value_text' => '14 יום', 'quote' => 'ניתן להחזיר מוצר תוך 14 יום.']);
+        $promise(['key' => 'pure_material', 'value_text' => 'כותנה', 'quote' => '100% כותנה.', 'product_id' => $product->id]);
+        $promise(['key' => 'handmade', 'value_text' => null, 'quote' => 'עבודת יד.', 'product_id' => $product->id]);
+
+        $assurances = collect($this->page('product', '10')->json('assurances'))->keyBy('scope');
+
+        // The refund window leads, because that is what a shopper weighs first.
+        $this->assertSame('החזר תוך 14 יום', $assurances['shop']['text']);
+        $this->assertSame('מתוך התקנון של החנות · משלוח חינם מעל 500', $assurances['shop']['note']);
+        $this->assertSame('עבודת יד · 100% כותנה', $assurances['product']['text']);
+        $this->assertSame('מתוך תיאור המוצר', $assurances['product']['note']);
+
+        $english = collect($this->page('product', '10', locale: 'en')->json('assurances'))->keyBy('scope');
+        $this->assertSame('Refund within 14 יום', $english['shop']['text']);
+        $this->assertSame('Hand made · 100% כותנה', $english['product']['text'], 'the detail stays as the store wrote it');
+
+        // Another product page sees the shop's promises, never this product's own.
+        $other = collect($this->page('product', '11')->json('assurances'))->keyBy('scope');
+        $this->assertTrue($other->has('shop'));
+        $this->assertFalse($other->has('product'));
+
+        // An article page carries what the shop promises, since that is true anywhere.
+        $this->assertSame('shop', $this->page('content', '900')->json('assurances.0.scope'));
+
+        Features::override('widget.promises', false, $this->shop->id);
+        Cache::flush();
+        $this->assertSame([], $this->page('product', '10')->json('assurances'));
     }
 
     public function test_an_article_gets_its_matched_products(): void

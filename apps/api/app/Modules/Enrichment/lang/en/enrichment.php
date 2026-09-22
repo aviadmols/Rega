@@ -25,6 +25,7 @@ return [
         'shopper_value' => 'Value to shoppers',
         'category' => 'Category',
         'highlight' => 'Highlight',
+        'promise' => 'Store promise',
     ],
     'fact_statuses' => [
         'approved' => 'Approved',
