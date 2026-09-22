@@ -78,6 +78,13 @@ recorded in Agent activity.
 The WhatsApp strip (feature `widget.whatsapp`, with the number, hours and message in Widget
 settings) needs no scan; it is on or off per shop.
 
+Each shop picks how the widget looks (`widget.layout`): **circles** — the key sentence, a row of
+circles each marked with how much it holds ("+4"), one panel under them — or **assistant** — the
+page loads with one closed line ("I have 5 things that will help you decide"), which opens into a
+conversation: the same circles as suggestions, each answered from the bank already in hand after a
+short pause, a field for a free question at the bottom, the WhatsApp strip inside when the shop has
+it. Nothing about the scan changes; the assistant calls no model except for a typed question.
+
 The "products you viewed" circle (feature `shoppers.recent_products`, on) needs no scan either: it
 counts the page views already collected. Leaving a phone or an email (feature `shoppers.signup`,
 off) adds a short form under it; every sign-up appears in the operator panel under "Sign-ups" with

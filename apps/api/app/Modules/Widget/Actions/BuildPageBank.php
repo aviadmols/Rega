@@ -126,6 +126,8 @@ final class BuildPageBank
                 'floating' => (bool) Settings::get('widget.floating_fallback', $shopId),
             ],
             'bank_version' => 1,
+            // Circles, or the assistant that opens from one closed line. Same bank either way.
+            'layout' => (string) Settings::get('widget.layout', $shopId),
             'teaser' => null,
             'sections' => [],
             'compare' => null,
@@ -1190,12 +1192,13 @@ final class BuildPageBank
         $text = fn (string $name): string => trim((string) Settings::get("shoppers.signup_{$name}", $shopId))
             ?: (string) __("widget::bank.signup.{$name}", [], $this->locale);
 
-        return [
+        return array_filter([
             'title' => $text('title'),
+            'note' => trim((string) Settings::get('shoppers.signup_note', $shopId)) ?: null,
             'consent' => $text('consent'),
             'placeholder' => (string) __('widget::bank.signup.placeholder', [], $this->locale),
             'button' => (string) __('widget::bank.signup.button', [], $this->locale),
-        ];
+        ], fn ($v): bool => $v !== null);
     }
 
     /** @return array<string, string> */

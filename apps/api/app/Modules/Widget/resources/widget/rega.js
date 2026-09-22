@@ -407,7 +407,16 @@
   var CSS = [
     // inline-size containment: the widget takes its column's width and a long line never widens the column.
     ':host{all:initial;display:block;contain:inline-size;max-width:100%;margin:16px 0;font-family:inherit;color:inherit;font-size:15px;line-height:1.5;',
-    '--accent:var(--rega-accent,#1f2933);--surface:var(--rega-surface,#fff);--radius:var(--rega-radius,14px);--line:rgba(17,24,39,.12);--muted:rgba(17,24,39,.62)}',
+    '--accent:var(--rega-accent,#1f2933);--surface:var(--rega-surface,#fff);--radius:var(--rega-radius,14px);--line:rgba(17,24,39,.12);--muted:rgba(17,24,39,.62);',
+    // The soft glow: three RGB triplets a store can retune (--rega-glow-1/2/3), a hairline gradient and a faint wash.
+    '--g1:var(--rega-glow-1,66,133,244);--g2:var(--rega-glow-2,168,85,247);--g3:var(--rega-glow-3,236,72,153);',
+    '--hairline:linear-gradient(135deg,rgba(var(--g1),.55),rgba(var(--g2),.4) 50%,rgba(var(--g3),.35));',
+    '--wash:radial-gradient(120% 90% at 100% 0%,rgba(var(--g1),.08),transparent 55%),radial-gradient(90% 70% at 0% 100%,rgba(var(--g3),.06),transparent 55%);',
+    '--grad:linear-gradient(135deg,rgb(var(--g1)),rgb(var(--g2)) 60%,rgb(var(--g3)))}',
+    '@keyframes rega-drift{0%{background-position:0 0,0 0,0% 50%}100%{background-position:0 0,0 0,100% 50%}}',
+    '@keyframes rega-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}',
+    '@keyframes rega-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}',
+    '@media (prefers-reduced-motion:reduce){.rega *{animation:none!important}}',
     ':host(.is-floating){contain:none;position:fixed;bottom:16px;inset-inline-start:16px;z-index:2147483000;margin:0;max-width:calc(100vw - 32px)}',
     '*{box-sizing:border-box}',
     '.rega{position:relative}',
@@ -418,14 +427,18 @@
     'border-radius:999px;background:var(--surface);color:inherit;font:inherit;font-size:14px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:box-shadow .2s,border-color .2s,background .2s;white-space:nowrap}',
     '.pill:hover,.pill:focus-visible{border-color:var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.08)}',
     '.pill:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
-    '.pill[aria-expanded="true"]{background:var(--accent);border-color:var(--accent);color:#fff}',
-    '.pill[aria-expanded="true"] .spark{color:#fff}',
+    // The open circle is lit softly: a tinted face inside a gradient hairline, never a solid block.
+    '.pill[aria-expanded="true"]{background:linear-gradient(#f5f6ff,#f5f6ff) padding-box,var(--hairline) border-box;border-color:transparent;color:inherit;box-shadow:0 8px 22px rgba(var(--g2),.10)}',
+    '.pill[aria-expanded="true"] .spark{color:rgba(var(--g2),.9)}',
     '.spark{flex:none;width:17px;height:17px;color:var(--accent)}',
     '.quote{all:unset;box-sizing:border-box;display:flex;align-items:flex-start;gap:10px;width:100%;margin:0 0 10px;padding:10px 14px;',
     'border-inline-start:3px solid var(--accent);border-start-end-radius:10px;border-end-end-radius:10px;background:rgba(17,24,39,.04);cursor:pointer;font:inherit;font-size:15px;line-height:1.55;color:inherit}',
     '.quote:hover,.quote:focus-visible{background:rgba(17,24,39,.07)}.quote:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
     '.quote .mark{flex:none;font-family:Georgia,serif;font-size:30px;line-height:.9;color:var(--accent)}',
     '.quote strong,.highlights strong{font-weight:700}',
+    '.quote{border-inline-start:2px solid rgba(var(--g2),.55);background:linear-gradient(90deg,rgba(var(--g2),.06),rgba(var(--g2),0))}',
+    '.quote:hover,.quote:focus-visible{background:linear-gradient(90deg,rgba(var(--g2),.10),rgba(var(--g2),.02))}',
+    '.quote .mark{color:rgba(var(--g2),.85)}',
     '.pop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;color:var(--muted)}',
     '.pop .hot{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:rgba(200,30,30,.09);color:#a51616;font-weight:600;font-size:12px}',
     '.pop .hot svg{width:12px;height:12px}',
@@ -434,7 +447,7 @@
     '.chip-label{display:block;max-width:22ch;overflow:hidden;text-overflow:ellipsis}',
     // How much waits inside a circle: "+4" products, "3" points. Quiet on a closed circle, lit on the open one.
     '.count{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:rgba(17,24,39,.07);color:var(--muted);font-size:11px;font-weight:700;line-height:1}',
-    '.pill[aria-expanded="true"] .count{background:rgba(255,255,255,.28);color:#fff}',
+    '.pill[aria-expanded="true"] .count{background:var(--grad);color:#fff}',
     '.panel{margin-top:8px;padding:6px 16px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:#111827}',
     ':host(.is-floating) .panel{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.18)}',
     '.panel[hidden]{display:none}',
@@ -470,17 +483,47 @@
     '.ask-send{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px}',
     '.ask-send[disabled]{opacity:.6;cursor:default}',
     '.ask-answer{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(17,24,39,.04)}',
-    '.signup{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:10px}',
-    '.signup-title{font-weight:600;margin-bottom:8px}',
-    '.signup-form{display:flex;gap:8px}',
-    '.signup-input{flex:1;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;font:inherit;font-size:16px}',
-    '.signup-input:focus{outline:2px solid var(--accent);outline-offset:1px}',
-    '.signup-send{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;white-space:nowrap}',
+    // The sign-up: a white card inside a gradient hairline with a faint wash, a borderless field, a gradient-text button.
+    '.signup{margin-top:12px;padding:12px;border:1px solid transparent;border-radius:16px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box}',
+    '.signup-title{font-weight:600}.signup-sub{margin-top:2px;font-size:12px;color:var(--muted)}',
+    '.signup-form{display:flex;gap:8px;margin-top:8px}',
+    '.signup-input{flex:1;min-width:0;box-sizing:border-box;height:42px;padding:0 14px;border:0;border-radius:999px;background:#f4f4f5;color:inherit;font:inherit;font-size:16px}',
+    '.signup-input:focus{outline:2px solid rgba(var(--g2),.5);outline-offset:1px}',
+    '.signup-send{all:unset;box-sizing:border-box;cursor:pointer;height:42px;padding:0 16px;border:1px solid transparent;border-radius:999px;white-space:nowrap;background:linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box}',
+    '.signup-send span{font-size:14px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
     '.signup-send[disabled]{opacity:.6;cursor:default}',
-    '.signup-consent{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer}',
-    '.signup-consent input{margin:2px 0 0;flex:none}',
+    '.signup-consent{display:flex;gap:7px;align-items:flex-start;margin-top:8px;font-size:11.5px;color:#8a8f98;line-height:1.5;cursor:pointer}',
+    '.signup-consent input{margin:2px 0 0;flex:none;accent-color:rgb(var(--g2))}',
     '.signup-status{margin-top:8px;font-size:13px}',
     '.signup-note{font-size:13px;color:var(--muted)}',
+    // The assistant layout: a closed line that invites a click, then a conversation card.
+    '.teaser{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:11px 14px;border:1px solid transparent;border-radius:999px;cursor:pointer;font:inherit;font-size:14px;line-height:1.4;color:inherit;',
+    'background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;background-size:auto,auto,220% 220%;animation:rega-drift 6s ease-in-out infinite alternate;box-shadow:0 10px 30px rgba(var(--g2),.12);transition:box-shadow .2s}',
+    '.teaser:hover,.teaser:focus-visible{box-shadow:0 14px 36px rgba(var(--g2),.18)}.teaser:focus-visible{outline:2px solid rgba(var(--g2),.5);outline-offset:2px}',
+    // all:unset above also unsets the browser's [hidden], so say it again.
+    '.teaser[hidden]{display:none}',
+    '.teaser-text{flex:1;min-width:0}.teaser .go{flex:none;font-size:12px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:rgb(var(--g2))}',
+    '.spark-g{flex:none;width:20px;height:20px}',
+    '.chat{position:relative;padding:14px;border:1px solid transparent;border-radius:22px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box;',
+    'background-size:auto,auto,220% 220%;animation:rega-drift 9s ease-in-out infinite alternate;box-shadow:0 14px 40px rgba(var(--g2),.10)}',
+    '.chat[hidden]{display:none}',
+    '.chat-head{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.chat-head .who{font-weight:500}.chat-head .aside{margin-inline-start:auto;font-size:11px;color:#a1a1aa}',
+    '.thread{display:flex;flex-direction:column;gap:10px;margin-top:12px}',
+    '.bubble{align-self:flex-start;max-width:94%;box-sizing:border-box;padding:10px 13px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid #ececee;font-size:14px;line-height:1.5;animation:rega-in .3s ease-out}',
+    '.bubble.me{align-self:flex-end;max-width:78%;border-radius:16px 16px 4px 16px;background:#f4f4f5;border:0}',
+    '.bubble .mark{font-family:Georgia,serif;font-size:22px;line-height:.5;color:rgba(var(--g2),.85);margin-inline-end:6px;vertical-align:-4px}',
+    '.bubble-lead{font-weight:600;margin-bottom:6px}.bubble .body{margin-top:0}.bubble .ask-form,.bubble .ask-note{display:none}',
+    '.dots{display:flex;gap:5px;padding:12px 14px}.dots span{width:6px;height:6px;border-radius:50%;background:rgb(var(--g2));animation:rega-dot 1.1s infinite ease-in-out}',
+    '.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}',
+    '.more{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.more .lead{font-size:12px;color:#a1a1aa}',
+    '.composer{display:flex;align-items:center;gap:8px;margin-top:12px}',
+    '.composer input{flex:1;min-width:0;box-sizing:border-box;height:44px;padding:0 16px;border:0;border-radius:999px;background:#f4f4f5;color:inherit;font:inherit;font-size:16px}',
+    '.composer input:focus{outline:2px solid rgba(var(--g2),.5);outline-offset:1px}',
+    '.composer button{all:unset;box-sizing:border-box;flex:none;width:44px;height:44px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(var(--g2),.25)}',
+    '.composer button svg{width:18px;height:18px}.rega[dir="ltr"] .composer button svg{transform:scaleX(-1)}',
+    '.chat .contact.in-chat{margin-top:12px;padding:12px 0 0;border:0;border-top:1px solid #f0f0f2;border-radius:0;background:transparent}',
+    '.chat .signup{margin-top:12px}',
+    '.chat-foot{margin-top:8px;font-size:11px;color:#a1a1aa;text-align:center}',
     '.ask-q{font-weight:600;margin-bottom:3px}.ask-a{line-height:1.55}.ask-a.is-loading{color:var(--muted)}',
     '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
     '.ask-item{padding:8px 0;border-top:1px solid var(--line)}',
@@ -971,12 +1014,15 @@
         .catch(function () { /* the field still works */ });
     };
 
+    // The assistant layout types into its own field and hands the question here.
+    node.ask = ask;
+
     return node;
   }
 
   /**
-   * Under the products a shopper viewed: the invitation to leave a phone or an email so the list
-   * waits for them next time. Once they left one, the same place says so instead.
+   * The invitation to leave a phone or an email so the list waits for them next time, shown under
+   * whatever is open. Once they left one, the same place says so instead.
    */
   function signUpBox(section, labels) {
     var box = el('div', 'signup');
@@ -992,6 +1038,9 @@
     }
 
     box.appendChild(el('div', 'signup-title', wording.title));
+    if (wording.note) {
+      box.appendChild(el('div', 'signup-sub', wording.note));
+    }
 
     var form = el('form', 'signup-form');
     var input = el('input', 'signup-input');
@@ -999,7 +1048,8 @@
     input.maxLength = 190;
     input.placeholder = wording.placeholder || '';
     input.setAttribute('aria-label', wording.title);
-    var send = el('button', 'signup-send', wording.button);
+    var send = el('button', 'signup-send');
+    send.appendChild(el('span', null, wording.button));
     send.type = 'submit';
     form.appendChild(input);
     form.appendChild(send);
@@ -1041,7 +1091,8 @@
       code.maxLength = 8;
       code.placeholder = labels.signup_code_placeholder || '';
       code.setAttribute('aria-label', labels.signup_code_placeholder || '');
-      var confirm = el('button', 'signup-send', labels.signup_confirm);
+      var confirm = el('button', 'signup-send');
+      confirm.appendChild(el('span', null, labels.signup_confirm));
       confirm.type = 'submit';
       codeForm.appendChild(code);
       codeForm.appendChild(confirm);
@@ -1181,13 +1232,6 @@
       }
     }
 
-    if (section.signup || section.signed_up) {
-      var box = signUpBox(section, labels);
-      if (box) {
-        node.appendChild(box);
-      }
-    }
-
     return node.firstChild ? node : null;
   }
 
@@ -1241,9 +1285,7 @@
         model: 'recent',
         title: labels.recent_title,
         chip: labels.recent_chip,
-        products: viewed.products,
-        signed_up: viewed.signed_up || null,
-        signup: viewed.signed_up ? null : (bank.signup || null)
+        products: viewed.products
       });
     }
 
@@ -1309,6 +1351,11 @@
     var holder = el('div');
     panel.appendChild(holder);
 
+    // The invitation to leave a phone or an email: built once, shown under whatever is open.
+    var signup = bank.signup || (viewed && viewed.signed_up)
+      ? signUpBox({ signup: bank.signup, signed_up: viewed && viewed.signed_up }, labels)
+      : null;
+
     var open = null;
     var exposed = {};
 
@@ -1363,83 +1410,24 @@
       }
     }
 
-    var quote = null;
-    if (quoteIndex !== -1) {
-      var source = rendered[quoteIndex].section;
-      quote = el('button', 'quote');
-      quote.type = 'button';
-      quote.setAttribute('aria-controls', 'rega-panel');
-      quote.appendChild(el('span', 'mark', '”'));
-      var words = el('span', 'quote-text');
-      if (quoteItem) {
-        words.appendChild(el('strong', null, quoteItem.key));
-        words.appendChild(document.createTextNode(' ' + quoteItem.text));
-      } else {
-        words.textContent = source.lines[0].text;
-      }
-      quote.appendChild(words);
-      quote.addEventListener('click', function () { setOpen(quoteIndex, 'closed'); });
-    }
+    var quoteText = quoteIndex === -1 ? null
+      : (quoteItem ? quoteItem.key + ' ' + quoteItem.text : rendered[quoteIndex].section.lines[0].text);
 
-    rendered.forEach(function (item, index) {
-      var pill = el('button', 'pill');
-      pill.type = 'button';
-      pill.setAttribute('aria-expanded', 'false');
-      pill.setAttribute('aria-controls', 'rega-panel');
-
-      if (index === 0) {
-        pill.innerHTML = SPARK;
-      }
-      pill.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
-      var count = pillCount(item.body);
-      if (count) {
-        pill.appendChild(el('span', 'count', count));
-      }
-      pill.title = item.section.title;
-
-      pill.addEventListener('click', function () { setOpen(index, 'closed'); });
-      item.pill = pill;
-      chips.appendChild(pill);
-    });
-
-    close.addEventListener('click', function () { setOpen(null, 'closed'); });
-    wrap.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && open !== null) {
-        setOpen(null, 'escape');
-      }
-    });
-
-    if (quote) {
-      wrap.appendChild(quote);
-    }
     var pop = popularityLine();
-    if (pop) {
-      wrap.appendChild(pop);
-    }
-    wrap.appendChild(chips);
-    wrap.appendChild(panel);
-
     var strip = contactStrip(live);
-    if (strip) {
-      wrap.appendChild(strip);
+
+    if (bank.layout === 'chat') {
+      renderChat();
+    } else {
+      renderCircles();
     }
+
     root.appendChild(wrap);
 
     if (!place(host)) {
       return;
     }
 
-    // One exposure per section: the quote's section when it is shown, and the first circle's when it is another.
-    if (quote) {
-      watchExposure(quote, function (ms, ratio) {
-        track('exposure', rendered[quoteIndex].section, 'teaser', { visible_ms: ms, ratio: ratio });
-      });
-    }
-    if (quoteIndex !== 0 && rendered.length) {
-      watchExposure(chips, function (ms, ratio) {
-        track('exposure', rendered[0].section, quote ? 'chip_1' : 'teaser', { visible_ms: ms, ratio: ratio });
-      });
-    }
     if (strip) {
       watchExposure(strip, function (ms, ratio) {
         track('exposure', { candidate: 'contact', model: 'contact' }, 'teaser', { visible_ms: ms, ratio: ratio });
@@ -1450,7 +1438,254 @@
         track('exposure', { candidate: 'popularity', model: 'popularity' }, 'teaser', { visible_ms: ms, ratio: ratio });
       });
     }
+
+    /** The circles: the quote, the row of circles, one panel under them, the strip. */
+    function renderCircles() {
+      var quote = null;
+      if (quoteIndex !== -1) {
+        quote = el('button', 'quote');
+        quote.type = 'button';
+        quote.setAttribute('aria-controls', 'rega-panel');
+        quote.appendChild(el('span', 'mark', '”'));
+        var words = el('span', 'quote-text');
+        if (quoteItem) {
+          words.appendChild(el('strong', null, quoteItem.key));
+          words.appendChild(document.createTextNode(' ' + quoteItem.text));
+        } else {
+          words.textContent = quoteText;
+        }
+        quote.appendChild(words);
+        quote.addEventListener('click', function () { setOpen(quoteIndex, 'closed'); });
+      }
+
+      rendered.forEach(function (item, index) {
+        var pill = el('button', 'pill');
+        pill.type = 'button';
+        pill.setAttribute('aria-expanded', 'false');
+        pill.setAttribute('aria-controls', 'rega-panel');
+
+        if (index === 0) {
+          pill.innerHTML = SPARK;
+        }
+        pill.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
+        var count = pillCount(item.body);
+        if (count) {
+          pill.appendChild(el('span', 'count', count));
+        }
+        pill.title = item.section.title;
+
+        pill.addEventListener('click', function () { setOpen(index, 'closed'); });
+        item.pill = pill;
+        chips.appendChild(pill);
+      });
+
+      close.addEventListener('click', function () { setOpen(null, 'closed'); });
+      wrap.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && open !== null) {
+          setOpen(null, 'escape');
+        }
+      });
+
+      if (signup) {
+        panel.appendChild(signup);
+      }
+      if (quote) {
+        wrap.appendChild(quote);
+      }
+      if (pop) {
+        wrap.appendChild(pop);
+      }
+      wrap.appendChild(chips);
+      wrap.appendChild(panel);
+      if (strip) {
+        wrap.appendChild(strip);
+      }
+
+      // One exposure per section: the quote's section when it is shown, and the first circle's when it is another.
+      if (quote) {
+        watchExposure(quote, function (ms, ratio) {
+          track('exposure', rendered[quoteIndex].section, 'teaser', { visible_ms: ms, ratio: ratio });
+        });
+      }
+      if (quoteIndex !== 0 && rendered.length) {
+        watchExposure(chips, function (ms, ratio) {
+          track('exposure', rendered[0].section, quote ? 'chip_1' : 'teaser', { visible_ms: ms, ratio: ratio });
+        });
+      }
+    }
+
+    /**
+     * The assistant: the page loads with one closed line that invites a click; it opens into a
+     * conversation whose suggestions are the same sections, each answered from the bank already
+     * in hand. No model is called for any of it; only a typed question goes to the Assistant.
+     */
+    function renderChat() {
+      var chatSection = { candidate: 'chat', model: 'chat' };
+
+      var teaser = el('button', 'teaser');
+      teaser.type = 'button';
+      teaser.innerHTML = SPARK_G;
+      teaser.appendChild(el('span', 'teaser-text', rendered.length === 1
+        ? String(labels.chat_teaser_one || '')
+        : String(labels.chat_teaser || '').replace(':count', String(rendered.length))));
+      teaser.appendChild(el('span', 'go', labels.chat_open));
+
+      var card = el('div', 'chat');
+      card.hidden = true;
+      var chead = el('div', 'chat-head');
+      chead.innerHTML = SPARK_G;
+      chead.appendChild(el('span', 'who', labels.chat_who));
+      chead.appendChild(el('span', 'aside', labels.chat_aside));
+      card.appendChild(chead);
+
+      var thread = el('div', 'thread');
+      thread.appendChild(el('div', 'bubble', labels.chat_greeting));
+      if (quoteText) {
+        var said = el('div', 'bubble');
+        said.appendChild(el('span', 'mark', '”'));
+        said.appendChild(document.createTextNode(quoteText));
+        thread.appendChild(said);
+      }
+      var suggestions = el('div', 'more');
+      thread.appendChild(suggestions);
+      card.appendChild(thread);
+
+      var askItem = null;
+      rendered.forEach(function (item) {
+        if (item.section.candidate === 'ask') {
+          askItem = item;
+        }
+      });
+
+      function chip(item, index) {
+        var button = el('button', 'pill');
+        button.type = 'button';
+        button.appendChild(el('span', 'chip-label', item.section.chip || item.section.title));
+        var count = pillCount(item.body);
+        if (count) {
+          button.appendChild(el('span', 'count', count));
+        }
+        button.addEventListener('click', function () { pick(index); });
+        return button;
+      }
+
+      function offer(except) {
+        suggestions.textContent = '';
+        if (except !== null) {
+          suggestions.appendChild(el('span', 'lead', labels.chat_more));
+        }
+        rendered.forEach(function (item, i) {
+          if (i !== except) {
+            suggestions.appendChild(chip(item, i));
+          }
+        });
+      }
+      offer(null);
+
+      var busy = false;
+      function pick(index) {
+        if (busy) {
+          return;
+        }
+        busy = true;
+        var item = rendered[index];
+        thread.insertBefore(el('div', 'bubble me', item.section.chip || item.section.title), suggestions);
+        var dots = el('div', 'bubble dots');
+        dots.appendChild(el('span'));
+        dots.appendChild(el('span'));
+        dots.appendChild(el('span'));
+        thread.insertBefore(dots, suggestions);
+        suggestions.textContent = '';
+
+        // A moment of "thinking": the answer was ready before the page finished loading.
+        setTimeout(function () {
+          thread.removeChild(dots);
+          var reply = el('div', 'bubble');
+          reply.appendChild(el('div', 'bubble-lead', item.section.title));
+          reply.appendChild(item.body);
+          if (typeof item.body.load === 'function') {
+            item.body.load();
+          }
+          thread.insertBefore(reply, suggestions);
+          offer(index);
+          track('open', item.section, CHIP_SLOTS[Math.min(index, CHIP_SLOTS.length - 1)]);
+          if (!exposed[item.section.candidate]) {
+            exposed[item.section.candidate] = true;
+            watchExposure(item.body, function (ms, ratio) {
+              track('exposure', item.section, 'panel', { visible_ms: ms, ratio: ratio });
+            });
+          }
+          busy = false;
+          if (reply.scrollIntoView) {
+            reply.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }, 600);
+      }
+
+      if (signup) {
+        card.appendChild(signup);
+      }
+
+      if (askItem) {
+        var composer = el('form', 'composer');
+        var input = el('input');
+        input.type = 'text';
+        input.maxLength = 200;
+        input.placeholder = labels.chat_placeholder || '';
+        input.setAttribute('aria-label', labels.ask_title || '');
+        var send = el('button');
+        send.type = 'submit';
+        send.setAttribute('aria-label', labels.chat_send || '');
+        send.innerHTML = ARROW;
+        composer.appendChild(input);
+        composer.appendChild(send);
+        composer.addEventListener('submit', function (event) {
+          event.preventDefault();
+          var text = input.value.trim();
+          if (!text || typeof askItem.body.ask !== 'function') {
+            return;
+          }
+          input.value = '';
+          if (thread.contains(askItem.body)) {
+            askItem.body.ask(text);
+          } else {
+            pick(rendered.indexOf(askItem));
+            setTimeout(function () { askItem.body.ask(text); }, 650);
+          }
+        });
+        card.appendChild(composer);
+      }
+
+      if (strip) {
+        strip.className += ' in-chat';
+        card.appendChild(strip);
+      }
+      card.appendChild(el('div', 'chat-foot', labels.chat_foot));
+
+      teaser.addEventListener('click', function () {
+        teaser.hidden = true;
+        card.hidden = false;
+        track('open', chatSection, 'teaser');
+        if (card.scrollIntoView) {
+          card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+
+      if (pop) {
+        wrap.appendChild(pop);
+      }
+      wrap.appendChild(teaser);
+      wrap.appendChild(card);
+
+      watchExposure(teaser, function (ms, ratio) {
+        track('exposure', chatSection, 'teaser', { visible_ms: ms, ratio: ratio });
+      });
+    }
   }
+
+  var SPARK_G = '<svg class="spark-g" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rega-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285F4"/><stop offset=".6" stop-color="#8B5CF6"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs><path fill="url(#rega-g)" d="M12 2l2.3 6.4 6.4 2.3-6.4 2.3L12 19.4l-2.3-6.4L3.3 10.7l6.4-2.3z"/><path fill="url(#rega-g)" opacity=".7" d="M19 15l.9 2.4 2.4.9-2.4.9L19 21.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg>';
+
+  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
 
   var FLAME = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2c.3 2.4-.3 4.5-1.7 6.2C10.2 10.1 8 11.5 8 14.5A4.5 4.5 0 0 0 12.5 19c2.6 0 4.5-1.9 4.5-4.5 0-1.6-.6-2.8-1.5-3.8-.3 1.1-.9 1.9-1.7 2.3.6-2 .3-4.8-.5-6.5C12.7 5 12.2 3.3 13.5 2z"/></svg>';
 

@@ -23,6 +23,7 @@
         { "name": "signups_per_visitor_per_day", "type": "int", "default": 5, "min": 1, "max": 50, "scope": "shop", "unit": "sign-ups" },
         { "name": "signups_per_minute", "type": "int", "default": 10, "min": 1, "max": 200, "scope": "global", "unit": "requests" },
         { "name": "signup_title", "type": "string", "default": "", "min": 0, "max": 120, "scope": "shop" },
-        { "name": "signup_consent", "type": "string", "default": "", "min": 0, "max": 300, "scope": "shop" }
+        { "name": "signup_consent", "type": "string", "default": "", "min": 0, "max": 300, "scope": "shop" },
+        { "name": "signup_note", "type": "string", "default": "", "min": 0, "max": 160, "scope": "shop" }
     ]
 }

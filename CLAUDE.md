@@ -61,6 +61,11 @@ Multi-tenant widget for stores (WooCommerce first, Shopify later). The plan, in 
 - `Widget` serves `/api/v1/widget/rega.js` (source: `Widget/resources/widget/rega.js`, plain ES5-ish JS,
   no build step) and `/api/v1/widget/{site}/page`, built in code from approved facts only. Placement
   is a per-shop CSS selector setting. Shopper-facing sentences are templates in `widget::bank`.
+  Two layouts from one bank (`widget.layout`): `circles` (the row of circles, one panel) and
+  `chat` (one closed teaser line that opens into a conversation whose suggestions are the same
+  sections; a chosen section's rendered body is moved into an assistant bubble after a short
+  "thinking" pause — no model call, only a typed question reaches the Assistant). Both use the soft
+  look: gradient hairlines from `--rega-glow-1/2/3`, the store's `--rega-accent` only on buttons.
 - `Analytics` stores beacons validated against `packages/event-spec` (copied to
   `resources/event-spec` in the image) and plugin order summaries; `BuildShopReport` is the one
   report for the plugin, the operator panel and later the merchant panel.

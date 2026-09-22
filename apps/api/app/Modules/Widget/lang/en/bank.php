@@ -79,7 +79,7 @@ return [
     // What the shop can rewrite in its settings for the sign-up under "products you viewed".
     'signup' => [
         'title' => 'Shall we keep the products you viewed?',
-        'consent' => 'I agree that the shop keeps my contact and the products I looked at, and may contact me with offers. I can ask to be removed at any time.',
+        'consent' => 'I agree that the shop keeps my contact and my activity history on the site (the products I viewed), and may contact me with offers. I can ask to be removed at any time.',
         'placeholder' => 'Phone or email',
         'button' => 'Keep them for me',
     ],
@@ -138,5 +138,15 @@ return [
         'signup_expired' => 'The code has expired. Ask for a new one.',
         'signup_too_many' => 'Too many tries. Please try again later.',
         'signup_error' => 'We could not keep it right now. Please try again.',
+        'chat_who' => 'Rega · the store\'s assistant',
+        'chat_aside' => 'Answers from the store\'s information',
+        'chat_greeting' => 'Hi! I went over this product. What would help you decide?',
+        'chat_teaser' => 'I have :count things that will help you decide on this product',
+        'chat_teaser_one' => 'I have something that will help you decide on this product',
+        'chat_open' => 'Ask',
+        'chat_more' => 'Anything else?',
+        'chat_placeholder' => 'Ask me about the product…',
+        'chat_send' => 'Send',
+        'chat_foot' => 'Answers are written from the store\'s information about the product · nothing is kept without your consent',
     ],
 ];

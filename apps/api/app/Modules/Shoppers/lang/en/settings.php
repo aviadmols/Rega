@@ -37,6 +37,10 @@ return [
         'label' => 'The sentence that invites them to leave a contact',
         'description' => 'For example: shall we keep the products you viewed? Empty shows the default.',
     ],
+    'signup_note' => [
+        'label' => 'A small line under the sentence',
+        'description' => 'For example: and we keep the products you viewed, on every device. Empty shows nothing.',
+    ],
     'signup_consent' => [
         'label' => 'The consent wording',
         'description' => 'What the shopper agrees to when leaving a contact. It must say the shop will see the contact and the products they viewed. Empty shows the built-in wording.',

@@ -148,6 +148,28 @@ final class PageBankTest extends TestCase
         $this->assertNotNull($this->page('content', '900')->json('contact'), 'articles get the strip too');
     }
 
+    public function test_the_shop_picks_circles_or_the_assistant_and_words_its_sign_up(): void
+    {
+        $this->assertSame('circles', $this->page('product', '10')->json('layout'), 'circles unless the shop chooses otherwise');
+
+        Settings::set('widget.layout', 'chat', $this->shop->id);
+        Features::override('shoppers.signup', true, $this->shop->id);
+        Settings::set('shoppers.signup_title', 'הירשמו לאתר וקבלו 5% הנחה', $this->shop->id);
+        Settings::set('shoppers.signup_note', 'וגם נשמור לכם את המוצרים שראיתם, לכל מכשיר.', $this->shop->id);
+        Cache::flush();
+
+        $bank = $this->page('product', '10')->json();
+        $this->assertSame('chat', $bank['layout']);
+        $this->assertSame('הירשמו לאתר וקבלו 5% הנחה', $bank['signup']['title']);
+        $this->assertSame('וגם נשמור לכם את המוצרים שראיתם, לכל מכשיר.', $bank['signup']['note']);
+        $this->assertStringContainsString('היסטוריית הפעילות', $bank['signup']['consent'], 'the built-in consent names the activity history');
+        $this->assertArrayHasKey('chat_teaser', $bank['labels']);
+
+        Settings::set('shoppers.signup_note', '', $this->shop->id);
+        Cache::flush();
+        $this->assertArrayNotHasKey('note', $this->page('product', '10')->json('signup'), 'an empty line is left out');
+    }
+
     public function test_the_popularity_line_says_how_often_the_product_was_added_and_bought(): void
     {
         $this->assertNull($this->page('product', '10')->json('popularity'), 'nothing counted yet');
