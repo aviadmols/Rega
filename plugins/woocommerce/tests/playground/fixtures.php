@@ -157,6 +157,16 @@ $protected_id = wp_insert_post(
 	)
 );
 
+// What the shop promises lives on a page, not in a guide. Rega reads pages too.
+$terms_id = wp_insert_post(
+	array(
+		'post_type'    => 'page',
+		'post_status'  => 'publish',
+		'post_title'   => 'תקנון האתר',
+		'post_content' => '<p>ניתן להחזיר מוצר תוך 14 יום ולקבל החזר מלא.</p><p>משלוח חינם בהזמנה מעל 500 ש"ח.</p>',
+	)
+);
+
 $token = \Rega\Auth\AccessToken::issue();
 
 if ( ! is_dir( '/rega-out' ) ) {
@@ -179,6 +189,7 @@ file_put_contents(
 			'variations'  => $variation_ids,
 			'guide'       => $guide_id,
 			'protected'   => $protected_id,
+			'terms'       => $terms_id,
 			'woocommerce' => WC()->version,
 			'wordpress'   => get_bloginfo( 'version' ),
 			'php'         => PHP_VERSION,

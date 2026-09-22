@@ -223,8 +223,18 @@ test('content includes published guides with the products they mention, and hide
   assert.equal(body.data.some((c) => Number(c.external_id) === fixtures.protected), false, 'password-protected post hidden');
 });
 
+test('pages are shared too, so what the shop promises can be read', async () => {
+  const { status, body } = await authed('/feed/content', { type: 'page', per_page: '100' });
+  assert.equal(status, 200, JSON.stringify(body));
+
+  const terms = body.data.find((c) => Number(c.external_id) === fixtures.terms);
+  assert.ok(terms, 'the terms page is shared');
+  assert.equal(terms.title, 'תקנון האתר');
+  assert.match(terms.text, /החזר מלא/, 'and its text comes through');
+});
+
 test('content types the merchant did not allow are refused', async () => {
-  const { status, body } = await authed('/feed/content', { type: 'page' });
+  const { status, body } = await authed('/feed/content', { type: 'shop_order' });
   assert.equal(status, 400);
   assert.equal(body.code, 'rega_content_type_not_allowed');
 });
