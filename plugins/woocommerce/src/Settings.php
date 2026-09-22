@@ -51,11 +51,15 @@ final class Settings {
 	/**
 	 * Post types whose published entries Rega may read as guides and articles.
 	 *
+	 * Posts and pages by default: the guides a shopper reads are usually posts, and what the shop
+	 * promises — returns, shipping, warranty — is usually a page. A shop that wants neither turns
+	 * them off in the settings; a saved choice, even an empty one, is always kept.
+	 *
 	 * @return list<string>
 	 */
 	public static function content_post_types(): array {
 		$stored = get_option( self::OPTION, array() );
-		$types  = is_array( $stored ) && isset( $stored['content_post_types'] ) ? (array) $stored['content_post_types'] : array( 'post' );
+		$types  = is_array( $stored ) && isset( $stored['content_post_types'] ) ? (array) $stored['content_post_types'] : array( 'post', 'page' );
 
 		return self::sanitize_post_types( $types );
 	}
