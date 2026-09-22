@@ -58,6 +58,61 @@
             @endforeach
         </x-filament::section>
 
+        @php($activity = $page['activity'])
+        @php($counts = $activity['by_candidate'])
+        @php($cell = 'padding:6px 10px;text-align:start;border-bottom:1px solid #f1f1f3')
+
+        <x-filament::section
+            :heading="__('widget::ui.page.overview')"
+            :description="__('widget::ui.page.overview_description', ['days' => $activity['days'], 'views' => number_format($activity['views'])])"
+        >
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:14px">
+                    <thead>
+                        <tr style="{{ $small }}">
+                            <th style="{{ $cell }}">{{ __('widget::ui.page.part') }}</th>
+                            <th style="{{ $cell }}">{{ __('widget::ui.page.exposures') }}</th>
+                            <th style="{{ $cell }}">{{ __('widget::ui.page.opens') }}</th>
+                            <th style="{{ $cell }}">{{ __('widget::ui.page.clicks') }}</th>
+                            <th style="{{ $cell }}">{{ __('widget::ui.page.adds') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($bank['sections'] as $position => $section)
+                            @php($n = $counts[$section['candidate']] ?? [])
+                            <tr>
+                                <td style="{{ $cell }}">
+                                    <strong>{{ $section['title'] }}</strong>
+                                    <span style="{{ $small }}">— {{ __('widget::ui.page.circle', ['position' => $position + 1]) }}</span>
+                                </td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['exposures'] ?? 0) }}</td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['opens'] ?? 0) }}</td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['clicks'] ?? 0) }}</td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['adds'] ?? 0) }}</td>
+                            </tr>
+                        @endforeach
+
+                        @foreach ($page['extras'] as $extra)
+                            @php($n = $counts[$extra['key']] ?? [])
+                            <tr style="{{ $extra['on'] ? '' : 'opacity:.55' }}">
+                                <td style="{{ $cell }}">
+                                    {{ __('widget::ui.page.parts.'.$extra['key']) }}
+                                    <x-filament::badge :color="$extra['on'] ? 'success' : 'gray'" style="display:inline-block">
+                                        {{ __($extra['on'] ? 'widget::ui.page.shown' : 'widget::ui.page.not_shown') }}
+                                    </x-filament::badge>
+                                    <div style="{{ $small }}">{{ $extra['detail'] ?: __('widget::ui.page.parts_note.'.$extra['key']) }}</div>
+                                </td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['exposures'] ?? 0) }}</td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['opens'] ?? 0) }}</td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format(($n['clicks'] ?? 0) + ($n['questions'] ?? 0)) }}</td>
+                                <td style="{{ $cell }}" dir="ltr">{{ number_format($n['adds'] ?? 0) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </x-filament::section>
+
         @if ($bank['page']['type'] === 'product')
             @php($pop = $why['popularity'][''] ?? null)
             <x-filament::section :heading="__('widget::ui.page.popularity')" collapsible collapsed>
@@ -134,8 +189,12 @@
                             <tr style="border-top:1px solid #e4e4e7;{{ $i >= $this->maxProducts() && ! $isPinned ? 'opacity:.5' : '' }}">
                                 <td style="padding:6px 4px;width:24px;{{ $small }}">{{ $i + 1 }}</td>
                                 <td style="padding:6px 4px">
+                                    @php($hits = $activity['by_item'][$candidate][$product['id']] ?? [])
                                     <div>{{ $product['title'] }} <span style="{{ $small }}">#{{ $product['id'] }}</span>
                                         @if ($isPinned) <x-filament::badge color="success">{{ __('widget::ui.page.pinned') }}</x-filament::badge> @endif
+                                        @if ($hits !== [])
+                                            <x-filament::badge color="info">{{ __('widget::ui.page.item_clicks', ['clicks' => $hits['clicks'] ?? 0]) }}@if (! empty($hits['adds'])) · {{ __('widget::ui.page.item_adds', ['adds' => $hits['adds']]) }}@endif</x-filament::badge>
+                                        @endif
                                     </div>
                                     <div style="{{ $small }}">
                                         @if ($isPinned && $w === [])
@@ -192,6 +251,37 @@
                 @endif
             </x-filament::section>
         @endforeach
+
+        @if ($bank['page']['type'] === 'product')
+            <x-filament::section
+                :heading="__('widget::ui.page.questions')"
+                :description="__('widget::ui.page.questions_description')"
+                collapsible
+            >
+                @if ($page['questions']->isEmpty())
+                    <p style="{{ $small }}">{{ __('widget::ui.page.no_questions') }}</p>
+                @else
+                    <div style="display:grid;gap:10px">
+                        @foreach ($page['questions'] as $question)
+                            <div style="padding:10px 12px;border:1px solid #e4e4e7;border-radius:10px;background:#fff">
+                                <div style="font-weight:600">{{ $question->question }}</div>
+                                <div style="margin-top:4px">{{ $question->answer ?: __('widget::ui.page.no_answer') }}</div>
+                                <div style="margin-top:4px;{{ $small }}">
+                                    {{ trans_choice('widget::ui.page.asked_times', $question->asked_count, ['count' => $question->asked_count]) }}
+                                    @if ($question->source)
+                                        · {{ __('widget::ui.page.answer_sources.'.$question->source) }}
+                                    @endif
+                                    @if ($question->status === \App\Modules\Assistant\Models\AssistantAnswer::HIDDEN)
+                                        · {{ __('widget::ui.page.answer_hidden') }}
+                                    @endif
+                                    · {{ $question->last_asked_at?->format('d/m/Y H:i') }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </x-filament::section>
+        @endif
 
         @php($absent = array_diff(\App\Modules\Widget\Models\WidgetCuration::PRODUCT_SECTIONS, array_column($bank['sections'], 'candidate'), $page['hidden_sections'], ['article_products']))
         @if ($bank['page']['type'] === 'product' && $absent !== [])

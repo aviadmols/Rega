@@ -3,8 +3,10 @@
 namespace App\Modules\Widget\Tests;
 
 use App\Modules\Admin\Models\User;
+use App\Modules\Analytics\Models\AnalyticsEvent;
 use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Analytics\Models\AnalyticsScore;
+use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Models\EnrichmentProductRelation;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
@@ -23,6 +25,8 @@ final class CurationTest extends TestCase
     use RefreshDatabase;
 
     private CatalogProduct $page;
+
+    private int $events = 0;
 
     protected function setUp(): void
     {
@@ -101,6 +105,64 @@ final class CurationTest extends TestCase
 
         $this->assertSame(['22', '23', '24', '90'], collect($this->ids('complement'))->sort()->values()->all());
         $this->assertSame(2, $this->inShop(fn () => WidgetCuration::query()->count()));
+    }
+
+    public function test_the_page_lists_every_part_of_the_widget_with_its_clicks_and_the_questions_asked(): void
+    {
+        // Shoppers saw the complements four times, opened them twice, clicked 21 and bought it.
+        $this->event('exposure', 'complement', times: 4);
+        $this->event('open', 'complement', times: 2);
+        $this->event('click', 'complement', item: '21');
+        $this->event('add_to_cart', 'complement', item: '21', extra: ['source' => 'widget', 'result' => 'added']);
+        $this->event('click', 'contact');
+        // The team's own preview visits are not what shoppers did.
+        $this->event('click', 'complement', item: '22', times: 9, extra: ['preview' => true]);
+
+        $this->inShop(fn () => AssistantAnswer::query()->create([
+            'shop_id' => $this->shop->id, 'product_id' => $this->page->id, 'question_key' => hash('sha256', 'q'),
+            'question' => 'אפשר לנסר איתו מתכת?', 'answer' => 'כן, עם להב מתאים.', 'outcome' => AssistantAnswer::ANSWERED,
+            'source' => 'general', 'status' => AssistantAnswer::SHOWN, 'prompt_version' => 2, 'asked_count' => 3,
+            'last_asked_at' => now(),
+        ]));
+
+        Filament::setCurrentPanel(Filament::getPanel('operator'));
+        $this->actingAs(User::factory()->operator()->create());
+
+        $page = Livewire::test(ProductPage::class, ['shop' => $this->shop->id, 'type' => 'product', 'id' => '10']);
+
+        $counts = $page->instance()->page()['activity'];
+        $this->assertEquals(['exposures' => 4, 'opens' => 2, 'clicks' => 1, 'adds' => 1], $counts['by_candidate']['complement'], 'preview clicks left out');
+        $this->assertEquals(['clicks' => 1, 'adds' => 1], $counts['by_item']['complement']['21']);
+        $this->assertSame(['clicks' => 1], $counts['by_candidate']['contact']);
+
+        // Every part of the widget is listed, whether it is shown or not.
+        $parts = collect($page->instance()->page()['extras'])->keyBy('key');
+        $this->assertSame(['quote', 'popularity', 'contact', 'ask', 'recent', 'signup', 'compare'], $parts->keys()->all());
+        $this->assertFalse($parts['contact']['on'], 'the WhatsApp strip is off for this shop');
+        $this->assertTrue($parts['recent']['on']);
+
+        $page->assertSee('כל מה שמוצג בעמוד')
+            ->assertSee('רצועת הוואטסאפ')
+            ->assertSee('תיבת השאלות')
+            ->assertSee('מוצרים שהגולש ראה')
+            ->assertSee('אפשר לנסר איתו מתכת?')
+            ->assertSee('נשאלה 3 פעמים')
+            ->assertSee('ידע כללי');
+    }
+
+    /** @param array<string, mixed> $extra */
+    private function event(string $type, string $candidate, ?string $item = null, int $times = 1, array $extra = []): void
+    {
+        $this->inShop(function () use ($type, $candidate, $item, $times, $extra): void {
+            foreach (range(1, $times) as $i) {
+                AnalyticsEvent::query()->create(array_replace([
+                    'shop_id' => $this->shop->id, 'event_id' => 'e'.++$this->events, 'type' => $type,
+                    'page_type' => 'product', 'page_path' => '/product/10', 'product_external_id' => '10',
+                    'item_external_id' => $item, 'candidate_id' => $candidate, 'visitor_hash' => 'v'.$i,
+                    'session_id' => 's1', 'preview' => false, 'occurred_at' => now()->subMinutes($i),
+                ], $extra));
+            }
+        });
     }
 
     /** @return list<string> */

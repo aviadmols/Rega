@@ -3,7 +3,10 @@
 namespace App\Modules\Widget\Filament\Operator\Pages;
 
 use App\Core\Facades\Settings;
+use App\Core\Modules\ModuleRepository;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Analytics\Models\AnalyticsEvent;
+use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
@@ -16,6 +19,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 
 /**
@@ -26,6 +30,8 @@ use Livewire\Attributes\Url;
 final class ProductPage extends Page
 {
     private const SEARCH_RESULTS = 12;
+
+    private const QUESTIONS = 20;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
 
@@ -136,7 +142,125 @@ final class ProductPage extends Page
             'pinned_items' => $curations->where('action', WidgetCuration::PIN)->where('item_external_id', '!=', '')->groupBy('candidate')->map(fn (Collection $c) => $c->pluck('item_external_id')->all())->all(),
             'preview_url' => $subject?->url && $connection ? $subject->url.(str_contains($subject->url, '?') ? '&' : '?').'rega_preview='.$connection->previewKey() : $subject?->url,
             'titles' => $this->titles($curations->pluck('item_external_id')->filter()->all()),
+            'activity' => $this->activity(),
+            'extras' => $this->extras($bank),
+            'questions' => $this->questions($subject),
         ];
+    }
+
+    /**
+     * What visitors did with each part of the widget on this page, counted from the events
+     * themselves so today counts too, not from the nightly scores. Preview visits are left out.
+     *
+     * @return array{days: int, views: int, by_candidate: array<string, array<string, int>>, by_item: array<string, array<string, array<string, int>>>}
+     */
+    private function activity(): array
+    {
+        $days = (int) Settings::get('analytics.score_window_days', $this->shop);
+        $column = $this->type === 'content' ? 'content_external_id' : 'product_external_id';
+
+        $rows = app(TenantContext::class)->run($this->shop, fn () => AnalyticsEvent::query()
+            ->where('page_type', $this->type)
+            ->where($column, $this->id)
+            ->where('preview', false)
+            ->where('occurred_at', '>=', now()->subDays($days))
+            ->select('candidate_id', 'type', 'item_external_id', 'source', 'result', DB::raw('count(*) as n'))
+            ->groupBy('candidate_id', 'type', 'item_external_id', 'source', 'result')
+            ->get());
+
+        $byCandidate = [];
+        $byItem = [];
+        $views = 0;
+
+        foreach ($rows as $row) {
+            $n = (int) $row->n;
+
+            if ($row->type === 'page_view') {
+                $views += $n;
+
+                continue;
+            }
+
+            $counter = match ($row->type) {
+                'exposure' => 'exposures',
+                'open' => 'opens',
+                'click' => 'clicks',
+                'chat_question' => 'questions',
+                // An add from the store's own button belongs to the product, not to a circle.
+                'add_to_cart' => $row->source === 'widget' && $row->result === 'added' ? 'adds' : null,
+                default => null,
+            };
+
+            if ($counter === null || $row->candidate_id === null) {
+                continue;
+            }
+
+            $candidate = (string) $row->candidate_id;
+            $byCandidate[$candidate][$counter] = ($byCandidate[$candidate][$counter] ?? 0) + $n;
+
+            if ($row->item_external_id !== null && in_array($counter, ['clicks', 'adds'], true)) {
+                $item = (string) $row->item_external_id;
+                $byItem[$candidate][$item][$counter] = ($byItem[$candidate][$item][$counter] ?? 0) + $n;
+            }
+        }
+
+        return ['days' => $days, 'views' => $views, 'by_candidate' => $byCandidate, 'by_item' => $byItem];
+    }
+
+    /**
+     * Everything the widget puts on the page that is not one of the circles: the quote above them,
+     * the popularity line, the WhatsApp strip, the question box, and the two that depend on the
+     * visitor rather than the page.
+     *
+     * @param  array<string, mixed>  $bank
+     * @return list<array{key: string, on: bool, detail: string|null}>
+     */
+    private function extras(array $bank): array
+    {
+        // The widget takes the first superlative, or the first highlight the shop does not repeat
+        // on many products, and shows it as a quote without a click.
+        $quote = null;
+        foreach ($bank['sections'] as $section) {
+            if (! empty($section['lines'])) {
+                $quote = $section['lines'][0]['text'];
+                break;
+            }
+            $items = array_values(array_filter($section['items'] ?? [], fn (array $item): bool => empty($item['common'])));
+            if ($items !== []) {
+                $quote = $items[0]['key'].' '.$items[0]['text'];
+                break;
+            }
+        }
+
+        return [
+            ['key' => 'quote', 'on' => $quote !== null, 'detail' => $quote],
+            ['key' => 'popularity', 'on' => ($bank['popularity'] ?? null) !== null, 'detail' => $bank['popularity']['text'] ?? ($bank['popularity']['badge'] ?? null)],
+            ['key' => 'contact', 'on' => ($bank['contact'] ?? null) !== null, 'detail' => $bank['contact']['title'] ?? null],
+            ['key' => 'ask', 'on' => (bool) ($bank['ask'] ?? false), 'detail' => null],
+            ['key' => 'recent', 'on' => (bool) ($bank['recent'] ?? false), 'detail' => null],
+            ['key' => 'signup', 'on' => ($bank['signup'] ?? null) !== null, 'detail' => $bank['signup']['title'] ?? null],
+            ['key' => 'compare', 'on' => ($bank['compare'] ?? null) !== null, 'detail' => null],
+        ];
+    }
+
+    /**
+     * What shoppers asked about this product, most asked first. Unanswered ones are the store
+     * team's to answer, in "Shopper questions".
+     *
+     * @return Collection<int, AssistantAnswer>
+     */
+    private function questions(mixed $subject): Collection
+    {
+        if (! $subject instanceof CatalogProduct || app(ModuleRepository::class)->get('Assistant')?->enabled !== true) {
+            return collect();
+        }
+
+        return app(TenantContext::class)->run($this->shop, fn () => AssistantAnswer::query()
+            ->where('product_id', $subject->id)
+            ->orderByDesc('asked_count')
+            ->orderByDesc('last_asked_at')
+            ->limit(self::QUESTIONS)
+            ->get());
     }
 
     public function pin(string $candidate, string $item = ''): void

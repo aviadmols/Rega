@@ -1,4 +1,4 @@
-{ "name": "Widget", "enabled": true, "requires": [ "Tenancy", "Connections", "Catalog", "Enrichment", "Analytics", "Shoppers", "Admin" ], "provider": "WidgetServiceProvider", "features": [ { "name": "on_products", "default": true },
+{ "name": "Widget", "enabled": true, "requires": [ "Tenancy", "Connections", "Catalog", "Enrichment", "Analytics", "Shoppers", "Assistant", "Admin" ], "provider": "WidgetServiceProvider", "features": [ { "name": "on_products", "default": true },
         { "name": "on_content", "default": true },
         { "name": "whatsapp", "default": false },
         { "name": "popularity", "default": true }
