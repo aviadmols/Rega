@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Actions;
 
+use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Ai\Contracts\ChatModel;
@@ -156,7 +157,7 @@ final class AuditContentReading
             return;
         }
 
-        EnrichmentRuleProposal::query()->create([
+        $row = EnrichmentRuleProposal::query()->create([
             'shop_id' => $shopId,
             'from_version' => (int) ($rules['version'] ?? 1),
             'status' => $proposal === null ? EnrichmentRuleProposal::REJECTED : $status,
@@ -168,7 +169,10 @@ final class AuditContentReading
             'run_id' => $run->runId,
         ]);
 
+        $published = $this->publishIfAllowed($row, $shopId, $review['effect'] ?? null);
+
         $run->output([
+            'published' => $published,
             'sampled' => count($sampled),
             'missed' => count($missed),
             'proposed' => $proposal === null ? 0 : array_sum(array_map(fn (string $list): int => count((array) ($proposal[$list] ?? [])), self::LISTS)),
@@ -373,5 +377,42 @@ final class AuditContentReading
     private function price(string $name): float
     {
         return (float) Settings::get("assistant.{$name}_usd_per_million");
+    }
+
+    /**
+     * A proposal both models agreed on becomes the reader's rules, tonight, by itself.
+     *
+     * Waiting for a person was the right default while nobody had seen this loop work. It is the
+     * wrong one now: a change nobody publishes is a change that did not happen, and a shop should
+     * not have to employ somebody to read marker words. What makes it safe is not the person, it
+     * is everything the proposal already had to survive — evidence quoted from the article, a
+     * check that every quote really is in the text, a share gate, a second model, and a measured
+     * effect that has to be more than nothing.
+     *
+     * One version a week at most, and a person can put the old one back with a click, because a
+     * rule that only ever adds markers can only ever find more, never less.
+     */
+    private function publishIfAllowed(EnrichmentRuleProposal $row, string $shopId, ?array $effect): bool
+    {
+        if (! $row->publishable() || ! Features::enabled('enrichment.auto_publish_rules', $shopId)) {
+            return false;
+        }
+
+        // An effect of nothing is a change of nothing, whatever the reviewer said about it.
+        if ((int) ($effect['after'] ?? 0) <= (int) ($effect['before'] ?? 0)) {
+            return false;
+        }
+
+        $thisWeek = EnrichmentContentRules::query()
+            ->where('shop_id', $shopId)
+            ->where('author', 'audit')
+            ->where('created_at', '>=', now()->subWeek())
+            ->exists();
+
+        if ($thisWeek) {
+            return false;
+        }
+
+        return app(PublishContentRules::class)->handle($row, null) !== null;
     }
 }

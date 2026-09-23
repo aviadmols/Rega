@@ -67,7 +67,7 @@ final class ContentAuditTest extends TestCase
         $this->app->instance(ChatModel::class, $this->model);
     }
 
-    public function test_a_miss_becomes_a_proposal_a_person_can_publish(): void
+    public function test_a_miss_both_models_agree_on_publishes_itself_and_the_reading_improves(): void
     {
         $this->model->replies = [
             ['missed' => [['quote' => self::MISSED, 'why' => 'מסקנה של הכתבה']], 'wrong' => []],
@@ -79,24 +79,15 @@ final class ContentAuditTest extends TestCase
 
         $proposal = $this->inShop(fn () => EnrichmentRuleProposal::query()->sole());
 
-        $this->assertSame(EnrichmentRuleProposal::APPROVED, $proposal->status, 'the reviewer agreed');
+        $this->assertSame(EnrichmentRuleProposal::PUBLISHED, $proposal->status, 'both models agreed, so nobody had to be asked');
         $this->assertSame(['המסקנה'], $proposal->proposed['takeaway_markers']);
         $this->assertSame(self::MISSED, $proposal->findings[0]['missed'][0]['quote'], 'the line that prompted it is kept');
-        $this->assertTrue($proposal->publishable());
+        $this->assertNull($proposal->decided_by, 'and no person is credited with a decision they did not make');
 
-        // Until a person publishes it, the reader is unchanged.
-        $this->assertSame(
-            ContentRules::defaults()['takeaway_markers'],
-            $this->inShop(fn (): array => EnrichmentContentRules::inForce($this->shop->id))['takeaway_markers'],
-        );
+        $inForce = $this->inShop(fn (): array => EnrichmentContentRules::inForce($this->shop->id));
 
-        $operator = User::factory()->operator()->create();
-        $published = app(PublishContentRules::class)->handle($proposal->fresh(), $operator->id);
-
-        $this->assertSame(ContentRules::VERSION + 1, $published->version, 'a version is added, never edited');
-        $this->assertContains('המסקנה', $this->inShop(fn (): array => EnrichmentContentRules::inForce($this->shop->id))['takeaway_markers']);
-        $this->assertSame(EnrichmentRuleProposal::PUBLISHED, $proposal->fresh()->status);
-        $this->assertSame($operator->id, $proposal->fresh()->decided_by);
+        $this->assertSame(ContentRules::VERSION + 1, $inForce['version'], 'a version is added, never edited');
+        $this->assertContains('המסקנה', $inForce['takeaway_markers']);
 
         // And now the reading really is better.
         app(ReadContentInCode::class)->handle($this->shop->id);
@@ -222,5 +213,31 @@ final class ContentAuditTest extends TestCase
 
         $this->assertSame([$this->shop->id], $audited, 'only the shop with articles that did not opt out');
         $this->assertNotContains($empty->id, $audited);
+    }
+
+    public function test_a_shop_that_turns_publishing_off_keeps_the_decision_for_a_person(): void
+    {
+        Features::override('enrichment.auto_publish_rules', false, $this->shop->id);
+
+        $this->model->replies = [
+            ['missed' => [['quote' => self::MISSED, 'why' => 'מסקנה של הכתבה']], 'wrong' => []],
+            ['takeaway_markers' => ['המסקנה'], 'audience_markers' => [], 'summary' => 'x'],
+            ['good' => true, 'reasons' => ['נתמך בראיות']],
+        ];
+
+        app(AuditContentReading::class)->handle($this->shop->id);
+        $proposal = $this->inShop(fn () => EnrichmentRuleProposal::query()->sole());
+
+        $this->assertSame(EnrichmentRuleProposal::APPROVED, $proposal->status, 'agreed, but waiting');
+        $this->assertSame(
+            ContentRules::defaults()['takeaway_markers'],
+            $this->inShop(fn (): array => EnrichmentContentRules::inForce($this->shop->id))['takeaway_markers'],
+            'and the reader is untouched until someone says so',
+        );
+
+        $operator = User::factory()->operator()->create();
+        app(PublishContentRules::class)->handle($proposal->fresh(), $operator->id);
+
+        $this->assertSame($operator->id, $proposal->fresh()->decided_by);
     }
 }

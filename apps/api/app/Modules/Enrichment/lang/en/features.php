@@ -13,4 +13,8 @@ return [
         'label' => 'Nightly reading',
         'description' => 'Every night, after the sync, code reads what changed in the shop again: products, promises, articles, superlatives and relations. No model, no cost.',
     ],
+    'auto_publish_rules' => [
+        'label' => 'Publish reading improvements automatically',
+        'description' => 'A proposal two models agreed on, with a measured improvement, publishes itself — at most one version a week. An older version can always be put back on the Scan improvements screen.',
+    ],
 ];

@@ -21,6 +21,10 @@
         {
             "name": "nightly",
             "default": true
+        },
+        {
+            "name": "auto_publish_rules",
+            "default": true
         }
     ],
     "settings": [
