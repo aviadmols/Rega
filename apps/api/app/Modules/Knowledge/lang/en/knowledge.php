@@ -21,4 +21,15 @@ return [
         'questions_without_an_answer' => 'Questions answered "I have no information" — the site does not say',
         'no_relations' => 'No relations between products have been computed',
     ],
+    'steps' => [
+        'catalog.sync' => 'Catalogue sync from the shop',
+        'enrichment.read_in_code' => 'Reading products in code',
+        'enrichment.read_promises' => 'Reading promises',
+        'enrichment.read_content' => 'Reading articles',
+        'enrichment.compute_rankings' => 'Computing superlatives',
+        'enrichment.compute_relations' => 'Computing relations between products',
+        'enrichment.audit_content' => 'Auditing how articles are read',
+        'analytics.compute_scores' => 'Computing scores from shopper behaviour',
+        'analytics.compute_popularity' => 'Computing popularity',
+    ],
 ];
