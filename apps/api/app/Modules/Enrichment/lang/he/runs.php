@@ -13,6 +13,7 @@ return [
     'vocabulary_invalid' => 'אוצר המילים לא נשמר: :count בעיות.',
     'read_in_code' => 'הקוד קרא :products מוצרים (:changed השתנו): מותג ל־:brands, :families משפחות מידות, :types סוגים לפי קטגוריה, :specs מידות מהכותרת.',
     'read_promises' => 'הקוד קרא :pages עמודים: :shop_promises הבטחות של החנות ו־:product_promises נקודות מתוך טקסט המוצרים.',
+    'read_content' => 'הקוד קרא :articles מאמרים: :takeaways נקודות לקחת, ו־:empty מאמרים שלא נמצא בהם כלום.',
     'relations_computed' => ':relations קשרים: :complements מוצרים משלימים ל־:products מוצרים, :families מידות נוספות, :alternatives חלופות.',
     'relation_rules_saved' => 'נשמרו כללי ההתאמה, גרסה :version: :rules כללים.',
     'relation_rules_invalid' => 'כללי ההתאמה לא נשמרו: :count בעיות.',

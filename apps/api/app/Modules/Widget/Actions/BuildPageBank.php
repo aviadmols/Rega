@@ -435,6 +435,27 @@ final class BuildPageBank
             return [[], 1];
         }
 
+        // What the article itself says, for a site whose articles are the thing rather than a
+        // route to a product. Code read these from the article's own lines.
+        $sections = [];
+        $takeaways = EnrichmentFact::query()
+            ->where('content_id', $content->id)
+            ->where('kind', FactKind::Highlight)
+            ->where('status', FactStatus::Approved)
+            ->orderBy('value_number')
+            ->limit(self::MAX_HIGHLIGHTS)
+            ->get();
+
+        if ($takeaways->isNotEmpty()) {
+            $sections[] = $this->section('highlights', [
+                'items' => $takeaways->map(fn (EnrichmentFact $f): array => [
+                    'id' => $f->key,
+                    'key' => __('widget::bank.takeaway'),
+                    'text' => (string) $f->value_text,
+                ])->all(),
+            ]);
+        }
+
         $matches = EnrichmentContentProduct::query()
             ->with('product')
             ->where('content_id', $content->id)
@@ -444,7 +465,7 @@ final class BuildPageBank
             ->get();
 
         if ($matches->isEmpty()) {
-            return [[], 1];
+            return [$sections, 1];
         }
 
         $products = $matches->map(fn (EnrichmentContentProduct $m): CatalogProduct => $m->product);
@@ -459,7 +480,9 @@ final class BuildPageBank
 
         $version = (int) $matches->max(fn (EnrichmentContentProduct $m): int => (int) $m->computed_at->timestamp);
 
-        return [[$this->section('article_products', ['products' => $this->cards($products, $reasons)])], $version];
+        $sections[] = $this->section('article_products', ['products' => $this->cards($products, $reasons)]);
+
+        return [$sections, $version];
     }
 
     /**

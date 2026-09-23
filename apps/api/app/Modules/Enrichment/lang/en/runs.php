@@ -13,6 +13,7 @@ return [
     'vocabulary_invalid' => 'The vocabulary was not saved: :count problems.',
     'read_in_code' => 'Code read :products products (:changed changed): brand for :brands, :families size families, :types types from categories, :specs sizes from titles.',
     'read_promises' => 'Code read :pages pages: :shop_promises store promises and :product_promises points from product text.',
+    'read_content' => 'Code read :articles articles: :takeaways takeaways, and :empty articles it found nothing in.',
     'relations_computed' => ':relations relations: :complements complements for :products products, :families other sizes, :alternatives alternatives.',
     'relation_rules_saved' => 'Matching rules saved, version :version: :rules rules.',
     'relation_rules_invalid' => 'The matching rules were not saved: :count problems.',

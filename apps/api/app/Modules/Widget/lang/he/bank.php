@@ -57,6 +57,8 @@ return [
         'g' => 'גרם',
         'pcs' => 'יח׳',
     ],
+    // What the article itself concluded, shown the way a product's points are.
+    'takeaway' => 'מהמאמר',
     'yes' => 'כן',
     'type' => 'סוג',
     'brand' => 'מותג',

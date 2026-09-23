@@ -57,6 +57,8 @@ return [
         'g' => 'g',
         'pcs' => 'pcs',
     ],
+    // What the article itself concluded, shown the way a product's points are.
+    'takeaway' => 'From the article',
     'yes' => 'Yes',
     'type' => 'Type',
     'brand' => 'Brand',
