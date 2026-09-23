@@ -44,7 +44,7 @@ class EnrichmentContentRules extends Model
     {
         $active = self::query()->where('shop_id', $shopId)->where('active', true)->latest('version')->first();
 
-        return $active?->rules ?? ContentRules::defaults();
+        return $active === null ? ContentRules::defaults() : ContentRules::withDefaults($active->rules);
     }
 
     public static function versionInForce(string $shopId): int

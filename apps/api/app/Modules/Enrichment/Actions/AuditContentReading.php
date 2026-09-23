@@ -42,9 +42,12 @@ final class AuditContentReading
 
     public const ACTION = 'enrichment.audit_content';
 
-    public const PROMPT_VERSION = 1;
+    public const PROMPT_VERSION = 2;
 
     /** How many articles one audit looks at. Few enough to be cheap, enough to see a pattern. */
+    /** The three lists a proposal may add to, and nothing else. */
+    private const LISTS = ['takeaway_markers', 'takeaway_phrases', 'audience_markers'];
+
     private const SAMPLE = 6;
 
     private const MAX_TEXT_CHARS = 4000;
@@ -168,7 +171,7 @@ final class AuditContentReading
         $run->output([
             'sampled' => count($sampled),
             'missed' => count($missed),
-            'proposed' => $proposal === null ? 0 : count($proposal['takeaway_markers'] ?? []) + count($proposal['audience_markers'] ?? []),
+            'proposed' => $proposal === null ? 0 : array_sum(array_map(fn (string $list): int => count((array) ($proposal[$list] ?? [])), self::LISTS)),
             'status' => $proposal === null ? EnrichmentRuleProposal::REJECTED : $status,
         ])->summary('enrichment::runs.audit_content', [
             'articles' => count($sampled),
@@ -208,21 +211,21 @@ final class AuditContentReading
     private function propose(RunContext $run, string $model, array $rules, array $missed, ?string $effort): ?array
     {
         $reply = $this->call($run, $model, 'propose_rules', [
-            'rules' => ['takeaway_markers' => $rules['takeaway_markers'] ?? [], 'audience_markers' => $rules['audience_markers'] ?? []],
+            'rules' => self::lists($rules),
             'missed' => $missed,
         ], $effort, 'answer');
 
         $quotes = array_column($missed, 'quote');
         $proposed = [];
 
-        foreach (['takeaway_markers', 'audience_markers'] as $list) {
+        foreach (self::LISTS as $list) {
             $proposed[$list] = array_values(array_filter(
                 array_map(fn ($marker): string => trim((string) $marker), (array) ($reply->data[$list] ?? [])),
                 fn (string $marker): bool => $this->markerIsFair($marker, $list, $rules, $quotes),
             ));
         }
 
-        if ($proposed['takeaway_markers'] === [] && $proposed['audience_markers'] === []) {
+        if (array_filter($proposed) === []) {
             return null;
         }
 
@@ -255,7 +258,16 @@ final class AuditContentReading
         }
 
         foreach ($quotes as $quote) {
-            if ($list === 'takeaway_markers' ? mb_stripos($quote, $marker) === 0 : mb_stripos($quote, $marker) !== false) {
+            $at = mb_stripos($quote, $marker);
+            $fits = match ($list) {
+                // A marker opens a line; a phrase is said in the middle of one; an audience
+                // marker may be anywhere, because what follows it is the audience.
+                'takeaway_markers' => $at === 0,
+                'takeaway_phrases' => is_int($at) && $at > 0,
+                default => $at !== false,
+            };
+
+            if ($fits) {
                 return true;
             }
         }
@@ -275,8 +287,10 @@ final class AuditContentReading
     private function review(RunContext $run, string $model, array $rules, array $proposal, array $missed, $articles, ?string $effort): array
     {
         $after = $rules;
-        $after['takeaway_markers'] = array_merge((array) ($rules['takeaway_markers'] ?? []), $proposal['takeaway_markers']);
-        $after['audience_markers'] = array_merge((array) ($rules['audience_markers'] ?? []), $proposal['audience_markers']);
+
+        foreach (self::LISTS as $list) {
+            $after[$list] = array_merge((array) ($rules[$list] ?? []), (array) ($proposal[$list] ?? []));
+        }
 
         $before = 0;
         $now = 0;
@@ -308,7 +322,7 @@ final class AuditContentReading
         }
 
         $reply = $this->call($run, $model, 'review_rules', [
-            'rules' => ['takeaway_markers' => $rules['takeaway_markers'] ?? [], 'audience_markers' => $rules['audience_markers'] ?? []],
+            'rules' => self::lists($rules),
             'proposed' => $proposal,
             'evidence' => $missed,
             'effect' => $effect,
@@ -337,6 +351,23 @@ final class AuditContentReading
         $run->usage('openai', $model, $reply->inputTokens, $reply->outputTokens, 0, $reply->costUsd($this->price($prices.'_input'), $this->price($prices.'_output')));
 
         return $reply;
+    }
+
+    /**
+     * The lists in force, as the prompts see them.
+     *
+     * @param  array<string, mixed>  $rules
+     * @return array<string, list<string>>
+     */
+    private static function lists(array $rules): array
+    {
+        $lists = [];
+
+        foreach (self::LISTS as $list) {
+            $lists[$list] = array_values((array) ($rules[$list] ?? []));
+        }
+
+        return $lists;
     }
 
     private function price(string $name): float

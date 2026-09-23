@@ -93,7 +93,7 @@ final class ContentAuditTest extends TestCase
         $operator = User::factory()->operator()->create();
         $published = app(PublishContentRules::class)->handle($proposal->fresh(), $operator->id);
 
-        $this->assertSame(2, $published->version, 'a version is added, never edited');
+        $this->assertSame(ContentRules::VERSION + 1, $published->version, 'a version is added, never edited');
         $this->assertContains('המסקנה', $this->inShop(fn (): array => EnrichmentContentRules::inForce($this->shop->id))['takeaway_markers']);
         $this->assertSame(EnrichmentRuleProposal::PUBLISHED, $proposal->fresh()->status);
         $this->assertSame($operator->id, $proposal->fresh()->decided_by);

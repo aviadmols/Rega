@@ -30,8 +30,9 @@ final class PublishContentRules
                 $current = EnrichmentContentRules::inForce($proposal->shop_id);
 
                 $rules = $current;
-                $rules['takeaway_markers'] = self::added($current, $proposal, 'takeaway_markers');
-                $rules['audience_markers'] = self::added($current, $proposal, 'audience_markers');
+                foreach (['takeaway_markers', 'takeaway_phrases', 'audience_markers'] as $list) {
+                    $rules[$list] = self::added($current, $proposal, $list);
+                }
                 $rules['version'] = (int) ($current['version'] ?? 1) + 1;
 
                 EnrichmentContentRules::query()->where('shop_id', $proposal->shop_id)->update(['active' => false]);

@@ -131,4 +131,31 @@ final class ArticleReadingTest extends TestCase
 
         $this->assertSame(0, $left, 'a takeaway the article stopped making is gone');
     }
+
+    public function test_a_conclusion_said_halfway_through_a_line_is_taken_from_the_phrase_on(): void
+    {
+        // How Hebrew articles actually write: the sentence sets the scene, then concludes.
+        $reading = ArticleReader::read('ריהוט מעץ', implode("\n", [
+            'עץ הוא חומר חי שמגיב לסביבה שלו לאורך השנים.',
+            'על מנת להכיר את כל אפשרויות העיצוב העומדות בפניכם ההמלצה היא להתייעץ עם מומחים בתחום.',
+            'המחיר משתנה בין היצרנים.',
+        ]), ContentRules::defaults());
+
+        $texts = array_column($reading['takeaways'], 'text');
+
+        $this->assertContains('ההמלצה היא להתייעץ עם מומחים בתחום.', $texts, 'the point, not the setup');
+        $this->assertSame(1, count($texts), 'an ordinary sentence is still not a takeaway');
+        $this->assertStringStartsWith('על מנת', $reading['takeaways'][0]['quote'], 'the whole line is kept as the quote');
+    }
+
+    public function test_a_phrase_at_the_opening_of_a_line_is_left_to_the_markers(): void
+    {
+        $rules = ContentRules::defaults();
+        $rules['takeaway_phrases'] = ['ההמלצה היא'];
+        $rules['takeaway_markers'] = [];
+
+        $reading = ArticleReader::read('כותרת', 'ההמלצה היא לבדוק את העץ לפני הקנייה בחנות.', $rules);
+
+        $this->assertSame([], $reading['takeaways'], 'a phrase only speaks for what it interrupts');
+    }
 }

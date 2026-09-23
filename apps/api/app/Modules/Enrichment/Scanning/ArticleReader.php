@@ -27,6 +27,9 @@ final class ArticleReader
 
     private const MAX_TAKEAWAYS = 6;
 
+    /** Shorter than this, what follows a phrase is the end of a sentence, not a point. */
+    private const MIN_CLAUSE = 24;
+
     /** Words a minute, for saying how long a read is. */
     private const READING_SPEED = 200;
 
@@ -42,7 +45,7 @@ final class ArticleReader
 
         return [
             'sections' => self::sections($lines),
-            'takeaways' => self::takeaways($lines, (array) ($rules['takeaway_markers'] ?? [])),
+            'takeaways' => self::takeaways($lines, (array) ($rules['takeaway_markers'] ?? []), (array) ($rules['takeaway_phrases'] ?? [])),
             'question' => self::question($title, $lines),
             'audience' => self::audience($lines, (array) ($rules['audience_markers'] ?? [])),
             'words' => $words,
@@ -98,14 +101,48 @@ final class ArticleReader
     }
 
     /**
+     * The part of a line a phrase introduces: from the phrase to the end of the line.
+     *
+     * Only past the opening, because a line that starts with the phrase is already a marker's
+     * business, and only when what follows is long enough to say something on its own.
+     *
+     * @param  list<string>  $phrases
+     */
+    private static function clause(string $line, array $phrases): ?string
+    {
+        foreach ($phrases as $phrase) {
+            $phrase = trim((string) $phrase);
+
+            if ($phrase === '') {
+                continue;
+            }
+
+            $at = mb_stripos($line, $phrase);
+
+            if ($at === false || $at === 0) {
+                continue;
+            }
+
+            $clause = trim(mb_substr($line, $at));
+
+            if (mb_strlen($clause) >= self::MIN_CLAUSE) {
+                return $clause;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * What the article wants the reader to take away: a listed line, or a line a marker word
      * introduces. Each keeps the line it came from, so nothing shown was not written.
      *
      * @param  list<string>  $lines
      * @param  list<string>  $markers
+     * @param  list<string>  $phrases
      * @return list<array{text: string, quote: string}>
      */
-    private static function takeaways(array $lines, array $markers): array
+    private static function takeaways(array $lines, array $markers, array $phrases = []): array
     {
         $found = [];
 
@@ -121,11 +158,14 @@ final class ArticleReader
                 }
             }
 
-            if (! $listed && ! $marked) {
+            // A line that says its conclusion halfway through: the takeaway is that half.
+            $clause = $listed || $marked ? null : self::clause($line, $phrases);
+
+            if (! $listed && ! $marked && $clause === null) {
                 continue;
             }
 
-            $text = trim((string) preg_replace('/^[\-•*]\s+|^\d+[.)]\s+/u', '', $line));
+            $text = $clause ?? trim((string) preg_replace('/^[\-•*]\s+|^\d+[.)]\s+/u', '', $line));
 
             if (mb_strlen($text) >= 12 && mb_strlen($text) <= 200) {
                 $found[] = ['text' => $text, 'quote' => $line];

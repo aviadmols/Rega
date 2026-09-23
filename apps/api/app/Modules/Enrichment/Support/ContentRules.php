@@ -14,7 +14,19 @@ namespace App\Modules\Enrichment\Support;
  */
 final class ContentRules
 {
-    public const VERSION = 1;
+    public const VERSION = 2;
+
+    /**
+     * A ruleset a shop published before a list existed still has to be readable, so the lists it
+     * predates come from the defaults rather than being empty.
+     *
+     * @param  array<string, mixed>  $rules
+     * @return array<string, mixed>
+     */
+    public static function withDefaults(array $rules): array
+    {
+        return $rules + self::defaults();
+    }
 
     /** @return array<string, mixed> */
     public static function defaults(): array
@@ -26,6 +38,13 @@ final class ContentRules
                 'חשוב לדעת', 'שימו לב', 'לסיכום', 'בשורה התחתונה', 'הטיפ', 'טיפ', 'כדאי',
                 'המלצה', 'שורה תחתונה', 'זכרו', 'אל תשכחו',
                 'Tip', 'Note', 'Remember', 'In short', 'Bottom line', 'Key takeaway',
+            ],
+            // A Hebrew article rarely opens a line with its conclusion; it arrives mid-sentence,
+            // after the setup. These are looked for anywhere in a line, and what follows one of
+            // them to the end of the line is the takeaway.
+            'takeaway_phrases' => [
+                'ההמלצה היא', 'חשוב לציין', 'כדאי לזכור', 'המשמעות היא', 'השורה התחתונה היא',
+                'the recommendation is', 'it is important to note', 'keep in mind',
             ],
             // What follows one of these is who the article is for.
             'audience_markers' => [
