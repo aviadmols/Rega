@@ -148,8 +148,9 @@ final class OperatorShopContextTest extends TestCase
         $page->assertSee(__('admin::configuration.groups.shown.title'));
         $page->assertSee(__('admin::configuration.groups.whatsapp.title'));
 
-        // Everything else is behind one heading rather than spread over the screen.
-        $page->assertSee(__('admin::configuration.groups.advanced.title'));
+        // Two tabs, and everything else is behind the second one rather than spread out.
+        $page->assertSee(__('admin::configuration.tabs.shop'));
+        $page->assertSee(__('admin::configuration.tabs.advanced'));
         $page->assertSee(__('admin::configuration.groups.advanced.help'));
     }
 }

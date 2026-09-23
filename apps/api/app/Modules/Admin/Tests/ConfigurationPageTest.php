@@ -5,6 +5,7 @@ namespace App\Modules\Admin\Tests;
 use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Settings\ValueSource;
+use App\Core\Tenancy\TenantContext;
 use App\Modules\Admin\Filament\Operator\Pages\Configuration;
 use App\Modules\Admin\Models\User;
 use App\Modules\Tenancy\Models\Shop;
@@ -25,17 +26,24 @@ final class ConfigurationPageTest extends TestCase
         $this->actingAs(User::factory()->operator()->create());
     }
 
-    public function test_the_scope_selector_shows_which_scope_is_being_edited(): void
+    public function test_the_page_edits_the_shop_the_panel_is_inside(): void
     {
         $shop = Shop::factory()->create();
 
-        Livewire::test(Configuration::class)->assertSet('data.scope', 'global');
-        Livewire::withQueryParams(['shop' => $shop->id])->test(Configuration::class)->assertSet('data.scope', $shop->id);
+        // Across every shop, these are the defaults every shop inherits.
+        Livewire::test(Configuration::class)->assertSet('shop', null);
 
-        // An unknown shop id falls back to the global scope instead of editing nothing.
-        Livewire::withQueryParams(['shop' => 'missing'])->test(Configuration::class)
-            ->assertSet('shop', null)
-            ->assertSet('data.scope', 'global');
+        $this->inShop($shop, fn () => Livewire::test(Configuration::class)->assertSet('shop', $shop->id));
+
+        // The shop is not a value the request may set: naming another one changes nothing.
+        $this->inShop($shop, fn () => Livewire::test(Configuration::class)
+            ->set('shop', Shop::factory()->create()->id)
+            ->assertSet('shop', $shop->id));
+    }
+
+    private function inShop(Shop $shop, callable $do): mixed
+    {
+        return app(TenantContext::class)->run($shop->id, $do);
     }
 
     public function test_every_declared_feature_and_setting_is_on_the_screen(): void
@@ -69,12 +77,11 @@ final class ConfigurationPageTest extends TestCase
         $shop = Shop::factory()->create();
         $other = Shop::factory()->create();
 
-        Livewire::withQueryParams(['shop' => $shop->id])
-            ->test(Configuration::class)
+        $this->inShop($shop, fn () => Livewire::test(Configuration::class)
             ->assertFormFieldDoesNotExist('s__admin__default_locale')
             ->fillForm(['s__tenancy__api_requests_per_minute' => '120'])
             ->call('save')
-            ->assertHasNoFormErrors();
+            ->assertHasNoFormErrors());
 
         $this->assertSame(120, Settings::get('tenancy.api_requests_per_minute', $shop->id));
         $this->assertSame(ValueSource::Shop, Settings::source('tenancy.api_requests_per_minute', $shop->id));
@@ -101,8 +108,7 @@ final class ConfigurationPageTest extends TestCase
         Settings::set('tenancy.max_active_api_keys', 7, $shop->id);
         Features::override('tenancy.api_access', false, $shop->id);
 
-        Livewire::withQueryParams(['shop' => $shop->id])
-            ->test(Configuration::class)
+        $this->inShop($shop, fn () => Livewire::test(Configuration::class)
             ->assertSet('data.s__tenancy__max_active_api_keys', '7')
             ->assertSet('data.f__tenancy__api_access', 'off')
             ->fillForm([
@@ -110,7 +116,7 @@ final class ConfigurationPageTest extends TestCase
                 'f__tenancy__api_access' => 'inherit',
             ])
             ->call('save')
-            ->assertHasNoFormErrors();
+            ->assertHasNoFormErrors());
 
         $this->assertSame(ValueSource::Default, Settings::source('tenancy.max_active_api_keys', $shop->id));
         $this->assertSame(ValueSource::Default, Features::source('tenancy.api_access', $shop->id));
@@ -120,9 +126,11 @@ final class ConfigurationPageTest extends TestCase
     {
         $shop = Shop::factory()->create();
 
+        $this->post('/admin/shop', ['shop' => $shop->id]);
+
         foreach (['he', 'en'] as $locale) {
             $this->withHeader('Accept-Language', $locale)
-                ->get('/operator/configuration?shop='.$shop->id)
+                ->get('/operator/configuration')
                 ->assertOk()
                 ->assertSee(__('tenancy::settings.max_active_api_keys.label', [], $locale));
         }

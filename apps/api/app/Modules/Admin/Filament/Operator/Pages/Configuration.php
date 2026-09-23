@@ -12,6 +12,7 @@ use App\Core\Settings\SettingDefinition;
 use App\Core\Settings\SettingManager;
 use App\Core\Settings\SettingRegistry;
 use App\Core\Settings\SettingType;
+use App\Core\Tenancy\TenantContext;
 use App\Modules\Tenancy\Models\Shop;
 use BackedEnum;
 use Filament\Forms\Components\Select;
@@ -22,12 +23,15 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Url;
 
 /**
  * Every feature flag and setting every enabled module declared, for the whole system or for
@@ -51,8 +55,11 @@ class Configuration extends Page implements HasForms
 
     protected string $view = 'admin::operator.configuration';
 
-    /** Shop id, or null for the global values. */
-    #[Url]
+    /**
+     * The shop whose values are on the screen, or null for the defaults every shop inherits.
+     * It is the shop the panel is inside, never a separate choice made here, and it is read back
+     * from the panel on every update so a crafted request cannot point the save somewhere else.
+     */
     public ?string $shop = null;
 
     /** @var array<string, mixed> */
@@ -79,11 +86,9 @@ class Configuration extends Page implements HasForms
 
     public function mount(): void
     {
-        if ($this->shop !== null && $this->selectedShop() === null) {
-            $this->shop = null;
-        }
+        $this->takeShopFromPanel();
 
-        $state = ['scope' => $this->shop ?? self::GLOBAL_SCOPE];
+        $state = [];
 
         foreach ($this->features() as $definition) {
             $override = $this->featureManager()->overrideFor($definition->key(), $this->shop);
@@ -104,24 +109,24 @@ class Configuration extends Page implements HasForms
 
     public function form(Schema $schema): Schema
     {
-        return $schema
-            ->statePath('data')
-            ->components([
-                Section::make(__('admin::configuration.scope'))
-                    ->schema([
-                        Select::make('scope')
-                            ->label(__('admin::configuration.scope'))
-                            ->hiddenLabel()
-                            ->options(fn (): array => [self::GLOBAL_SCOPE => __('admin::configuration.scope_global')] + Shop::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->selectablePlaceholder(false)
-                            ->searchable()
-                            ->live()
-                            ->afterStateUpdated(fn (?string $state) => $this->redirect(self::getUrl(
-                                ['shop' => in_array($state, [null, '', self::GLOBAL_SCOPE], true) ? null : $state],
-                            ))),
-                    ]),
-                ...$this->moduleSections(),
-            ]);
+        return $schema->statePath('data')->components($this->moduleSections());
+    }
+
+    /** Livewire hydrates public properties from the request, so the shop is taken again. */
+    public function hydrate(): void
+    {
+        $this->takeShopFromPanel();
+    }
+
+    /** And again if anything assigns it mid-request, which is the door hydrating alone leaves open. */
+    public function updatedShop(): void
+    {
+        $this->takeShopFromPanel();
+    }
+
+    protected function takeShopFromPanel(): void
+    {
+        $this->shop = app(TenantContext::class)->id();
     }
 
     public function save(): void
@@ -264,15 +269,40 @@ class Configuration extends Page implements HasForms
 
         $rest = $this->restByModule($inGroups);
 
-        if ($rest !== []) {
-            $sections[] = Section::make(__('admin::configuration.groups.advanced.title'))
-                ->description(__('admin::configuration.groups.advanced.help'))
-                ->collapsible()
-                ->collapsed()
-                ->schema($rest);
+        if ($sections === []) {
+            return $rest;
         }
 
-        return $sections;
+        // Two tabs rather than one long page: what a store is, and what the platform is tuned to.
+        return [
+            Tabs::make()
+                ->tabs(array_values(array_filter([
+                    Tab::make(__('admin::configuration.tabs.shop'))
+                        ->icon(Heroicon::OutlinedBuildingStorefront)
+                        ->badge(count($inGroups))
+                        ->schema($sections),
+                    $rest === [] ? null : Tab::make(__('admin::configuration.tabs.advanced'))
+                        ->icon(Heroicon::OutlinedWrenchScrewdriver)
+                        ->badge($this->countFields($inGroups))
+                        ->schema([
+                            Text::make(__('admin::configuration.groups.advanced.help'))
+                                ->color('gray')
+                                ->size(TextSize::Small),
+                            ...$rest,
+                        ]),
+                ]))),
+        ];
+    }
+
+    /** How many switches and caps are behind the advanced tab, so its size is no surprise. */
+    private function countFields(array $taken): int
+    {
+        $left = fn (array $all): int => count(array_filter(
+            $all,
+            fn (FeatureDefinition|SettingDefinition $d): bool => ! in_array($d->key(), $taken, true),
+        ));
+
+        return $left($this->features()) + $left($this->settings());
     }
 
     /**

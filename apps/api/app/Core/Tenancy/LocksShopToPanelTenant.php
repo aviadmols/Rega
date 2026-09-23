@@ -33,6 +33,15 @@ trait LocksShopToPanelTenant
         return Filament::getTenant() !== null;
     }
 
+    /**
+     * A screen inherited from the operator panel may take its shop from the tenant context. Here
+     * the panel's own tenant is the authority, and it is right even before any middleware ran.
+     */
+    protected function takeShopFromPanel(): void
+    {
+        $this->lockShopToTenant();
+    }
+
     public function mount(): void
     {
         $this->lockShopToTenant();

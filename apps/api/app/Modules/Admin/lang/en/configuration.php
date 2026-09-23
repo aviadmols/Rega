@@ -22,4 +22,8 @@ return [
         'signup' => ['title' => 'Products they viewed, and signing up', 'help' => 'What is kept for a returning shopper, and what the sign-up asks.'],
         'advanced' => ['title' => 'Advanced — platform tuning', 'help' => 'Caps, time windows, scanning and models. Not needed to run a store; open it only if you know what you are changing.'],
     ],
+    'tabs' => [
+        'shop' => 'Store settings',
+        'advanced' => 'Advanced',
+    ],
 ];
