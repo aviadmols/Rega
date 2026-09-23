@@ -9,10 +9,14 @@ use App\Modules\Ai\Contracts\SpendCapReached;
 use App\Modules\Ai\Contracts\SpendGuard;
 use App\Modules\Ai\Enums\AiProviderName;
 use App\Modules\Catalog\Models\CatalogCategory;
+use App\Modules\Enrichment\Actions\CreateTaskFile;
 use App\Modules\Enrichment\Actions\ImportVocabulary;
 use App\Modules\Enrichment\Actions\RunNightlyModelReading;
 use App\Modules\Enrichment\Enums\FactOrigin;
+use App\Modules\Enrichment\Enums\TaskType;
+use App\Modules\Enrichment\Models\EnrichmentBatchItem;
 use App\Modules\Enrichment\Models\EnrichmentFact;
+use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -130,5 +134,28 @@ final class NightlyModelReadingTest extends TestCase
 
         $this->assertSame('succeeded', $run->status->value);
         $this->assertGreaterThan(0, $run->output['asked'], 'the branch with unread products was found');
+    }
+
+    public function test_it_finishes_a_batch_somebody_exported_and_abandoned(): void
+    {
+        foreach (range(1, 2) as $i) {
+            $this->product("7{$i}", "מקדחה נטענת {$i} 18V", 'מקדחה חזקה לעבודות בית.', [$this->root]);
+        }
+
+        // Exported to an outside agent, and the answers never came back. Those products count as
+        // already asked, so without this nothing would ever pick them up again.
+        $vocabulary = $this->inShop(fn () => EnrichmentVocabulary::query()->where('active', true)->sole());
+        $abandoned = app(CreateTaskFile::class)
+            ->handle($this->shop->id, TaskType::ProductExtraction, $vocabulary->id)['batch'];
+
+        $this->assertNotNull($abandoned);
+        $waiting = $this->inShop(fn (): int => EnrichmentBatchItem::query()->where('batch_id', $abandoned->id)->count());
+        $this->assertGreaterThan(0, $waiting);
+
+        Settings::set('enrichment.nightly_model_requests', 50, $this->shop->id);
+        $run = app(RunNightlyModelReading::class)->handle($this->shop->id);
+
+        $this->assertSame($abandoned->id, $run->output['batch'], 'the oldest waiting questions are answered first');
+        $this->assertSame($waiting, $run->output['asked'], 'and all of them');
     }
 }

@@ -4,7 +4,10 @@ namespace App\Modules\Enrichment\Actions;
 
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Enrichment\Enums\BatchStatus;
+use App\Modules\Enrichment\Enums\ItemStatus;
 use App\Modules\Enrichment\Enums\TaskType;
+use App\Modules\Enrichment\Models\EnrichmentBatch;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Runs\Contracts\RecordsRuns;
 use App\Modules\Runs\Contracts\RunContext;
@@ -59,9 +62,18 @@ final class RunNightlyModelReading
                 // only be read against the one its branch belongs to. Taking the first would mean
                 // reading one branch until it was finished and never touching the others, so each
                 // is tried in turn until one still has something unread.
-                $vocabularies = $this->tenant->run($shopId, fn () => EnrichmentVocabulary::query()
+                // A batch somebody exported and never brought answers back for leaves its
+                // products marked as already asked, so nothing would ever pick them up again.
+                // Those are answered first: they are the oldest questions waiting.
+                $batch = $this->tenant->run($shopId, fn () => EnrichmentBatch::query()
+                    ->where('task', TaskType::ProductExtraction)
+                    ->where('status', BatchStatus::AwaitingResults)
+                    ->whereHas('items', fn ($q) => $q->where('status', ItemStatus::Pending))
+                    ->oldest('created_at')
+                    ->first());
+
+                $vocabularies = $batch !== null ? collect() : $this->tenant->run($shopId, fn () => EnrichmentVocabulary::query()
                     ->where('active', true)->orderBy('key')->get());
-                $batch = null;
 
                 foreach ($vocabularies as $vocabulary) {
                     $batch = $this->batches->handle($shopId, TaskType::ProductExtraction, $vocabulary->id, limit: $limit)['batch'] ?? null;
