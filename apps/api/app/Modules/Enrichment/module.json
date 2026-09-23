@@ -77,6 +77,24 @@
             "max": 100000,
             "scope": "global",
             "unit": "kilobytes"
+        },
+        {
+            "name": "model_answer_tokens",
+            "type": "int",
+            "default": 900,
+            "min": 200,
+            "max": 4000,
+            "scope": "shop",
+            "unit": "tokens"
+        },
+        {
+            "name": "nightly_model_requests",
+            "type": "int",
+            "default": 40,
+            "min": 0,
+            "max": 500,
+            "scope": "shop",
+            "unit": "requests"
         }
     ]
 }

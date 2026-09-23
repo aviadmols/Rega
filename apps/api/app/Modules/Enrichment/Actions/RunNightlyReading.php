@@ -38,6 +38,8 @@ final class RunNightlyReading
         'articles' => MatchProductsToArticles::class,
         'rankings' => ComputeRankings::class,
         'relations' => ComputeProductRelations::class,
+        // Last, and the only one that costs anything: what code could not work out on its own.
+        'model' => RunNightlyModelReading::class,
     ];
 
     public function __construct(private readonly RecordsRuns $runs) {}

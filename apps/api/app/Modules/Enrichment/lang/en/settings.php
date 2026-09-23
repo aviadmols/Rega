@@ -25,4 +25,12 @@ return [
         'label' => 'Largest results file',
         'description' => 'Uploads above this size are refused.',
     ],
+    'model_answer_tokens' => [
+        'label' => 'Longest answer a model may write',
+        'description' => 'How many tokens a model may spend on one product.',
+    ],
+    'nightly_model_requests' => [
+        'label' => 'Products a model reads each night',
+        'description' => 'How many products are sent to a model nightly. 0 turns model reading off. The monthly spend cap still wins.',
+    ],
 ];
