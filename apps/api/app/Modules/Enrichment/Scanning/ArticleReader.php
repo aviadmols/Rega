@@ -30,26 +30,35 @@ final class ArticleReader
     /** Shorter than this, what follows a phrase is the end of a sentence, not a point. */
     private const MIN_CLAUSE = 24;
 
+    /** More than two "what is X" chips stops being a shortcut and becomes a list. */
+    private const MAX_SUBJECTS = 2;
+
     /** Words a minute, for saying how long a read is. */
     private const READING_SPEED = 200;
 
     /**
      * @param  array<string, mixed>  $rules  from ContentRules::defaults(), or a shop's own version
      * @return array{sections: list<string>, takeaways: list<array{text: string, quote: string}>,
-     *               question: string|null, audience: string|null, words: int, minutes: int}
+     *               question: string|null, audience: string|null, words: int, minutes: int,
+     *               questions: list<array{kind: string, term?: string, count?: int}>}
      */
     public static function read(string $title, string $body, array $rules): array
     {
         $lines = self::lines($body);
         $words = self::countWords($title."\n".$body);
 
+        $sections = self::sections($lines);
+        $takeaways = self::takeaways($lines, $rules);
+        $audience = self::audience($lines, (array) ($rules['audience_markers'] ?? []));
+
         return [
-            'sections' => self::sections($lines),
-            'takeaways' => self::takeaways($lines, $rules),
+            'sections' => $sections,
+            'takeaways' => $takeaways,
             'question' => self::question($title, $lines),
-            'audience' => self::audience($lines, (array) ($rules['audience_markers'] ?? [])),
+            'audience' => $audience,
             'words' => $words,
             'minutes' => max(1, (int) ceil($words / self::READING_SPEED)),
+            'questions' => self::worthAsking($sections, $takeaways, $audience, $lines, $rules),
         ];
     }
 
@@ -239,6 +248,70 @@ final class ArticleReader
         }
 
         return $found;
+    }
+
+    /**
+     * What is worth asking about this article, as things rather than as sentences.
+     *
+     * A reader is not shown a text box and left to invent a question; they are shown the two or
+     * three questions this particular article can answer well. Which ones those are is decided
+     * here, from what the reading already found — the points, the subjects the piece keeps
+     * returning to, who it is for. The wording is not decided here: these are kinds and terms,
+     * turned into a sentence in the reader's own language when the widget asks for them.
+     *
+     * A subject only counts when the article says it more than once. A word that appears in a
+     * heading and nowhere else is a heading, not what the piece is about.
+     *
+     * @param  list<string>  $sections
+     * @param  list<array{text: string, quote: string}>  $takeaways
+     * @param  list<string>  $lines
+     * @param  array<string, mixed>  $rules
+     * @return list<array{kind: string, term?: string, count?: int}>
+     */
+    private static function worthAsking(array $sections, array $takeaways, ?string $audience, array $lines, array $rules): array
+    {
+        // Summing up is what a reader wants first, and it is the one question every article can
+        // answer, so it is always there and always first.
+        $asks = [['kind' => 'summary']];
+
+        if (count($takeaways) >= 2) {
+            $asks[] = ['kind' => 'points', 'count' => count($takeaways)];
+        }
+
+        $body = mb_strtolower(implode(' ', $lines));
+        $skip = array_map('mb_strtolower', (array) ($rules['not_subjects'] ?? []));
+        $terms = 0;
+
+        foreach ($sections as $heading) {
+            if ($terms >= self::MAX_SUBJECTS) {
+                break;
+            }
+
+            $term = trim((string) preg_replace('/[?:.!،,]+$/u', '', $heading));
+            $words = count(preg_split('/\s+/u', $term) ?: []);
+
+            if ($words > 2 || mb_strlen($term) < 3 || mb_strlen($term) > 24) {
+                continue;
+            }
+
+            if (in_array(mb_strtolower($term), $skip, true)) {
+                continue;
+            }
+
+            // Said more than once: the article keeps coming back to it, so it is a subject.
+            if (mb_substr_count($body, mb_strtolower($term)) < 2) {
+                continue;
+            }
+
+            $asks[] = ['kind' => 'term', 'term' => $term];
+            $terms++;
+        }
+
+        if ($audience !== null) {
+            $asks[] = ['kind' => 'audience'];
+        }
+
+        return $asks;
     }
 
     /** @param list<string> $lines */

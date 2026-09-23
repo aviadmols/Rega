@@ -102,6 +102,14 @@ final class ReadContentInCode
                         ]);
                     }
 
+                    foreach ($reading['questions'] as $i => $ask) {
+                        $write(FactKind::Tag, 'ask_'.($i + 1), [
+                            'value_text' => $ask['term'] ?? $ask['kind'],
+                            'value_number' => $ask['count'] ?? null,
+                            'quote' => $ask['kind'],
+                        ]);
+                    }
+
                     if ($reading['question'] !== null) {
                         $counts['with_question']++;
                         $write(FactKind::Tag, 'answers', ['value_text' => $reading['question'], 'quote' => $reading['question']]);

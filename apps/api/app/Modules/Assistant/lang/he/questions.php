@@ -15,4 +15,11 @@ return [
         'למי המאמר הזה מתאים?',
         'מה כדאי לעשות אחרי שקראתי?',
     ],
+    // Built from what the scan found in this page itself, so the chips differ per article.
+    'asked' => [
+        'summary' => 'סכם לי את המאמר',
+        'points' => ':count נקודות שחשוב לדעת',
+        'term' => 'מה זה :term?',
+        'audience' => 'למי זה מתאים?',
+    ],
 ];

@@ -15,4 +15,11 @@ return [
         'Who is this guide for?',
         'What should I do after reading it?',
     ],
+    // Built from what the scan found in this page itself, so the chips differ per article.
+    'asked' => [
+        'summary' => 'Sum this article up for me',
+        'points' => ':count things worth knowing',
+        'term' => 'What is :term?',
+        'audience' => 'Who is this for?',
+    ],
 ];

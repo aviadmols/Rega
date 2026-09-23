@@ -14,7 +14,7 @@ namespace App\Modules\Enrichment\Support;
  */
 final class ContentRules
 {
-    public const VERSION = 3;
+    public const VERSION = 4;
 
     /**
      * A ruleset a shop published before a list existed still has to be readable, so the lists it
@@ -51,6 +51,12 @@ final class ContentRules
             'skip_lines' => [
                 'גולשים שהגיעו לעמוד', 'מוצרים קשורים', 'קראו עוד', 'קרא עוד', 'שתפו', 'לחצו כאן',
                 'מגוון חנויות', 'חנויות אחרות', 'באתרים אחרים', 'בחנויות המובילות',
+            ],
+            // Headings that are furniture rather than a subject: nobody asks "what is summary".
+            'not_subjects' => [
+                'לסיכום', 'סיכום', 'מבוא', 'הקדמה', 'כללי', 'תוכן עניינים', 'שאלות נפוצות',
+                'לסיום', 'רקע', 'טיפים', 'המלצות', 'יתרונות', 'חסרונות',
+                'Summary', 'Intro', 'Introduction', 'Background', 'Tips', 'FAQ',
             ],
             // What follows one of these is who the article is for.
             'audience_markers' => [
