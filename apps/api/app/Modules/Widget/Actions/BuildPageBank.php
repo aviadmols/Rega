@@ -166,6 +166,10 @@ final class BuildPageBank
 
         $bank['enabled'] = true;
         $sections = $this->allowed($shopId, $sections);
+        // The order before anything was learned, and the share of shoppers shown it, so a held-out
+        // visitor can be served the untouched arrangement from this same cached bank.
+        $bank['baseline_order'] = array_values(array_map(fn (array $s): string => (string) $s['candidate'], $sections));
+        $bank['holdout_percent'] = (int) Settings::get('analytics.holdout_percent', $shopId);
         $bank['sections'] = $this->tenant->run($shopId, fn (): array => $this->curated(
             $type,
             $externalId,

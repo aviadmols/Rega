@@ -414,4 +414,18 @@ final class PageBankTest extends TestCase
         // A panel that is off cannot be the line the shopper is greeted with either.
         $this->assertNotSame('complement', $bank['teaser']['candidate'] ?? null);
     }
+
+    public function test_the_bank_carries_the_untouched_order_and_the_share_of_shoppers_held_out(): void
+    {
+        Settings::set('analytics.holdout_percent', 15, $this->shop->id);
+
+        $bank = app(BuildPageBank::class)->handle($this->shop->id, 'product', '10', 'he');
+
+        $this->assertSame(15, $bank['holdout_percent']);
+        $this->assertSame(
+            array_column($bank['sections'], 'candidate'),
+            $bank['baseline_order'],
+            'with nothing learned yet both orders agree, and both are sent so a control group can be served',
+        );
+    }
 }

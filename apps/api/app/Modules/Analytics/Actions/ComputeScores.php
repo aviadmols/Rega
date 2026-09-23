@@ -63,6 +63,8 @@ final class ComputeScores
         $rows = AnalyticsEvent::query()
             ->where('occurred_at', '>=', $since)
             ->where('preview', false)
+            // A held-out visitor is the control. Learning from them would compare a thing to itself.
+            ->where('holdout', false)
             ->whereNotNull('candidate_id')
             ->whereIn('type', ['exposure', 'open', 'click', 'add_to_cart'])
             ->select('candidate_id', 'type', 'page_type', 'product_external_id', 'content_external_id', 'item_external_id', 'source', 'result', DB::raw('count(*) as n'))

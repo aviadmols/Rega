@@ -89,6 +89,26 @@
 
   var session = storage('sessionStorage', 'rega_sid', function () { return randomId(22); }) || randomId(22);
 
+  /**
+   * Which side of the measurement this visitor is on, decided from their own id alone.
+   *
+   * The same person is always on the same side, on every page and every visit, because a
+   * measurement where people wander between the two groups measures nothing. A held-out visitor
+   * is shown the arrangement the learning never touched, and what they do is kept out of it.
+   */
+  function heldOut(percent) {
+    if (!percent) {
+      return false;
+    }
+    var n = 0;
+    for (var i = 0; i < vid.length; i++) {
+      n = (n * 31 + vid.charCodeAt(i)) % 100000;
+    }
+    return (n % 100) < percent;
+  }
+
+  var holdout = false;
+
   // ---------------------------------------------------------------- preview
 
   var previewKey = null;
@@ -163,7 +183,7 @@
         vid: vid,
         session: session,
         sent_at: Date.now(),
-        holdout: false,
+        holdout: holdout,
         preview: teamPreview,
         events: queue.splice(0, MAX_BATCH)
       });
@@ -2571,6 +2591,20 @@
         bank = data;
         shop = data.shop;
         teamPreview = isPreviewMode && data.preview === true;
+        holdout = heldOut(data.holdout_percent || 0);
+
+        // The control group is shown the arrangement the learning never touched. The bank is
+        // cached and shared, so it carries both orders and the side is chosen here.
+        if (holdout && data.baseline_order && data.sections) {
+          var order = data.baseline_order;
+          data.sections = data.sections.slice().sort(function (a, b) {
+            var ai = order.indexOf(a.candidate);
+            var bi = order.indexOf(b.candidate);
+            return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+          });
+          bank.sections = data.sections;
+          bank.teaser = null;
+        }
 
         track('page_view');
         setTimeout(function () { flush(false); }, 1500);

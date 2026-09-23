@@ -66,6 +66,7 @@ final class ComputePopularity
             ->where('type', 'add_to_cart')
             ->where('result', 'added')
             ->where('preview', false)
+            ->where('holdout', false)
             ->where('occurred_at', '>=', $since)
             ->whereNotNull('item_external_id')
             ->select('item_external_id', DB::raw('count(*) as n'))
