@@ -263,7 +263,7 @@ final class AuditContentReading
                 // A marker opens a line; a phrase is said in the middle of one; an audience
                 // marker may be anywhere, because what follows it is the audience.
                 'takeaway_markers' => $at === 0,
-                'takeaway_phrases' => is_int($at) && $at > 0,
+                'takeaway_phrases' => $at !== false,
                 default => $at !== false,
             };
 

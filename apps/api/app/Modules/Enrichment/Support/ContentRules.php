@@ -14,7 +14,7 @@ namespace App\Modules\Enrichment\Support;
  */
 final class ContentRules
 {
-    public const VERSION = 2;
+    public const VERSION = 3;
 
     /**
      * A ruleset a shop published before a list existed still has to be readable, so the lists it
@@ -45,6 +45,12 @@ final class ContentRules
             'takeaway_phrases' => [
                 'ההמלצה היא', 'חשוב לציין', 'כדאי לזכור', 'המשמעות היא', 'השורה התחתונה היא',
                 'the recommendation is', 'it is important to note', 'keep in mind',
+            ],
+            // Lines that are the site talking about itself, or the article sending the reader
+            // somewhere else to buy. Never a takeaway, whatever else matches them.
+            'skip_lines' => [
+                'גולשים שהגיעו לעמוד', 'מוצרים קשורים', 'קראו עוד', 'קרא עוד', 'שתפו', 'לחצו כאן',
+                'מגוון חנויות', 'חנויות אחרות', 'באתרים אחרים', 'בחנויות המובילות',
             ],
             // What follows one of these is who the article is for.
             'audience_markers' => [

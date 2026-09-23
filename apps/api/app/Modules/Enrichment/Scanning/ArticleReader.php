@@ -45,7 +45,7 @@ final class ArticleReader
 
         return [
             'sections' => self::sections($lines),
-            'takeaways' => self::takeaways($lines, (array) ($rules['takeaway_markers'] ?? []), (array) ($rules['takeaway_phrases'] ?? [])),
+            'takeaways' => self::takeaways($lines, $rules),
             'question' => self::question($title, $lines),
             'audience' => self::audience($lines, (array) ($rules['audience_markers'] ?? [])),
             'words' => $words,
@@ -100,11 +100,64 @@ final class ArticleReader
         return $headings;
     }
 
+    /** A sentence without what only ends it, so two wordings of one point can be compared. */
+    private static function bare(string $text): string
+    {
+        return trim((string) preg_replace('/[.!?,;:־–—\s]+$/u', '', $text));
+    }
+
+    /**
+     * Whether a line says any of these.
+     *
+     * @param  list<string>  $phrases
+     */
+    private static function mentions(string $line, array $phrases): bool
+    {
+        foreach ($phrases as $phrase) {
+            if ($phrase !== '' && mb_stripos($line, (string) $phrase) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a point has already been made.
+     *
+     * An article that repeats "the recommendation is to consult an expert" three times, each time
+     * with a few more words, has made one point, and a shopper should be shown it once. The longer
+     * wording wins, because it is the one that says the whole thing.
+     *
+     * @param  list<array{text: string, quote: string}>  $found
+     */
+    private static function saidAlready(array &$found, string $text): bool
+    {
+        $bare = self::bare($text);
+
+        foreach ($found as $i => $earlier) {
+            $was = self::bare($earlier['text']);
+
+            if (mb_stripos($was, $bare) !== false) {
+                return true;
+            }
+
+            if (mb_stripos($bare, $was) !== false) {
+                $found[$i]['text'] = $text;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * The part of a line a phrase introduces: from the phrase to the end of the line.
      *
-     * Only past the opening, because a line that starts with the phrase is already a marker's
-     * business, and only when what follows is long enough to say something on its own.
+     * Wherever the phrase stands, including at the very opening — a marker list cannot be relied
+     * on to cover every phrase, and a point introduced in the first three words is still the
+     * point. Only when what follows is long enough to say something on its own.
      *
      * @param  list<string>  $phrases
      */
@@ -119,7 +172,7 @@ final class ArticleReader
 
             $at = mb_stripos($line, $phrase);
 
-            if ($at === false || $at === 0) {
+            if ($at === false) {
                 continue;
             }
 
@@ -138,15 +191,24 @@ final class ArticleReader
      * introduces. Each keeps the line it came from, so nothing shown was not written.
      *
      * @param  list<string>  $lines
-     * @param  list<string>  $markers
-     * @param  list<string>  $phrases
+     * @param  array<string, mixed>  $rules
      * @return list<array{text: string, quote: string}>
      */
-    private static function takeaways(array $lines, array $markers, array $phrases = []): array
+    private static function takeaways(array $lines, array $rules): array
     {
+        $markers = (array) ($rules['takeaway_markers'] ?? []);
+        $phrases = (array) ($rules['takeaway_phrases'] ?? []);
+        $skip = (array) ($rules['skip_lines'] ?? []);
+        $headings = array_flip(self::sections($lines));
         $found = [];
 
         foreach ($lines as $line) {
+            // A heading names what follows; it is not itself the point. Nor is the furniture of
+            // the site, or a line telling the reader to go and buy somewhere else.
+            if (isset($headings[$line]) || self::mentions($line, $skip)) {
+                continue;
+            }
+
             $listed = preg_match('/^[\-•*]\s+|^\d+[.)]\s+/u', $line) === 1;
             $marked = false;
 
@@ -167,7 +229,7 @@ final class ArticleReader
 
             $text = $clause ?? trim((string) preg_replace('/^[\-•*]\s+|^\d+[.)]\s+/u', '', $line));
 
-            if (mb_strlen($text) >= 12 && mb_strlen($text) <= 200) {
+            if (mb_strlen($text) >= 12 && mb_strlen($text) <= 200 && ! self::saidAlready($found, $text)) {
                 $found[] = ['text' => $text, 'quote' => $line];
             }
 

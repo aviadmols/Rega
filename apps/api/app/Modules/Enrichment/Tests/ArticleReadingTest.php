@@ -148,7 +148,7 @@ final class ArticleReadingTest extends TestCase
         $this->assertStringStartsWith('על מנת', $reading['takeaways'][0]['quote'], 'the whole line is kept as the quote');
     }
 
-    public function test_a_phrase_at_the_opening_of_a_line_is_left_to_the_markers(): void
+    public function test_a_phrase_that_opens_a_line_is_taken_even_when_no_marker_covers_it(): void
     {
         $rules = ContentRules::defaults();
         $rules['takeaway_phrases'] = ['ההמלצה היא'];
@@ -156,6 +156,39 @@ final class ArticleReadingTest extends TestCase
 
         $reading = ArticleReader::read('כותרת', 'ההמלצה היא לבדוק את העץ לפני הקנייה בחנות.', $rules);
 
-        $this->assertSame([], $reading['takeaways'], 'a phrase only speaks for what it interrupts');
+        $this->assertSame(
+            ['ההמלצה היא לבדוק את העץ לפני הקנייה בחנות.'],
+            array_column($reading['takeaways'], 'text'),
+            'a point made in the first three words is still the point',
+        );
+    }
+
+    public function test_the_same_point_made_three_times_is_taken_once_in_its_fullest_wording(): void
+    {
+        $reading = ArticleReader::read('ריהוט משרדי', implode("\n", [
+            'משרד נעים מתחיל בריהוט שנבחר לפי אופי העבודה שנעשית בו יום יום.',
+            'לכן ההמלצה היא להתייעץ עם מומחים.',
+            'לפני שקונים ההמלצה היא להתייעץ עם מומחים בהתאם לטעמכם האישי.',
+        ]), ContentRules::defaults());
+
+        $this->assertSame(
+            ['ההמלצה היא להתייעץ עם מומחים בהתאם לטעמכם האישי.'],
+            array_column($reading['takeaways'], 'text'),
+        );
+    }
+
+    public function test_a_heading_the_site_furniture_and_a_line_sending_the_shopper_away_are_not_points(): void
+    {
+        $reading = ArticleReader::read('פרקט', implode("\n", [
+            'טיפים לעיצוב ושילוב פרקט',
+            'פרקט עץ מביא חום לחלל, והבחירה בו משנה את האופי של החדר כולו לאורך שנים רבות.',
+            'גולשים שהגיעו לעמוד זה התעניינו גם בפרטים על לוחות פוליגל.',
+            'ההמלצה היא להגיע למגוון חנויות ולראות את ההיצע לפני שמחליטים.',
+            'חשוב לציין שאפשר ללטש פרקט ותיק ולהחזיר לו את המראה המקורי.',
+        ]), ContentRules::defaults());
+
+        $texts = array_column($reading['takeaways'], 'text');
+
+        $this->assertSame(['חשוב לציין שאפשר ללטש פרקט ותיק ולהחזיר לו את המראה המקורי.'], $texts);
     }
 }
