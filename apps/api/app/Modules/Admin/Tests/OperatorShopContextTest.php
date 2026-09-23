@@ -112,4 +112,16 @@ final class OperatorShopContextTest extends TestCase
         $page->assertSee('חנות ראשונה');
         $page->assertSee('חנות שנייה');
     }
+
+    public function test_a_platform_with_one_shop_is_already_inside_it(): void
+    {
+        // Two shops: nothing is assumed, and the panel starts across both.
+        $this->assertNull($this->scopeDuringRequest());
+
+        $this->second->delete();
+
+        // One shop left: choosing it would be the only sensible thing to do, so it is done.
+        $this->assertSame($this->first->id, $this->scopeDuringRequest());
+        $this->assertSame($this->first->id, CurrentShop::id(), 'and the picker says so');
+    }
 }

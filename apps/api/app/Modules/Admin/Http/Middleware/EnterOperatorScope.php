@@ -22,10 +22,11 @@ final class EnterOperatorScope
 
     public function handle(Request $request, Closure $next): Response
     {
-        $shop = CurrentShop::id();
+        $shop = CurrentShop::id() ?? CurrentShop::theOnlyShop();
 
         // A shop deleted since it was picked leaves the panel across every shop, not broken.
-        if ($shop !== null && CurrentShop::shop() !== null) {
+        if ($shop !== null && CurrentShop::exists($shop)) {
+            CurrentShop::set($shop);
             $this->tenant->set($shop);
         } else {
             CurrentShop::set(null);

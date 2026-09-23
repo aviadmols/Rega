@@ -33,11 +33,27 @@ final class CurrentShop
         return is_string($id) && $id !== '' ? $id : null;
     }
 
+    /**
+     * Nothing chosen yet, and only one shop on the platform: that is the shop. Otherwise a new
+     * operator would meet a panel with most of its screens missing and read it as a fault.
+     */
+    public static function theOnlyShop(): ?string
+    {
+        $shops = Shop::query()->orderBy('name')->limit(2)->pluck('id');
+
+        return $shops->count() === 1 ? (string) $shops->first() : null;
+    }
+
     public static function shop(): ?Shop
     {
         $id = self::id();
 
         return $id === null ? null : Shop::query()->find($id);
+    }
+
+    public static function exists(string $id): bool
+    {
+        return Shop::query()->whereKey($id)->exists();
     }
 
     /** Picking a shop that no longer exists, or "every shop", clears the choice. */
