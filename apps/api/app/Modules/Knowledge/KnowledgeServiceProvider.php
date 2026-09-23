@@ -28,6 +28,14 @@ final class KnowledgeServiceProvider extends ModuleServiceProvider
                 ->name('knowledge:measure-weekly')
                 ->withoutOverlapping()
                 ->onOneServer();
+
+            // And what several shops of a trade found separately becomes the trade's.
+            $schedule->command('knowledge promote')
+                ->weeklyOn(0, '05:50')
+                ->timezone('Asia/Jerusalem')
+                ->name('knowledge:promote-weekly')
+                ->withoutOverlapping()
+                ->onOneServer();
         });
     }
 

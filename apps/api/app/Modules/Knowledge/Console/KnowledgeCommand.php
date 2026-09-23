@@ -4,6 +4,7 @@ namespace App\Modules\Knowledge\Console;
 
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Knowledge\Actions\MeasureLearning;
+use App\Modules\Knowledge\Actions\PromoteToVertical;
 use App\Modules\Knowledge\Actions\TakeKnowledgeSnapshot;
 use App\Modules\Runs\Models\Run;
 use App\Modules\Tenancy\Enums\ShopStatus;
@@ -19,7 +20,7 @@ use Illuminate\Console\Command;
 final class KnowledgeCommand extends Command
 {
     protected $signature = 'knowledge
-        {step : snapshot or measure}
+        {step : snapshot, measure or promote}
         {target? : shop slug or ID}
         {--all : every active shop}';
 
@@ -30,8 +31,23 @@ final class KnowledgeCommand extends Command
         return $tenant->runUnscoped(fn (): int => match ($this->argument('step')) {
             'snapshot' => $this->each(fn (Shop $shop): Run => app(TakeKnowledgeSnapshot::class)->handle($shop)),
             'measure' => $this->each(fn (Shop $shop): Run => app(MeasureLearning::class)->handle($shop->id)),
+            'promote' => $this->promote(),
             default => $this->failWith('Unknown step.'),
         });
+    }
+
+    private function promote(): int
+    {
+        if (! PromoteToVertical::allowed()) {
+            $this->line('promotion is off');
+
+            return self::SUCCESS;
+        }
+
+        $run = app(PromoteToVertical::class)->handle();
+        $this->line((string) $run->summary());
+
+        return $run->status->value === 'succeeded' ? self::SUCCESS : self::FAILURE;
     }
 
     /** @param callable(Shop): Run $step */

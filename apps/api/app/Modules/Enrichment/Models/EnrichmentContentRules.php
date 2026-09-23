@@ -64,6 +64,12 @@ class EnrichmentContentRules extends Model
         return $trade === null ? ContentRules::defaults() : ContentRules::withDefaults($trade);
     }
 
+    /** The rules every shop starts from, for anything outside this module that needs them. */
+    public static function defaults(): array
+    {
+        return ContentRules::defaults();
+    }
+
     public static function versionInForce(string $shopId): int
     {
         return (int) (self::inForce($shopId)['version'] ?? ContentRules::VERSION);

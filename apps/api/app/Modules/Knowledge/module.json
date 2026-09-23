@@ -12,6 +12,21 @@
         "Admin"
     ],
     "provider": "KnowledgeServiceProvider",
-    "features": [],
-    "settings": []
+    "features": [
+        {
+            "name": "promote",
+            "default": true
+        }
+    ],
+    "settings": [
+        {
+            "name": "promote_min_shops",
+            "type": "int",
+            "default": 2,
+            "min": 2,
+            "max": 20,
+            "scope": "global",
+            "unit": "shops"
+        }
+    ]
 }
