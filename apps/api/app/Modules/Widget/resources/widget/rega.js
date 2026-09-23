@@ -986,7 +986,9 @@
    * for a free question, the answer, and what earlier shoppers asked. Loaded on first open.
    */
   /** The outcomes where the assistant has nothing of its own to say. */
-  var NO_ANSWER = { no_info: true, limit: true, unavailable: true };
+  // Every ending that leaves the shopper without an answer offers the team instead, a refused
+  // question most of all: it is the one the team can answer and the assistant cannot.
+  var NO_ANSWER = { no_info: true, limit: true, unavailable: true, out_of_scope: true };
 
   /**
    * The way out when the assistant cannot answer: one WhatsApp button that opens a chat with the

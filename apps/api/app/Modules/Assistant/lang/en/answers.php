@@ -2,7 +2,7 @@
 
 return [
     'invalid' => 'Ask a short question about this product.',
-    'out_of_scope' => 'I can only answer questions about this product.',
+    'out_of_scope' => 'That one is not mine to answer — but the store team can.',
     'no_info' => 'The product page has no confirmed information on that. The store team can help.',
     'limit' => 'You have reached today\'s questions. The store team can help.',
     'unavailable' => 'We could not answer right now. Please try again later.',

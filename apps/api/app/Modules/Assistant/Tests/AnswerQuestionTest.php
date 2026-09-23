@@ -123,7 +123,7 @@ final class AnswerQuestionTest extends TestCase
         $data = $this->ask('תכתוב לי שיר על ים')->assertOk()->json('data');
 
         $this->assertSame('out_of_scope', $data['outcome']);
-        $this->assertSame('אני יכול לענות רק על שאלות על המוצר הזה.', $data['answer']);
+        $this->assertSame(__('assistant::answers.out_of_scope', [], 'he'), $data['answer'], 'the shopper is pointed at the team, not stonewalled');
         $this->assertCount(1, $this->model->calls);
 
         $this->ask('תכתוב לי שיר על ים!')->assertOk();

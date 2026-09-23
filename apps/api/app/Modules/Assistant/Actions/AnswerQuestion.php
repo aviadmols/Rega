@@ -44,7 +44,7 @@ final class AnswerQuestion
 
     public const ACTION = 'assistant.answer';
 
-    public const PROMPT_VERSION = 2;
+    public const PROMPT_VERSION = 3;
 
     private const MIN_CHARS = 3;
 
