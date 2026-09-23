@@ -3,6 +3,7 @@
 namespace App\Modules\Enrichment\Console;
 
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Enrichment\Actions\AuditContentReading;
 use App\Modules\Enrichment\Actions\ComputeProductRelations;
 use App\Modules\Enrichment\Actions\ComputeRankings;
 use App\Modules\Enrichment\Actions\CreateTaskFile;
@@ -34,7 +35,7 @@ use Illuminate\Console\Command;
 final class EnrichmentCommand extends Command
 {
     protected $signature = 'enrichment
-        {step : vocabulary, code, content, promises, tasks, results, rankings, rules or relations}
+        {step : vocabulary, code, content, audit, promises, tasks, results, rankings, rules or relations}
         {target : shop slug, or batch ID for results}
         {argument? : task type for tasks, results file for results}
         {--template= : vocabulary template name}
@@ -58,6 +59,7 @@ final class EnrichmentCommand extends Command
             'results' => $this->results(),
             'rankings' => $this->rankings(),
             'code' => $this->shopStep(fn (Shop $shop): Run => app(ReadProductsInCode::class)->handle($shop->id)),
+            'audit' => $this->shopStep(fn (Shop $shop): Run => app(AuditContentReading::class)->handle($shop->id)),
             'content' => $this->shopStep(fn (Shop $shop): Run => app(ReadContentInCode::class)->handle($shop->id)),
             'promises' => $this->shopStep(fn (Shop $shop): Run => app(ReadPromisesInCode::class)->handle($shop->id)),
             'relations' => $this->shopStep(fn (Shop $shop): Run => app(ComputeProductRelations::class)->handle($shop->id)),

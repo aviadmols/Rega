@@ -8,9 +8,9 @@ use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Enrichment\Enums\FactKind;
 use App\Modules\Enrichment\Enums\FactOrigin;
 use App\Modules\Enrichment\Enums\FactStatus;
+use App\Modules\Enrichment\Models\EnrichmentContentRules;
 use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Scanning\ArticleReader;
-use App\Modules\Enrichment\Support\ContentRules;
 use App\Modules\Runs\Contracts\RecordsRuns;
 use App\Modules\Runs\Contracts\RunContext;
 use App\Modules\Runs\Models\Run;
@@ -55,7 +55,7 @@ final class ReadContentInCode
     private function read(RunContext $run, string $shopId): void
     {
         $status = Features::enabled('enrichment.auto_approve', $shopId) ? FactStatus::Approved : FactStatus::NeedsPerson;
-        $rules = ContentRules::defaults();
+        $rules = EnrichmentContentRules::inForce($shopId);
         $counts = ['articles' => 0, 'takeaways' => 0, 'with_question' => 0, 'with_audience' => 0, 'empty' => 0];
         $samples = [];
 
