@@ -577,7 +577,6 @@
     '.composer input:focus{outline:2px solid rgba(var(--g2),.5);outline-offset:1px}',
     '.composer button{all:unset;box-sizing:border-box;flex:none;width:40px;height:40px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(var(--g2),.25)}',
     '.composer button svg{width:18px;height:18px}.rega[dir="ltr"] .composer button svg{transform:scaleX(-1)}',
-    '.chat .contact.in-chat{margin-top:10px;padding:10px 0 0;border:0;border-top:1px solid #f0f0f2;border-radius:0;background:transparent}',
     '.chat .signup{margin-top:10px;padding:10px}',
     '.ask-q{font-weight:600;margin-bottom:3px}.ask-a{line-height:1.55}.ask-a.is-loading{color:var(--muted)}',
     '.ask-heading{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}',
@@ -594,16 +593,17 @@
     '.callback-form[hidden]{display:none}',
     '.callback-row{display:flex;gap:8px}',
     '.callback .signup-input{height:38px;font-size:14px}.callback .signup-send{height:38px}',
-    '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}',
-    '.contact-head{display:flex;align-items:center;gap:8px;flex:1 1 200px;min-width:0}',
-    '.contact-title{font-size:14px;line-height:1.4}',
-    '.contact-badge{flex:none;display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:rgba(17,24,39,.07);color:var(--muted);font-size:11px}',
-    '.contact-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}',
-    '.contact.is-online .contact-badge{background:#e8f6ee;color:#146c43}',
+    '.contact-wrap{margin-top:10px}',
+    '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:11px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}',
+    '.contact-title{flex:1 1 180px;min-width:0;font-size:14px;line-height:1.45}',
+    '.contact-badge{display:inline-flex;align-items:center;gap:6px;margin:0 2px 6px;font-size:11.5px;color:var(--muted)}',
+    '.contact-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:#c4c4c8}',
+    '.contact-wrap.is-online .contact-badge{color:#146c43}',
+    '.contact-wrap.is-online .contact-badge:before{background:#16a34a}',
     '.contact-button{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-size:14px;font-weight:600}',
     '.contact-button svg{width:17px;height:17px;flex:none;fill:currentColor}',
     '.contact-button:hover,.contact-button:focus-visible{filter:brightness(.95)}',
-    '.contact-note{flex:1 1 100%;font-size:12px;color:var(--muted)}',
+    '.contact-note{margin:6px 2px 0;font-size:12px;color:var(--muted)}',
     '.browse{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
     '.browse a{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:inherit;text-decoration:none;font-size:13px}',
     '.browse a:after{content:"\\203A"}.rega[dir="rtl"] .browse a:after{content:"\\2039"}',
@@ -950,11 +950,12 @@
     var link = safeUrl(data ? data.permalink : location.href.split('?')[0]) || location.href.split('?')[0];
     var message = String(contact.message || '').replace(':product', title).replace(':url', link);
 
-    var strip = el('div', 'contact' + (online ? ' is-online' : ''));
-    var head = el('div', 'contact-head');
-    head.appendChild(el('span', 'contact-badge', online ? contact.online_label : contact.offline_label));
-    head.appendChild(el('span', 'contact-title', contact.title));
-    strip.appendChild(head);
+    var strip = el('div', 'contact-wrap' + (online ? ' is-online' : ''));
+    strip.appendChild(el('div', 'contact-badge', online ? contact.online_label : contact.offline_label));
+
+    var card = el('div', 'contact');
+    card.appendChild(el('span', 'contact-title', contact.title));
+    strip.appendChild(card);
 
     var button = el('a', 'contact-button');
     button.innerHTML = WHATSAPP;
@@ -966,7 +967,7 @@
     button.addEventListener('click', function () {
       track('click', section, 'teaser', PAGE_TYPE === 'product' ? { product_id: PAGE_ID } : { content_id: PAGE_ID });
     });
-    strip.appendChild(button);
+    card.appendChild(button);
 
     if (!online && contact.offline_note) {
       strip.appendChild(el('div', 'contact-note', contact.offline_note));
