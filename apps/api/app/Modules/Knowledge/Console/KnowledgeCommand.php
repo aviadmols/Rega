@@ -3,7 +3,9 @@
 namespace App\Modules\Knowledge\Console;
 
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Knowledge\Actions\MeasureLearning;
 use App\Modules\Knowledge\Actions\TakeKnowledgeSnapshot;
+use App\Modules\Runs\Models\Run;
 use App\Modules\Tenancy\Enums\ShopStatus;
 use App\Modules\Tenancy\Models\Shop;
 use Illuminate\Console\Command;
@@ -17,7 +19,7 @@ use Illuminate\Console\Command;
 final class KnowledgeCommand extends Command
 {
     protected $signature = 'knowledge
-        {step : snapshot}
+        {step : snapshot or measure}
         {target? : shop slug or ID}
         {--all : every active shop}';
 
@@ -26,12 +28,14 @@ final class KnowledgeCommand extends Command
     public function handle(TenantContext $tenant): int
     {
         return $tenant->runUnscoped(fn (): int => match ($this->argument('step')) {
-            'snapshot' => $this->snapshot(),
+            'snapshot' => $this->each(fn (Shop $shop): Run => app(TakeKnowledgeSnapshot::class)->handle($shop)),
+            'measure' => $this->each(fn (Shop $shop): Run => app(MeasureLearning::class)->handle($shop->id)),
             default => $this->failWith('Unknown step.'),
         });
     }
 
-    private function snapshot(): int
+    /** @param callable(Shop): Run $step */
+    private function each(callable $step): int
     {
         $shops = $this->option('all')
             ? Shop::query()->where('status', ShopStatus::Active)->orderBy('slug')->get()
@@ -44,7 +48,7 @@ final class KnowledgeCommand extends Command
         $failed = 0;
 
         foreach ($shops as $shop) {
-            $run = app(TakeKnowledgeSnapshot::class)->handle($shop);
+            $run = $step($shop);
             $this->line("{$shop->slug}: ".$run->summary());
             $failed += $run->status->value === 'succeeded' ? 0 : 1;
         }

@@ -19,6 +19,15 @@ final class KnowledgeServiceProvider extends ModuleServiceProvider
                 ->name('knowledge:snapshot-daily')
                 ->withoutOverlapping()
                 ->onOneServer();
+
+            // Once a week: did any of it help? Weekly rather than nightly because a day of one
+            // shop's traffic cannot answer the question, and asking anyway invites a false yes.
+            $schedule->command('knowledge measure --all')
+                ->weeklyOn(0, '05:30')
+                ->timezone('Asia/Jerusalem')
+                ->name('knowledge:measure-weekly')
+                ->withoutOverlapping()
+                ->onOneServer();
         });
     }
 

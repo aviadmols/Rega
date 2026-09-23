@@ -41,4 +41,8 @@ return [
         'label' => 'Share of shoppers held out',
         'description' => 'The part of shoppers shown the fixed order instead of the learned one. Without them the system can be said to have changed, but not to have improved. 0 turns the measurement off.',
     ],
+    'measure_min_exposures' => [
+        'label' => 'How much is enough before saying anything',
+        'description' => 'Below this on either side the measurement says "too early" instead of inventing a conclusion.',
+    ],
 ];

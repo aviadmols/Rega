@@ -4,6 +4,7 @@ namespace App\Modules\Enrichment\Models;
 
 use App\Core\Tenancy\BelongsToTenant;
 use App\Modules\Enrichment\Support\ContentRules;
+use App\Modules\Tenancy\Models\Shop;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -39,12 +40,28 @@ class EnrichmentContentRules extends Model
         return ['rules' => 'array', 'active' => 'boolean'];
     }
 
-    /** What the reader should use for this shop: its own active version, or the defaults. */
+    /**
+     * What the reader should use for this shop.
+     *
+     * Its own published rules first, because a shop that has learned something about itself knows
+     * better than its trade. Then what its trade has learned, so a shop opened tomorrow starts
+     * where the others got to. Then the defaults, so there is always something.
+     *
+     * Inherited, not copied: a shop with no rules of its own follows its trade as the trade
+     * improves, without anybody re-importing anything.
+     */
     public static function inForce(string $shopId): array
     {
-        $active = self::query()->where('shop_id', $shopId)->where('active', true)->latest('version')->first();
+        $own = self::query()->where('shop_id', $shopId)->where('active', true)->latest('version')->first();
 
-        return $active === null ? ContentRules::defaults() : ContentRules::withDefaults($active->rules);
+        if ($own !== null) {
+            return ContentRules::withDefaults($own->rules);
+        }
+
+        $shop = Shop::query()->find($shopId);
+        $trade = EnrichmentContentTemplate::inForce($shop?->vertical?->value);
+
+        return $trade === null ? ContentRules::defaults() : ContentRules::withDefaults($trade);
     }
 
     public static function versionInForce(string $shopId): int

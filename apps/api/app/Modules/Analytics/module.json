@@ -105,6 +105,15 @@
             "max": 50,
             "scope": "shop",
             "unit": "percent"
+        },
+        {
+            "name": "measure_min_exposures",
+            "type": "int",
+            "default": 200,
+            "min": 20,
+            "max": 100000,
+            "scope": "shop",
+            "unit": "exposures"
         }
     ]
 }

@@ -32,4 +32,11 @@ return [
         'analytics.compute_scores' => 'Computing scores from shopper behaviour',
         'analytics.compute_popularity' => 'Computing popularity',
     ],
+    'verdict_lines' => [
+        'helped' => 'the learned order does better than the fixed one',
+        'hurt' => 'the learned order does worse than the fixed one',
+        'no_difference' => 'no difference between the learned and the fixed order',
+        'too_early' => 'too early to say — not enough yet',
+        'no_control' => 'nobody is held out, so there is nothing to compare against',
+    ],
 ];
