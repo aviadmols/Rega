@@ -38,39 +38,28 @@
                     <x-filament::badge color="gray">{{ __('widget::ui.page.disabled') }}</x-filament::badge>
                 @endif
             </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+            <div style="margin-top:12px">
                 <x-filament::button size="sm" color="gray" wire:click="rescan" wire:loading.attr="disabled">{{ __('widget::ui.page.rescan') }}</x-filament::button>
-                <span style="{{ $small }}">{{ __('widget::ui.page.rescan_help') }}</span>
             </div>
-            @if ($this->rescan)
-                <div style="margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid #e4e4e7;background:#fafafa;font-size:13px;line-height:1.6">
-                    <div style="font-weight:600">{{ __('widget::ui.page.rescan_written', ['n' => $this->rescan['written']['written']]) }}</div>
-                    @foreach ($this->rescan['written']['notes'] as $note)
-                        <div style="{{ $small }}">{{ __('widget::ui.page.rescan_notes.'.$note) }}</div>
-                    @endforeach
-                    @if ($this->rescan['added'] === [] && $this->rescan['removed'] === [] && $this->rescan['before']['sections'] === $this->rescan['after']['sections'])
-                        <div style="margin-top:4px">{{ __('widget::ui.page.rescan_same') }}</div>
+
+            @if ($this->changed !== null)
+                <div style="margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid #e4e4e7;background:#fafafa;font-size:13px;line-height:1.7">
+                    @if ($this->changed['added'] === [] && $this->changed['removed'] === [] && $this->changed['sections'] === [])
+                        {{ __('widget::ui.page.rescan_same') }}
                     @else
-                        @foreach ($this->rescan['added'] as $line)
+                        @foreach ($this->changed['added'] as $line)
                             <div style="color:#15803d">+ {{ $line }}</div>
                         @endforeach
-                        @foreach ($this->rescan['removed'] as $line)
+                        @foreach ($this->changed['removed'] as $line)
                             <div style="color:#b91c1c">− {{ $line }}</div>
                         @endforeach
-                        @foreach ($this->rescan['after']['sections'] as $candidate => $count)
-                            @php($was = $this->rescan['before']['sections'][$candidate] ?? null)
-                            @if ($was !== $count)
-                                <div style="{{ $small }}">{{ __('widget::bank.chips.'.$candidate) }}: {{ $was ?? 0 }} → {{ $count }}</div>
-                            @endif
-                        @endforeach
-                        @foreach ($this->rescan['before']['sections'] as $candidate => $count)
-                            @if (! array_key_exists($candidate, $this->rescan['after']['sections']))
-                                <div style="{{ $small }}">{{ __('widget::bank.chips.'.$candidate) }}: {{ $count }} → 0</div>
-                            @endif
+                        @foreach ($this->changed['sections'] as $candidate => $count)
+                            <div style="{{ $small }}">{{ __('widget::bank.chips.'.$candidate) }}: {{ $count[0] }} → {{ $count[1] }}</div>
                         @endforeach
                     @endif
                 </div>
             @endif
+
             @if ($page['hidden_sections'] !== [])
                 <p style="margin-top:10px;{{ $small }}">{{ __('widget::ui.page.hidden_sections') }}:
                     @foreach ($page['hidden_sections'] as $candidate)

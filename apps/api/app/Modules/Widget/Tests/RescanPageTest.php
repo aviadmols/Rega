@@ -39,19 +39,18 @@ final class RescanPageTest extends TestCase
 
         $page = Livewire::test(ProductPage::class, ['shop' => $this->shop->id, 'type' => 'content', 'id' => '900']);
 
-        $this->assertNull($page->instance()->rescan);
+        $this->assertNull($page->instance()->changed);
 
         $page->call('rescan');
-        $result = $page->instance()->rescan;
+        $result = $page->instance()->changed;
 
-        $this->assertGreaterThanOrEqual(3, $result['written']['written'], 'two takeaways, a question and a reading time');
         $this->assertNotEmpty(array_filter($result['added'], fn (string $line): bool => str_ends_with($line, 'לבטון צריך פטישון')), 'the widget gains the point');
-        $this->assertSame(2, $result['after']['sections']['highlights'] ?? 0);
+        $this->assertSame([0, 2], $result['sections']['highlights'] ?? null, 'the highlights panel appears with both points');
 
         // Read again: nothing new to say, and the screen says so rather than repeating itself.
         $page->call('rescan');
-        $this->assertSame([], $page->instance()->rescan['added']);
-        $this->assertSame([], $page->instance()->rescan['removed']);
+        $this->assertSame([], $page->instance()->changed['added']);
+        $this->assertSame([], $page->instance()->changed['removed']);
     }
 
     public function test_rescanning_a_product_reads_its_promises_and_leaves_shop_wide_facts_alone(): void
@@ -67,10 +66,9 @@ final class RescanPageTest extends TestCase
 
         $page = Livewire::test(ProductPage::class, ['shop' => $this->shop->id, 'type' => 'product', 'id' => '10']);
         $page->call('rescan');
-        $result = $page->instance()->rescan;
+        $result = $page->instance()->changed;
 
-        $this->assertSame(3, $result['written']['written'], 'hand made, cotton, Portugal');
-        $this->assertContains('rankings_and_relations_need_the_whole_shop', $result['written']['notes'], 'what one page cannot recompute is said');
+        $this->assertNotEmpty(array_filter($result['added'], fn (string $line): bool => str_contains($line, 'כותנה')), 'the promise reaches the page');
         $this->assertSame(FactStatus::Approved, $kept->fresh()->status, 'the person\'s decision stands');
     }
 }

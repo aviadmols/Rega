@@ -343,12 +343,13 @@ class ProductPage extends Page
     }
 
     /**
-     * What a fresh reading of this page would change in the widget: the bank before, the code
-     * readers run for this page alone, the bank after, and the difference between the two.
+     * What a fresh reading changed in the widget: the lines gained and lost, and the sections
+     * whose count moved. Named apart from rescan() on purpose — Livewire's $wire proxy resolves a
+     * property before a method, so a property of the same name makes the button do nothing.
      *
      * @var array<string, mixed>|null
      */
-    public ?array $rescan = null;
+    public ?array $changed = null;
 
     public function rescan(): void
     {
@@ -357,7 +358,7 @@ class ProductPage extends Page
         }
 
         $before = $this->shape(app(BuildPageBank::class)->handle($this->shop, $this->type, $this->id, 'he'));
-        $written = app(RereadsPages::class)->reread($this->shop, $this->type, $this->id);
+        app(RereadsPages::class)->reread($this->shop, $this->type, $this->id);
 
         // The storefront reads the bank from a cache; a rescan is the one time it must not.
         foreach (['he', 'en'] as $locale) {
@@ -366,13 +367,34 @@ class ProductPage extends Page
 
         $after = $this->shape(app(BuildPageBank::class)->handle($this->shop, $this->type, $this->id, 'he'));
 
-        $this->rescan = [
-            'written' => $written,
-            'before' => $before,
-            'after' => $after,
+        $this->changed = [
             'added' => array_values(array_diff($after['lines'], $before['lines'])),
             'removed' => array_values(array_diff($before['lines'], $after['lines'])),
+            'sections' => $this->moved($before['sections'], $after['sections']),
         ];
+    }
+
+    /**
+     * The sections whose size changed, as candidate => [before, after].
+     *
+     * @param  array<string, int>  $before
+     * @param  array<string, int>  $after
+     * @return array<string, array{int, int}>
+     */
+    private function moved(array $before, array $after): array
+    {
+        $moved = [];
+
+        foreach ($after + $before as $candidate => $ignored) {
+            $was = $before[$candidate] ?? 0;
+            $is = $after[$candidate] ?? 0;
+
+            if ($was !== $is) {
+                $moved[$candidate] = [$was, $is];
+            }
+        }
+
+        return $moved;
     }
 
     /**
