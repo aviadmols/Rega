@@ -52,7 +52,6 @@ final class DisplaySettings extends OperatorConfiguration
         'widget.whatsapp_button',
         'widget.whatsapp_message',
         'widget.whatsapp_offline_note',
-        'widget.whatsapp_timezone',
         'widget.whatsapp_when_offline',
         'shoppers.signup_title',
         'shoppers.signup_consent',
