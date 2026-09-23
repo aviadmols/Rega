@@ -118,6 +118,27 @@ final class MerchantPanelTest extends TestCase
         $this->assertSame($this->mine->id, $page->instance()->shop);
     }
 
+    public function test_the_panel_says_whose_shop_it_is_on_every_page(): void
+    {
+        // The panel wears the shop's name, and says plainly that this store is theirs.
+        $mine = $this->followingRedirects()->get('/merchant/'.$this->mine->slug)->assertOk();
+        $mine->assertSee('החנות שלי');
+        $mine->assertSee(__('admin::panels.account.viewing'));
+        $mine->assertSee('data-shop-banner="'.$this->mine->slug.'"', false);
+        $mine->assertDontSee(__('admin::panels.account.as_operator', ['shop' => 'החנות שלי']));
+
+        // Their own shop is the only one they can open at all: another shop's address is not a
+        // page for them, so there is nothing to refuse and nothing to see.
+        $this->get('/merchant/'.$this->theirs->slug)->assertNotFound();
+
+        // An operator sees the same screens, and is told they are someone else's.
+        $operator = User::factory()->create(['is_operator' => true]);
+        $this->actingAs($operator);
+        $asOperator = $this->followingRedirects()->get('/merchant/'.$this->theirs->slug)->assertOk();
+        $asOperator->assertSee(__('admin::panels.account.as_operator', ['shop' => 'חנות אחרת']));
+        $asOperator->assertSee('חנות אחרת');
+    }
+
     public function test_an_operator_still_picks_a_shop_on_the_same_screens(): void
     {
         $this->actingAs(User::factory()->operator()->create());
