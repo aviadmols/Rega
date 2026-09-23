@@ -593,13 +593,17 @@
     '.callback-form[hidden]{display:none}',
     '.callback-row{display:flex;gap:8px}',
     '.callback .signup-input{height:38px;font-size:14px}.callback .signup-send{height:38px}',
-    '.contact-wrap{margin-top:10px}',
-    '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:11px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}',
-    '.contact-title{flex:1 1 180px;min-width:0;font-size:14px;line-height:1.45}',
-    '.contact-badge{display:inline-flex;align-items:center;gap:6px;margin:0 2px 6px;font-size:11.5px;color:var(--muted)}',
-    '.contact-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:#c4c4c8}',
+    // The badge is lifted out of the flow and hung above the card, so the card keeps its shape
+    // whether or not anyone is answering.
+    '.contact-wrap{position:relative;margin-top:10px;padding-top:22px}',
+    '.contact-badge{position:absolute;top:0;inset-inline-start:8px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;line-height:1.4;color:var(--muted)}',
+    '.contact-badge:before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:#c4c4c8}',
     '.contact-wrap.is-online .contact-badge{color:#146c43}',
-    '.contact-wrap.is-online .contact-badge:before{background:#16a34a}',
+    // A slow breath, not a blink: enough to read as live, never enough to nag.
+    '.contact-wrap.is-online .contact-badge:before{background:#16a34a;animation:rega-alive 2.4s ease-in-out infinite}',
+    '@keyframes rega-alive{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(22,163,74,.5)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(22,163,74,0)}}',
+    '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}',
+    '.contact-title{flex:1 1 180px;min-width:0;font-size:14px;line-height:1.45}',
     '.contact-button{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-size:14px;font-weight:600}',
     '.contact-button svg{width:17px;height:17px;flex:none;fill:currentColor}',
     '.contact-button:hover,.contact-button:focus-visible{filter:brightness(.95)}',
