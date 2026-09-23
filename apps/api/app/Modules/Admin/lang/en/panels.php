@@ -17,4 +17,8 @@ return [
         'as_operator' => 'You are viewing :shop as an operator. Everything here belongs to that store alone.',
         'switch' => 'Switch store',
     ],
+    'shop' => [
+        'label' => 'Store',
+        'every' => 'Every store',
+    ],
 ];

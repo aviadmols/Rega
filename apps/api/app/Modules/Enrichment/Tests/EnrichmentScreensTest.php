@@ -20,6 +20,7 @@ use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Enrichment\Support\FactWriter;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
+use App\Modules\Tenancy\Models\Shop;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -135,6 +136,42 @@ final class EnrichmentScreensTest extends TestCase
 
         app(FactWriter::class)->supersedePrevious('product_id', $product->id, [FactKind::Tag]);
         $this->assertSame(FactStatus::Approved, $fact->fresh()->status, 'a person decided; a new reading does not undo it');
+    }
+
+    public function test_a_screen_shows_the_shop_in_scope_and_no_other(): void
+    {
+        // The operator panel puts the chosen shop into the tenant scope for the whole request,
+        // so a screen that was written without a thought for tenancy still shows one store.
+        $tenant = app(TenantContext::class);
+        $other = Shop::factory()->create(['name' => 'חנות שנייה']);
+
+        // Deliberately not entering unscoped mode here: the whole point is that the scope bites.
+        $tenant->runUnscoped(fn () => $this->powerToolsVocabulary());
+        $mine = $tenant->run($this->shop->id, fn () => CatalogProduct::query()->sole());
+
+        $write = fn (Shop $shop, ?CatalogProduct $product, string $value) => $tenant->run($shop->id, fn () => EnrichmentFact::query()->create([
+            'shop_id' => $shop->id, 'product_id' => $product?->id, 'kind' => 'tag', 'key' => 'tag',
+            'value_text' => $value, 'quote' => $value, 'origin' => 'code',
+            'status' => FactStatus::Approved, 'input_hash' => $shop->id,
+        ]));
+
+        $write($this->shop, $mine, 'אורן');
+        $write($other, null, 'אלון');
+
+        $tenant->run($this->shop->id, fn () => Livewire::test(ListEnrichmentFacts::class)
+            ->set('activeTab', 'approved')
+            ->assertSee('אורן')
+            ->assertDontSee('אלון'));
+
+        $tenant->run($other->id, fn () => Livewire::test(ListEnrichmentFacts::class)
+            ->set('activeTab', 'approved')
+            ->assertSee('אלון')
+            ->assertDontSee('אורן'));
+
+        $tenant->runUnscoped(fn () => Livewire::test(ListEnrichmentFacts::class)
+            ->set('activeTab', 'approved')
+            ->assertSee('אורן')
+            ->assertSee('אלון'));
     }
 
     public function test_the_facts_screen_shows_every_kind_of_fact_there_is(): void
