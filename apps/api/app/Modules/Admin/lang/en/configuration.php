@@ -12,6 +12,7 @@ return [
     'groups' => [
         'shown' => ['title' => 'What shows in the store', 'help' => 'Which pages get the widget, how it looks and how many products a list holds.'],
         'placement' => ['title' => 'Where it sits on the page', 'help' => 'By a class or selector of your theme. When none is found the widget floats in the corner.'],
+        'panels' => ['title' => 'What the shopper is offered', 'help' => 'Every panel the widget can show. What is off here simply never appears to customers.'],
         'assistant' => ['title' => 'What the assistant answers', 'help' => 'Answers are written from the store\'s own information and checked before a shopper sees them.'],
         'whatsapp' => ['title' => 'Talking to the team on WhatsApp', 'help' => 'The number and the wording. Answering hours are on the "Answering hours" screen.'],
         'signup' => ['title' => 'Products they viewed, and signing up', 'help' => 'What is kept for a returning shopper, and what the sign-up asks.'],

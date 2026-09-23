@@ -397,4 +397,21 @@ final class PageBankTest extends TestCase
             'set_facets' => $facets, 'value' => $value, 'unit' => $unit, 'computed_at' => now(),
         ]));
     }
+
+    public function test_a_shop_switches_a_panel_off_and_the_shopper_never_sees_it(): void
+    {
+        $before = array_column(app(BuildPageBank::class)->handle($this->shop->id, 'product', '10', 'he')['sections'], 'candidate');
+
+        $this->assertContains('complement', $before, 'there is something to switch off');
+
+        Features::override('widget.show_complement', false, $this->shop->id);
+        $bank = app(BuildPageBank::class)->handle($this->shop->id, 'product', '10', 'he');
+        $after = array_column($bank['sections'], 'candidate');
+
+        $this->assertNotContains('complement', $after, 'off means gone');
+        $this->assertSame(array_values(array_diff($before, ['complement'])), $after, 'and nothing else moved');
+
+        // A panel that is off cannot be the line the shopper is greeted with either.
+        $this->assertNotSame('complement', $bank['teaser']['candidate'] ?? null);
+    }
 }

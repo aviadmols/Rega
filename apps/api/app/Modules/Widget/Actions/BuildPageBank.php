@@ -67,6 +67,17 @@ final class BuildPageBank
         'recent' => 'recent',
     ];
 
+    /**
+     * The panels a shop may switch off for itself, each with a flag of its own.
+     *
+     * "recent" is not here: it is the visitor's own browsing, added by the widget rather than
+     * built here, and it already answers to shoppers.recent_products.
+     */
+    public const SWITCHABLE = [
+        'position', 'highlights', 'specs', 'complement', 'family',
+        'alternatives', 'on_sale', 'good_for', 'guides', 'article_products',
+    ];
+
     private const MAX_POSITIONS = 3;
 
     private const MAX_SPECS = 10;
@@ -154,6 +165,7 @@ final class BuildPageBank
             : [...$this->contentSections($externalId, $pool), null]);
 
         $bank['enabled'] = true;
+        $sections = $this->allowed($shopId, $sections);
         $bank['sections'] = $this->tenant->run($shopId, fn (): array => $this->curated(
             $type,
             $externalId,
@@ -1114,6 +1126,26 @@ final class BuildPageBank
             'title' => __('widget::bank.titles.'.$candidate, [], $this->locale),
             'chip' => __('widget::bank.chips.'.$candidate, $chipReplace, $this->locale),
         ] + $content;
+    }
+
+    /**
+     * The panels this shop lets a shopper see.
+     *
+     * A shop turns a panel off because it does not want it on its pages, so it goes before
+     * anything else looks at it: what is off is never learned from, never curated, and never
+     * becomes the teaser. A panel with no flag of its own is always shown.
+     *
+     * @param  list<array<string, mixed>>  $sections
+     * @return list<array<string, mixed>>
+     */
+    private function allowed(string $shopId, array $sections): array
+    {
+        return array_values(array_filter($sections, function (array $section) use ($shopId): bool {
+            $candidate = (string) $section['candidate'];
+
+            return ! in_array($candidate, self::SWITCHABLE, true)
+                || Features::enabled('widget.show_'.$candidate, $shopId);
+        }));
     }
 
     /**

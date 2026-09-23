@@ -73,6 +73,18 @@ class Configuration extends Page implements HasForms
             'widget.content_position',
             'widget.floating_fallback',
         ],
+        'panels' => [
+            'widget.show_highlights',
+            'widget.show_position',
+            'widget.show_specs',
+            'widget.show_complement',
+            'widget.show_family',
+            'widget.show_alternatives',
+            'widget.show_on_sale',
+            'widget.show_good_for',
+            'widget.show_guides',
+            'widget.show_article_products',
+        ],
         'assistant' => [
             'assistant.on_products',
             'assistant.on_content',

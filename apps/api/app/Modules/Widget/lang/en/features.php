@@ -21,4 +21,44 @@ return [
         'label' => 'What the store promises, and what the product is',
         'description' => 'Code reads the store\'s pages (terms, shipping, returns) and the product text, and finds what helps a shopper decide: a refund within 14 days, free delivery over a sum, warranty, and also hand made or 100% cotton. Every promise is kept with the sentence it was read from.',
     ],
+    'show_highlights' => [
+        'label' => 'Product highlights',
+        'description' => 'The points worth knowing about the product, and on an article what it says.',
+    ],
+    'show_position' => [
+        'label' => 'Where it stands among its kind',
+        'description' => 'Lines like "the lightest of the drills", computed from your catalogue.',
+    ],
+    'show_specs' => [
+        'label' => 'Specification',
+        'description' => 'The product\'s sizes and figures.',
+    ],
+    'show_complement' => [
+        'label' => 'What goes with it',
+        'description' => 'Complements worth taking together.',
+    ],
+    'show_family' => [
+        'label' => 'Other sizes and models',
+        'description' => 'The rest of the same product family.',
+    ],
+    'show_alternatives' => [
+        'label' => 'Similar options',
+        'description' => 'Alternatives in a close price range.',
+    ],
+    'show_on_sale' => [
+        'label' => 'On sale',
+        'description' => 'Related products currently on sale.',
+    ],
+    'show_good_for' => [
+        'label' => 'What it suits',
+        'description' => 'The jobs the product is good for.',
+    ],
+    'show_guides' => [
+        'label' => 'Guides',
+        'description' => 'Articles from the site related to the product.',
+    ],
+    'show_article_products' => [
+        'label' => 'Products from the article',
+        'description' => 'The products the article talks about.',
+    ],
 ];

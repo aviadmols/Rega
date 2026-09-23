@@ -32,6 +32,46 @@
         {
             "name": "promises",
             "default": true
+        },
+        {
+            "name": "show_highlights",
+            "default": true
+        },
+        {
+            "name": "show_position",
+            "default": true
+        },
+        {
+            "name": "show_specs",
+            "default": true
+        },
+        {
+            "name": "show_complement",
+            "default": true
+        },
+        {
+            "name": "show_family",
+            "default": true
+        },
+        {
+            "name": "show_alternatives",
+            "default": true
+        },
+        {
+            "name": "show_on_sale",
+            "default": true
+        },
+        {
+            "name": "show_good_for",
+            "default": true
+        },
+        {
+            "name": "show_guides",
+            "default": true
+        },
+        {
+            "name": "show_article_products",
+            "default": true
         }
     ],
     "settings": [
