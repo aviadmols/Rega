@@ -131,6 +131,9 @@ class EnrichmentFact extends Model
             FactKind::ContentKind => __("enrichment::enrichment.content_kinds.{$this->value_text}"),
             FactKind::ShopperValue => __("enrichment::enrichment.shopper_values.{$this->value_text}"),
             FactKind::Category => (string) $this->quote,
+            // A highlight or a promise is already a sentence; a promise with no detail of its
+            // own ("hand made") shows the sentence it was read from. Never throw on a new kind.
+            default => (string) ($this->value_text ?? $this->quote ?? ''),
         };
     }
 }

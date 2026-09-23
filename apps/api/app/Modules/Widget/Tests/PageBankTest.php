@@ -7,6 +7,7 @@ use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Admin\Models\User;
 use App\Modules\Analytics\Models\AnalyticsPopularity;
+use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
 use App\Modules\Connections\Support\SiteKeys;
@@ -214,6 +215,41 @@ final class PageBankTest extends TestCase
         Features::override('widget.popularity', false, $this->shop->id);
         Cache::flush();
         $this->assertNull($this->page('product', '10')->json('popularity'));
+    }
+
+    public function test_the_banner_offers_questions_shoppers_really_asked_here(): void
+    {
+        $this->assertSame([], $this->page('product', '10')->json('questions'), 'nothing asked yet');
+
+        $save = function (string $question, string $outcome, int $asked, string $status = AssistantAnswer::SHOWN): void {
+            app(TenantContext::class)->run($this->shop->id, fn () => AssistantAnswer::query()->create([
+                'shop_id' => $this->shop->id,
+                'product_id' => CatalogProduct::query()->where('external_id', '10')->value('id'),
+                'question_key' => substr(hash('sha256', $question), 0, 64),
+                'question' => $question,
+                'answer' => $outcome === AssistantAnswer::ANSWERED ? 'תשובה.' : null,
+                'outcome' => $outcome,
+                'status' => $status,
+                'prompt_version' => 2,
+                'asked_count' => $asked,
+                'last_asked_at' => now(),
+            ]));
+            Cache::flush();
+        };
+
+        $save('האם זה מתאים לחוץ?', AssistantAnswer::ANSWERED, 2);
+        $save('אפשר לנסר איתו מתכת?', AssistantAnswer::ANSWERED, 9);
+        $save('מה מזג האוויר מחר?', AssistantAnswer::OUT_OF_SCOPE, 30);
+        $save('כמה הוא שוקל בדיוק?', AssistantAnswer::NO_INFO, 40);
+        $save('שאלה שהוסתרה', AssistantAnswer::ANSWERED, 50, AssistantAnswer::HIDDEN);
+
+        // Most asked first, and only questions that were really answered here.
+        $this->assertSame(['אפשר לנסר איתו מתכת?', 'האם זה מתאים לחוץ?'], $this->page('product', '10')->json('questions'));
+        $this->assertSame(2, $this->page('product', '10')->json('asked'), 'a question with no answer is not one the banner offers');
+
+        Features::override('assistant.on_products', false, $this->shop->id);
+        Cache::flush();
+        $this->assertSame([], $this->page('product', '10')->json('questions'));
     }
 
     public function test_the_banner_carries_what_the_shop_promises_and_what_the_product_is_made_of(): void

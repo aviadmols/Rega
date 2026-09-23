@@ -80,6 +80,9 @@ final class BuildPageBank
 
     private const MAX_HIGHLIGHTS = 4;
 
+    /** Questions the banner may turn through, most asked first. */
+    private const MAX_ASKED_SHOWN = 3;
+
     private const MIN_LEVEL_SET = 3;
 
     /** A product in the best quarter of its set gets "among the highest". */
@@ -164,6 +167,7 @@ final class BuildPageBank
         // question is about the guide — "sum this up for me" — not about a product.
         $bank['ask'] = Features::enabled($type === 'product' ? 'assistant.on_products' : 'assistant.on_content', $shopId);
         $bank['asked'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): int => $this->asked($type, $externalId)) : 0;
+        $bank['questions'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): array => $this->askedQuestions($type, $externalId)) : [];
         $bank['contact'] = $this->contact($shopId);
         $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
         $bank['assurances'] = $this->tenant->run($shopId, fn (): array => $this->assurances($shopId, $type === 'product' ? $externalId : null));
@@ -1143,19 +1147,42 @@ final class BuildPageBank
     /** How many questions shoppers asked about this product and got an answer to. */
     private function asked(string $type, string $externalId): int
     {
+        return $this->answersHere($type, $externalId)?->count() ?? 0;
+    }
+
+    /**
+     * Questions shoppers really asked on this page and got an answer to. An answer is only shown
+     * after the small model agreed the question was about this page and agreed again that the
+     * answer was, so every question here is one that fitted. Most asked first; the banner offers
+     * them instead of an empty invitation, and asking one again costs nothing.
+     *
+     * @return list<string>
+     */
+    private function askedQuestions(string $type, string $externalId): array
+    {
+        return $this->answersHere($type, $externalId)
+            ?->where('outcome', AssistantAnswer::ANSWERED)
+            ->orderByDesc('asked_count')->orderByDesc('last_asked_at')
+            ->limit(self::MAX_ASKED_SHOWN)
+            ->pluck('question')
+            ->all() ?? [];
+    }
+
+    /** @return Builder<AssistantAnswer>|null null when the module is off or the page is unknown */
+    private function answersHere(string $type, string $externalId): ?Builder
+    {
         if (app(ModuleRepository::class)->get('Assistant')?->enabled !== true) {
-            return 0;
+            return null;
         }
 
         $page = $type === 'product'
             ? CatalogProduct::query()->where('external_id', $externalId)->first()
             : CatalogContent::query()->where('external_id', $externalId)->first();
 
-        return $page === null ? 0 : AssistantAnswer::query()
+        return $page === null ? null : AssistantAnswer::query()
             ->where($type === 'product' ? 'product_id' : 'content_id', $page->id)
             ->where('status', AssistantAnswer::SHOWN)
-            ->whereNotNull('answer')
-            ->count();
+            ->whereNotNull('answer');
     }
 
     /**

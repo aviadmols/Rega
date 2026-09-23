@@ -137,6 +137,47 @@ final class EnrichmentScreensTest extends TestCase
         $this->assertSame(FactStatus::Approved, $fact->fresh()->status, 'a person decided; a new reading does not undo it');
     }
 
+    public function test_the_facts_screen_shows_every_kind_of_fact_there_is(): void
+    {
+        app(TenantContext::class)->enterUnscoped();
+        $this->powerToolsVocabulary();
+        $product = app(TenantContext::class)->run($this->shop->id, fn () => CatalogProduct::query()->sole());
+
+        // One row per kind, so a kind added later cannot take the screen down with it.
+        $facts = collect(FactKind::cases())->map(fn (FactKind $kind): EnrichmentFact => EnrichmentFact::query()->create([
+            'shop_id' => $this->shop->id,
+            'product_id' => $product->id,
+            'kind' => $kind,
+            'key' => $kind->value,
+            'value_text' => in_array($kind, [FactKind::Spec, FactKind::Flag], true) ? null : 'x',
+            'value_number' => $kind === FactKind::Spec ? 1.5 : null,
+            'unit' => $kind === FactKind::Spec ? 'kg' : null,
+            'quote' => 'מתוך הטקסט של החנות',
+            'origin' => 'code',
+            'status' => FactStatus::Approved,
+            'input_hash' => $kind->value,
+        ]));
+
+        Livewire::test(ListEnrichmentFacts::class)
+            ->set('activeTab', 'approved')
+            ->assertOk()
+            ->assertSee('מתוך הטקסט של החנות');
+        $this->assertCount(count(FactKind::cases()), $facts);
+
+        // A promise the shop makes belongs to no product, and still has to render.
+        $shopWide = EnrichmentFact::query()->create([
+            'shop_id' => $this->shop->id, 'kind' => FactKind::Promise, 'key' => 'free_shipping',
+            'value_text' => null, 'quote' => 'משלוח חינם לכל הארץ.', 'origin' => 'code',
+            'status' => FactStatus::Approved, 'input_hash' => 'shop-wide',
+        ]);
+
+        Livewire::test(ListEnrichmentFacts::class)
+            ->set('activeTab', 'approved')
+            ->assertOk()
+            ->assertSee('משלוח חינם לכל הארץ.');
+        $this->assertNull($shopWide->product_id);
+    }
+
     public function test_a_vocabulary_is_added_from_a_template_and_a_bad_one_is_refused_with_reasons(): void
     {
         app(TenantContext::class)->enterUnscoped();

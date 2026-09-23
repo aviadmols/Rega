@@ -540,6 +540,8 @@
     '.bn-tile.is-hot{background:rgba(200,30,30,.08);color:#a51616}',
     '.bn-tile.is-promise{background:rgba(16,185,129,.10);color:#0f766e}',
     '.bn-tile.is-made{background:rgba(217,119,6,.10);color:#b45309}',
+    '.bn-tile.is-compare{background:rgba(17,24,39,.06);color:#3f3f46}',
+    '.bn-tile.is-ask{background:rgba(var(--g2),.10);color:rgb(var(--g2))}',
     '.bn-bubbles{display:flex;flex:none;padding-inline-start:8px}',
     '.bn-bubbles img,.bn-bubbles .bn-more{width:32px;height:32px;border-radius:50%;margin-inline-start:-8px;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.10)}',
     '.bn-bubbles img{object-fit:contain;background:#f6f6f7}',
@@ -1755,7 +1757,9 @@
       frames.forEach(function (frame) {
         frame.node.addEventListener('click', function () {
           openChat();
-          if (frame.index !== null) {
+          if (frame.ask) {
+            askInChat(frame.ask);
+          } else if (frame.index !== null) {
             pick(frame.index);
           }
         });
@@ -1813,6 +1817,19 @@
       }
       offer(null);
 
+      /** Puts a question to the assistant inside the conversation, opening its bubble first. */
+      function askInChat(text) {
+        if (!askItem || typeof askItem.body.ask !== 'function') {
+          return;
+        }
+        if (thread.contains(askItem.body)) {
+          askItem.body.ask(text);
+        } else {
+          pick(rendered.indexOf(askItem));
+          setTimeout(function () { askItem.body.ask(text); }, 650);
+        }
+      }
+
       var busy = false;
       function pick(index) {
         if (busy) {
@@ -1869,15 +1886,9 @@
         composer.addEventListener('submit', function (event) {
           event.preventDefault();
           var text = input.value.trim();
-          if (!text || typeof askItem.body.ask !== 'function') {
-            return;
-          }
-          input.value = '';
-          if (thread.contains(askItem.body)) {
-            askItem.body.ask(text);
-          } else {
-            pick(rendered.indexOf(askItem));
-            setTimeout(function () { askItem.body.ask(text); }, 650);
+          if (text) {
+            input.value = '';
+            askInChat(text);
           }
         });
         card.appendChild(composer);
@@ -2078,6 +2089,10 @@
   var SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>';
   var STAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.1 4.6 5 .6-3.7 3.4 1 4.9L12 14.1 7.6 16.5l1-4.9L4.9 8.2l5-.6z"/></svg>';
 
+  var SCALES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M7 20h10M4 8h16M8 8l-3 6a3 3 0 0 0 6 0zM16 8l3 6a3 3 0 0 1-6 0z"/></svg>';
+
+  var QUESTION = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3.2-6.4M9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>';
+
   /** The square at the start of a frame: an icon, or where the product stands in its set. */
   function bannerTile(kind, icon) {
     var tile = el('div', 'bn-tile is-' + kind);
@@ -2124,6 +2139,38 @@
       return text.length > 22 ? text.slice(0, 20).replace(/\s+$/, '') + '…' : text;
     };
 
+    /** A list of products as a frame: their own pictures, how many there are, and where it leads. */
+    var listFrame = function (key, candidate, one, many, cta) {
+      var found = at(candidate);
+
+      if (!found) {
+        return;
+      }
+      var bubbles = bannerBubbles(found.item.body, 3);
+      var count = found.item.body.querySelectorAll('.card').length;
+
+      if (!bubbles || !count) {
+        return;
+      }
+      add(key, bannerRow(
+        bubbles,
+        count === 1 ? String(labels[one] || '') : String(labels[many] || '').replace(':count', String(count)),
+        labels[cta],
+        true
+      ), found.index);
+    };
+
+    // The comparison with the product this shopper looked at before: the strongest thing the
+    // widget can say on a page, so it comes first.
+    var compare = at('compare');
+    if (compare && previous && previous.title) {
+      add('compare', bannerRow(
+        bannerTile('compare', SCALES),
+        String(labels.banner_compare || '').replace(':title', shorten(previous.title)),
+        labels.banner_compare_cta
+      ), compare.index);
+    }
+
     // What goes with it, in its own pictures.
     var goes = at('complement');
     if (goes) {
@@ -2141,6 +2188,10 @@
         ), goes.index);
       }
     }
+
+    // The same product in another size, and similar products the shop put on sale.
+    listFrame('family', 'family', 'banner_family_one', 'banner_family', 'banner_all');
+    listFrame('sale', 'on_sale', 'banner_sale_one', 'banner_sale', 'banner_all');
 
     // Where it stands among its kind: only a real first place, never a tie.
     var best = at('highlights');
@@ -2166,20 +2217,29 @@
       add(kind, bannerRow(bannerTile(kind, kind === 'made' ? STAR : SHIELD), assurance.text, assurance.note));
     });
 
-    // What this shopper looked at before.
-    var seen = at('recent');
-    if (seen) {
-      var faces = bannerBubbles(seen.item.body, 3);
-      var many = seen.item.body.querySelectorAll('.card').length;
-      if (faces && many) {
-        add('seen', bannerRow(
-          faces,
-          many === 1 ? labels.banner_seen_one : String(labels.banner_seen || '').replace(':count', String(many)),
-          labels.banner_list,
-          true
-        ), seen.index);
-      }
+    // A question a shopper really asked here, when there is one. It reached this frame only
+    // because both checks passed — the question was about this page and the answer was about it
+    // too — so it is a question that fitted. A click asks it again and the saved answer comes
+    // back with no model. With nothing asked yet, the invitation stands in its place.
+    var ask = at('ask');
+    var asked = (bank.questions || []).filter(function (text) { return text; });
+
+    if (ask && asked.length) {
+      var question = add('asked', bannerRow(bannerTile('ask', QUESTION), asked[0], labels.banner_asked_note), ask.index);
+      var heading = question.node.querySelector('.bn-title');
+      var turn = 0;
+      question.ask = asked[0];
+      question.enter = function () {
+        question.ask = asked[turn % asked.length];
+        heading.textContent = question.ask;
+        turn++;
+      };
+    } else if (ask) {
+      add('ask', bannerRow(bannerTile('ask', QUESTION), labels.banner_ask, labels.banner_ask_note), ask.index);
     }
+
+    // What this shopper looked at before.
+    listFrame('seen', 'recent', 'banner_seen_one', 'banner_seen', 'banner_list');
 
     // The opening line comes first, and carries the whole invitation when it is alone.
     var typed = el('div', 'bn-type');
