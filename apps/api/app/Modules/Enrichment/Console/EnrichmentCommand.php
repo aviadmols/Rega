@@ -5,6 +5,7 @@ namespace App\Modules\Enrichment\Console;
 use App\Core\Facades\Features;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Catalog\Models\CatalogContent;
+use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Actions\AuditContentReading;
 use App\Modules\Enrichment\Actions\ComputeProductRelations;
 use App\Modules\Enrichment\Actions\ComputeRankings;
@@ -15,6 +16,7 @@ use App\Modules\Enrichment\Actions\ImportVocabulary;
 use App\Modules\Enrichment\Actions\ReadContentInCode;
 use App\Modules\Enrichment\Actions\ReadProductsInCode;
 use App\Modules\Enrichment\Actions\ReadPromisesInCode;
+use App\Modules\Enrichment\Actions\RunNightlyReading;
 use App\Modules\Enrichment\Enums\TaskType;
 use App\Modules\Enrichment\Models\EnrichmentBatch;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
@@ -37,7 +39,7 @@ use Illuminate\Console\Command;
 final class EnrichmentCommand extends Command
 {
     protected $signature = 'enrichment
-        {step : vocabulary, code, content, audit, promises, tasks, results, rankings, rules or relations}
+        {step : nightly, vocabulary, code, content, audit, promises, tasks, results, rankings, rules or relations}
         {target? : shop slug, or batch ID for results; none with --scheduled}
         {argument? : task type for tasks, results file for results}
         {--template= : vocabulary template name}
@@ -60,6 +62,7 @@ final class EnrichmentCommand extends Command
             'vocabulary' => $this->vocabulary(),
             'tasks' => $this->tasks(),
             'results' => $this->results(),
+            'nightly' => $this->shopStep(fn (Shop $shop): Run => app(RunNightlyReading::class)->handle($shop->id), 'enrichment.nightly'),
             'rankings' => $this->rankings(),
             'code' => $this->shopStep(fn (Shop $shop): Run => app(ReadProductsInCode::class)->handle($shop->id)),
             'audit' => $this->shopStep(fn (Shop $shop): Run => app(AuditContentReading::class)->handle($shop->id), 'enrichment.weekly_audit'),
@@ -199,7 +202,10 @@ final class EnrichmentCommand extends Command
      */
     private function everyShop(callable $step, string $flag): int
     {
-        $shopIds = CatalogContent::query()->active()->whereNotNull('body')->distinct()->pluck('shop_id');
+        $shopIds = $flag === 'enrichment.weekly_audit'
+            ? CatalogContent::query()->active()->whereNotNull('body')->distinct()->pluck('shop_id')
+            : CatalogProduct::query()->whereNull('removed_at')->distinct()->pluck('shop_id')
+                ->concat(CatalogContent::query()->active()->distinct()->pluck('shop_id'))->unique();
         $failed = 0;
 
         foreach (Shop::query()->whereIn('id', $shopIds)->orderBy('slug')->get() as $shop) {

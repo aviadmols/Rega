@@ -17,6 +17,7 @@ return [
     'audit_content' => 'הביקורת בדקה :articles מאמרים ומצאה :missed נקודות שהקוד פספס.',
     'audit_nothing' => 'אין מאמרים לבדוק.',
     'reread_page' => 'העמוד נקרא מחדש בקוד: :written עובדות נכתבו.',
+    'nightly' => 'הקריאה הלילית: :done מתוך :total שלבים הסתיימו, :failed נכשלו.',
     'relations_computed' => ':relations קשרים: :complements מוצרים משלימים ל־:products מוצרים, :families מידות נוספות, :alternatives חלופות.',
     'relation_rules_saved' => 'נשמרו כללי ההתאמה, גרסה :version: :rules כללים.',
     'relation_rules_invalid' => 'כללי ההתאמה לא נשמרו: :count בעיות.',

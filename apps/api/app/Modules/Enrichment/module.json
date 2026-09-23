@@ -17,6 +17,10 @@
         {
             "name": "weekly_audit",
             "default": true
+        },
+        {
+            "name": "nightly",
+            "default": true
         }
     ],
     "settings": [
