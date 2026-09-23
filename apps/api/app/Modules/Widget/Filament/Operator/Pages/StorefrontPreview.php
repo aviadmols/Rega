@@ -50,7 +50,9 @@ final class StorefrontPreview extends Page
 
     public function mount(): void
     {
-        $this->shop ??= Shop::query()->orderBy('name')->value('id');
+        // The shop the panel is inside, so every screen agrees; the first by name when it is
+        // looking across every shop.
+        $this->shop ??= app(TenantContext::class)->id() ?? Shop::query()->orderBy('name')->value('id');
     }
 
     /** @return array<string, string> */

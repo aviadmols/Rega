@@ -54,7 +54,9 @@ class ShopQuestions extends Page
 
     public function mount(): void
     {
-        $this->shop ??= Shop::query()->orderBy('name')->value('id');
+        // The shop the panel is inside, so every screen agrees; the first by name when it is
+        // looking across every shop.
+        $this->shop ??= app(TenantContext::class)->id() ?? Shop::query()->orderBy('name')->value('id');
     }
 
     /** False in the merchant panel, where the shop is the one in the address and cannot change. */
