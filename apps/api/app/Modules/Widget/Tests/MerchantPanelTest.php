@@ -64,7 +64,14 @@ final class MerchantPanelTest extends TestCase
         // Caps, limits and anything about enrichment are not.
         $screen->assertDontSee(__('catalog::settings.max_products.label'))
             ->assertDontSee(__('enrichment::features.auto_approve.label'))
+            ->assertDontSee(__('assistant::settings.answer_model.label'), 'which model answers is the platform'."'".'s call')
             ->assertDontSee(__('assistant::settings.questions_per_shop_per_day.label'));
+
+        // Grouped the way a shop owner thinks, not one section per module.
+        $screen->assertSee(__('admin::configuration.groups.shown.title'))
+            ->assertSee(__('admin::configuration.groups.placement.title'))
+            ->assertSee(__('admin::configuration.groups.whatsapp.title'))
+            ->assertSee(__('admin::configuration.groups.signup.title'));
 
         $screen->set('data.s__widget__layout', 'chat')->call('save')->assertHasNoErrors();
         $this->assertSame('chat', Settings::get('widget.layout', $this->mine->id));

@@ -200,7 +200,7 @@ class Configuration extends Page implements HasForms
         return $sections;
     }
 
-    private function featureField(FeatureDefinition $definition): Select
+    protected function featureField(FeatureDefinition $definition): Select
     {
         $inherited = $this->shop === null
             ? $definition->default
@@ -217,7 +217,7 @@ class Configuration extends Page implements HasForms
             ->selectablePlaceholder(false);
     }
 
-    private function settingField(SettingDefinition $definition): Component
+    protected function settingField(SettingDefinition $definition): Component
     {
         $name = self::field('s', $definition->key());
         $inherited = $this->shop === null

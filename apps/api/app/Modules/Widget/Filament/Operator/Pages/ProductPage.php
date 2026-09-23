@@ -4,6 +4,7 @@ namespace App\Modules\Widget\Filament\Operator\Pages;
 
 use App\Core\Facades\Settings;
 use App\Core\Modules\ModuleRepository;
+use App\Core\Tenancy\NeedsShopContext;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Analytics\Models\AnalyticsEvent;
 use App\Modules\Assistant\Models\AssistantAnswer;
@@ -29,6 +30,8 @@ use Livewire\Attributes\Url;
  */
 class ProductPage extends Page
 {
+    use NeedsShopContext;
+
     private const SEARCH_RESULTS = 12;
 
     private const QUESTIONS = 20;

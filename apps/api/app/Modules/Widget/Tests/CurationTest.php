@@ -2,6 +2,7 @@
 
 namespace App\Modules\Widget\Tests;
 
+use App\Core\Tenancy\TenantContext;
 use App\Modules\Admin\Models\User;
 use App\Modules\Analytics\Models\AnalyticsEvent;
 use App\Modules\Analytics\Models\AnalyticsPopularity;
@@ -90,6 +91,8 @@ final class CurationTest extends TestCase
             'score' => 13, 'rank' => 1, 'popular' => true, 'window_days' => 30, 'computed_at' => now(),
         ]));
 
+        app(TenantContext::class)->set($this->shop->id);
+
         Livewire::test(ProductPage::class, ['shop' => $this->shop->id, 'type' => 'product', 'id' => '10'])
             ->assertSee('מסור אנכי')
             ->assertSee('מתאים לקנות יחד')
@@ -127,6 +130,8 @@ final class CurationTest extends TestCase
 
         Filament::setCurrentPanel(Filament::getPanel('operator'));
         $this->actingAs(User::factory()->operator()->create());
+
+        app(TenantContext::class)->set($this->shop->id);
 
         $page = Livewire::test(ProductPage::class, ['shop' => $this->shop->id, 'type' => 'product', 'id' => '10']);
 

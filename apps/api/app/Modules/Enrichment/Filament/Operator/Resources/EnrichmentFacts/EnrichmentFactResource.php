@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentFacts;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Enrichment\Actions\DecideFact;
 use App\Modules\Enrichment\Enums\FactKind;
 use App\Modules\Enrichment\Enums\FactStatus;
@@ -25,6 +26,8 @@ use Illuminate\Support\Collection;
  */
 final class EnrichmentFactResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = EnrichmentFact::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;

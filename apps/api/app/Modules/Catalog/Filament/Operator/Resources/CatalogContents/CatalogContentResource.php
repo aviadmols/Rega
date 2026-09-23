@@ -2,6 +2,7 @@
 
 namespace App\Modules\Catalog\Filament\Operator\Resources\CatalogContents;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Catalog\Filament\Operator\Resources\CatalogContents\Pages\ListCatalogContents;
 use App\Modules\Catalog\Filament\Operator\Resources\CatalogContents\Pages\ViewCatalogContent;
 use App\Modules\Catalog\Models\CatalogContent;
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Builder;
 /** Articles and guides the store shares with Rega. Read-only. */
 final class CatalogContentResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = CatalogContent::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;

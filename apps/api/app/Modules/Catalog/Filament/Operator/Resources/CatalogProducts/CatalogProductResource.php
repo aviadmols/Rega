@@ -2,6 +2,7 @@
 
 namespace App\Modules\Catalog\Filament\Operator\Resources\CatalogProducts;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Catalog\Filament\Operator\Resources\CatalogProducts\Pages\ListCatalogProducts;
 use App\Modules\Catalog\Filament\Operator\Resources\CatalogProducts\Pages\ViewCatalogProduct;
 use App\Modules\Catalog\Filament\Operator\Resources\CatalogProducts\Schemas\CatalogProductInfolist;
@@ -16,6 +17,8 @@ use Filament\Tables\Table;
 /** What Rega read from each store. Read-only: the store is the source of truth. */
 final class CatalogProductResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = CatalogProduct::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;

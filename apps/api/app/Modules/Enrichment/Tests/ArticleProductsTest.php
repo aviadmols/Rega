@@ -49,8 +49,11 @@ final class ArticleProductsTest extends TestCase
         $this->assertTrue($links->first()->reasons['mentioned']);
         $this->assertSame('עצים › דקים', $links->get(1)->reasons['category']);
 
-        $this->actingAs(User::factory()->operator()->create())
-            ->get('/operator/enrichment/article-products')
+        $this->actingAs(User::factory()->operator()->create());
+        // A shop-owned screen opens once the panel is inside a shop, the way the picker sets it.
+        $this->post('/admin/shop', ['shop' => $this->shop->id]);
+
+        $this->get('/operator/enrichment/article-products')
             ->assertOk();
     }
 

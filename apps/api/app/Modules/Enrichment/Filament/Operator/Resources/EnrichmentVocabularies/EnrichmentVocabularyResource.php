@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies\Pages\ListEnrichmentVocabularies;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies\Pages\ViewEnrichmentVocabulary;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Builder;
 /** What agents may say about each branch of each shop's catalog. */
 final class EnrichmentVocabularyResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = EnrichmentVocabulary::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;

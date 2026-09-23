@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Filament\Operator\Pages;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Models\EnrichmentBatchItem;
@@ -21,6 +22,8 @@ use Livewire\Attributes\Url;
  */
 final class ScanLog extends Page
 {
+    use NeedsShopContext;
+
     private const SEARCH_RESULTS = 12;
 
     private const TOP_PROBLEMS = 20;

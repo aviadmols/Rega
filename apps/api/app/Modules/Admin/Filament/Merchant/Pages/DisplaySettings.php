@@ -8,6 +8,8 @@ use App\Core\Settings\SettingDefinition;
 use App\Core\Tenancy\LocksShopToPanelTenant;
 use App\Modules\Admin\Filament\Operator\Pages\Configuration as OperatorConfiguration;
 use BackedEnum;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
@@ -25,37 +27,50 @@ final class DisplaySettings extends OperatorConfiguration
 {
     use LocksShopToPanelTenant;
 
-    /** Switches a shop owner decides for themselves. */
-    private const FEATURES = [
-        'widget.on_products',
-        'widget.on_content',
-        'widget.popularity',
-        'widget.promises',
-        'widget.whatsapp',
-        'assistant.on_products',
-        'assistant.on_content',
-        'shoppers.recent_products',
-        'shoppers.signup',
-    ];
-
-    /** Wording and placement. Never a cap, a limit or a price. */
-    private const SETTINGS = [
-        'widget.layout',
-        'widget.product_selector',
-        'widget.product_position',
-        'widget.content_selector',
-        'widget.content_position',
-        'widget.floating_fallback',
-        'widget.max_products',
-        'widget.whatsapp_number',
-        'widget.whatsapp_title',
-        'widget.whatsapp_button',
-        'widget.whatsapp_message',
-        'widget.whatsapp_offline_note',
-        'widget.whatsapp_when_offline',
-        'shoppers.signup_title',
-        'shoppers.signup_consent',
-        'shoppers.signup_note',
+    /**
+     * What a shop owner decides, grouped the way they think about it rather than by the module
+     * the code happens to live in. This is also the allow-list: a key that is not in a group is
+     * not read and cannot be written from here, so which model answers, what a run may cost and
+     * every other platform decision stays with the operator.
+     *
+     * @var array<string, list<string>>
+     */
+    private const GROUPS = [
+        'shown' => [
+            'widget.on_products',
+            'widget.on_content',
+            'widget.layout',
+            'widget.max_products',
+            'widget.popularity',
+            'widget.promises',
+        ],
+        'placement' => [
+            'widget.product_selector',
+            'widget.product_position',
+            'widget.content_selector',
+            'widget.content_position',
+            'widget.floating_fallback',
+        ],
+        'assistant' => [
+            'assistant.on_products',
+            'assistant.on_content',
+        ],
+        'whatsapp' => [
+            'widget.whatsapp',
+            'widget.whatsapp_number',
+            'widget.whatsapp_title',
+            'widget.whatsapp_button',
+            'widget.whatsapp_message',
+            'widget.whatsapp_offline_note',
+            'widget.whatsapp_when_offline',
+        ],
+        'signup' => [
+            'shoppers.recent_products',
+            'shoppers.signup',
+            'shoppers.signup_title',
+            'shoppers.signup_consent',
+            'shoppers.signup_note',
+        ],
     ];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSwatch;
@@ -97,7 +112,7 @@ final class DisplaySettings extends OperatorConfiguration
     {
         return array_values(array_filter(
             parent::features($module),
-            fn (FeatureDefinition $definition): bool => in_array($definition->key(), self::FEATURES, true),
+            fn (FeatureDefinition $definition): bool => in_array($definition->key(), self::allowed(), true),
         ));
     }
 
@@ -106,7 +121,49 @@ final class DisplaySettings extends OperatorConfiguration
     {
         return array_values(array_filter(
             parent::settings($module),
-            fn (SettingDefinition $definition): bool => in_array($definition->key(), self::SETTINGS, true),
+            fn (SettingDefinition $definition): bool => in_array($definition->key(), self::allowed(), true),
         ));
+    }
+
+    /**
+     * Sections a shop owner recognises — what shows, where it sits, what the assistant answers,
+     * WhatsApp, sign-up — instead of one section per module, each holding a field or two.
+     *
+     * @return list<Component>
+     */
+    protected function moduleSections(): array
+    {
+        $features = collect($this->features())->keyBy(fn (FeatureDefinition $d): string => $d->key());
+        $settings = collect($this->settings())->keyBy(fn (SettingDefinition $d): string => $d->key());
+        $sections = [];
+
+        foreach (self::GROUPS as $group => $keys) {
+            $fields = [];
+
+            foreach ($keys as $key) {
+                $fields[] = match (true) {
+                    $features->has($key) => $this->featureField($features->get($key)),
+                    $settings->has($key) => $this->settingField($settings->get($key)),
+                    default => null,
+                };
+            }
+
+            $fields = array_values(array_filter($fields));
+
+            if ($fields !== []) {
+                $sections[] = Section::make(__("admin::configuration.groups.{$group}.title"))
+                    ->description(__("admin::configuration.groups.{$group}.help"))
+                    ->columns(2)
+                    ->schema($fields);
+            }
+        }
+
+        return $sections;
+    }
+
+    /** @return list<string> */
+    private static function allowed(): array
+    {
+        return array_merge(...array_values(self::GROUPS));
     }
 }

@@ -4,6 +4,7 @@ namespace App\Modules\Widget\Filament\Operator\Pages;
 
 use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
+use App\Core\Tenancy\NeedsShopContext;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
@@ -22,6 +23,8 @@ use Livewire\Attributes\Url;
  */
 final class StorefrontPreview extends Page
 {
+    use NeedsShopContext;
+
     private const SAMPLE = 8;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEye;

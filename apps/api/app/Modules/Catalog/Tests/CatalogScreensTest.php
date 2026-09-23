@@ -27,9 +27,10 @@ final class CatalogScreensTest extends TestCase
         Queue::fake();
         Filament::setCurrentPanel(Filament::getPanel('operator'));
         $this->actingAs(User::factory()->operator()->create());
-        app(TenantContext::class)->enterUnscoped();
 
         $shop = Shop::factory()->create();
+        // The catalog belongs to one shop, so the panel is inside that shop while these screens are read.
+        app(TenantContext::class)->set($shop->id);
         StoreConnection::query()->create(['shop_id' => $shop->id, 'site_url' => 'https://store.test', 'access_token' => 'rgt_'.str_repeat('a', 48)]);
         $product = CatalogProduct::query()->create([
             'shop_id' => $shop->id, 'external_id' => '101', 'type' => 'simple', 'status' => 'publish',
@@ -50,6 +51,9 @@ final class CatalogScreensTest extends TestCase
             ->assertSee('הספק: 710W');
 
         Livewire::test(ListCatalogContents::class)->assertSee('איך בוחרים מסור');
+
+        // Over HTTP the panel reads its shop from the session, the way the picker sets it.
+        $this->post('/admin/shop', ['shop' => $shop->id]);
 
         foreach (['he', 'en'] as $locale) {
             $this->withHeader('Accept-Language', $locale)->get('/operator/catalog/products')->assertOk();

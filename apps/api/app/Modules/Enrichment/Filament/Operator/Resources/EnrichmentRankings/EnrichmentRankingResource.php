@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentRankings;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentRankings\Pages\ListEnrichmentRankings;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Builder;
 /** Superlatives computed in code, with the set each one was measured in. */
 final class EnrichmentRankingResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = EnrichmentRanking::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTrophy;

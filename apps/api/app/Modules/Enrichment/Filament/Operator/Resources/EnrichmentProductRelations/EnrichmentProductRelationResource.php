@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentProductRelations;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Enrichment\Enums\RelationKind;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentProductRelations\Pages\ListEnrichmentProductRelations;
 use App\Modules\Enrichment\Models\EnrichmentProductRelation;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Lang;
 /** What shows next to each product, and why: complements, other sizes, alternatives. */
 final class EnrichmentProductRelationResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = EnrichmentProductRelation::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquare2Stack;

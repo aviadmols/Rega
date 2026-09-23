@@ -1897,11 +1897,6 @@
       // Under the field: what there is to ask about, so the thread above stays the conversation.
       card.appendChild(suggestions);
 
-      if (strip) {
-        strip.className += ' in-chat';
-        card.appendChild(strip);
-      }
-
       function openChat() {
         if (!card.hidden) {
           return;
@@ -1940,7 +1935,12 @@
       if (quick.firstChild) {
         wrap.appendChild(quick);
       }
-      // The offer stands on its own, under the banner, and stays there once the chat opens.
+      // The way to a person stands on its own, under the banner: a shopper who wants the team
+      // rather than the assistant should not have to open a conversation to find them.
+      if (strip) {
+        wrap.appendChild(strip);
+      }
+      // The offer stands on its own too, and both stay put once the chat opens.
       if (signup) {
         wrap.appendChild(signup);
       }

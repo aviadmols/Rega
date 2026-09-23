@@ -12,6 +12,7 @@ use App\Modules\Enrichment\Enums\ItemStatus;
 use App\Modules\Enrichment\Enums\TaskType;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentBatches\Pages\ListEnrichmentBatches;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentBatches\Pages\ViewEnrichmentBatch;
+use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentFacts\EnrichmentFactResource;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentFacts\Pages\ListEnrichmentFacts;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies\Pages\ListEnrichmentVocabularies;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentVocabularies\Pages\ViewEnrichmentVocabulary;
@@ -52,6 +53,8 @@ final class EnrichmentScreensTest extends TestCase
     public function test_every_screen_renders_for_the_operator_in_both_languages(): void
     {
         $this->powerToolsVocabulary();
+        // These screens belong to one shop, so the panel is inside one while they are read.
+        $this->post('/admin/shop', ['shop' => $this->shop->id]);
 
         foreach (['he', 'en'] as $locale) {
             $this->withHeader('Accept-Language', $locale);
@@ -80,7 +83,7 @@ final class EnrichmentScreensTest extends TestCase
 
     public function test_the_operator_creates_a_task_file_downloads_it_and_uploads_answers(): void
     {
-        app(TenantContext::class)->enterUnscoped();
+        app(TenantContext::class)->set($this->shop->id);
         $vocabulary = $this->powerToolsVocabulary();
 
         Livewire::test(ListEnrichmentBatches::class)
@@ -116,7 +119,7 @@ final class EnrichmentScreensTest extends TestCase
 
     public function test_a_person_approves_and_rejects_facts_and_a_new_reading_keeps_their_decision(): void
     {
-        app(TenantContext::class)->enterUnscoped();
+        app(TenantContext::class)->set($this->shop->id);
         $vocabulary = $this->powerToolsVocabulary();
         $product = app(TenantContext::class)->run($this->shop->id, fn () => CatalogProduct::query()->sole());
 
@@ -168,15 +171,13 @@ final class EnrichmentScreensTest extends TestCase
             ->assertSee('אלון')
             ->assertDontSee('אורן'));
 
-        $tenant->runUnscoped(fn () => Livewire::test(ListEnrichmentFacts::class)
-            ->set('activeTab', 'approved')
-            ->assertSee('אורן')
-            ->assertSee('אלון'));
+        // Across every shop the screen is not there at all, rather than showing both stores.
+        $this->assertFalse($tenant->runUnscoped(fn (): bool => EnrichmentFactResource::canAccess()));
     }
 
     public function test_the_facts_screen_shows_every_kind_of_fact_there_is(): void
     {
-        app(TenantContext::class)->enterUnscoped();
+        app(TenantContext::class)->set($this->shop->id);
         $this->powerToolsVocabulary();
         $product = app(TenantContext::class)->run($this->shop->id, fn () => CatalogProduct::query()->sole());
 
@@ -217,7 +218,7 @@ final class EnrichmentScreensTest extends TestCase
 
     public function test_a_vocabulary_is_added_from_a_template_and_a_bad_one_is_refused_with_reasons(): void
     {
-        app(TenantContext::class)->enterUnscoped();
+        app(TenantContext::class)->set($this->shop->id);
 
         Livewire::test(ListEnrichmentVocabularies::class)
             ->callAction('add_vocabulary', data: ['shop_id' => $this->shop->id, 'source' => 'template', 'template' => 'power-tools', 'author' => 'claude-opus-5'])

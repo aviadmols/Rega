@@ -196,6 +196,9 @@ final class CodeReadingTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('operator'));
         $this->actingAs(User::factory()->operator()->create());
 
+        // A shop-owned screen opens once the panel is inside a shop, the way the picker sets it.
+        $this->post('/admin/shop', ['shop' => $this->shop->id]);
+
         foreach (['he', 'en'] as $locale) {
             $this->withHeader('Accept-Language', $locale)
                 ->get('/operator/enrichment/scan-log?product='.$product->id)

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentContentProducts;
 
+use App\Core\Tenancy\NeedsShopContext;
 use App\Modules\Enrichment\Filament\Operator\Resources\EnrichmentContentProducts\Pages\ListEnrichmentContentProducts;
 use App\Modules\Enrichment\Models\EnrichmentContentProduct;
 use BackedEnum;
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Builder;
 /** The products a guide or post page can show, and why each one was chosen. */
 final class EnrichmentContentProductResource extends Resource
 {
+    use NeedsShopContext;
+
     protected static ?string $model = EnrichmentContentProduct::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;

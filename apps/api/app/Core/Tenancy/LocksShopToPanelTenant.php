@@ -19,6 +19,20 @@ use Filament\Facades\Filament;
  */
 trait LocksShopToPanelTenant
 {
+    /**
+     * A screen inherited from the operator panel may refuse to open until a shop is chosen. Here
+     * the shop is the address, so it is always chosen and the screen is always there.
+     */
+    public static function canAccess(...$arguments): bool
+    {
+        return Filament::getTenant() !== null;
+    }
+
+    public static function shouldRegisterNavigation(...$arguments): bool
+    {
+        return Filament::getTenant() !== null;
+    }
+
     public function mount(): void
     {
         $this->lockShopToTenant();

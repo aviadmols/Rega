@@ -358,6 +358,9 @@ final class PageBankTest extends TestCase
         $this->actingAs(User::factory()->operator()->create());
         $key = StoreConnection::forSite($this->site)->previewKey();
 
+        // A shop-owned screen opens once the panel is inside a shop, the way the picker sets it.
+        $this->post('/admin/shop', ['shop' => $this->shop->id]);
+
         foreach (['he', 'en'] as $locale) {
             $this->withHeader('Accept-Language', $locale)
                 ->get('/operator/storefront-preview?shop='.$this->shop->id)
