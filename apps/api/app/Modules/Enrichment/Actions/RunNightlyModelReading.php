@@ -65,8 +65,9 @@ final class RunNightlyModelReading
                 // A batch somebody exported and never brought answers back for leaves its
                 // products marked as already asked, so nothing would ever pick them up again.
                 // Those are answered first: they are the oldest questions waiting.
+                // Any kind of question, not only reading a product: facts waiting to be checked
+                // and articles waiting to be matched were left behind the same way.
                 $batch = $this->tenant->run($shopId, fn () => EnrichmentBatch::query()
-                    ->where('task', TaskType::ProductExtraction)
                     ->where('status', BatchStatus::AwaitingResults)
                     ->whereHas('items', fn ($q) => $q->where('status', ItemStatus::Pending))
                     ->oldest('created_at')
@@ -93,7 +94,7 @@ final class RunNightlyModelReading
 
                 $counts = $this->tenant->run($shopId, fn (): array => $this->answers->handle($run, $batch, $model, $limit));
 
-                $run->output($counts + ['batch' => $batch->id, 'model' => $model])
+                $run->output($counts + ['batch' => $batch->id, 'task' => $batch->task->value, 'model' => $model])
                     ->summary('enrichment::runs.nightly_model', [
                         'asked' => number_format($counts['asked']),
                         'applied' => number_format($counts['applied']),
