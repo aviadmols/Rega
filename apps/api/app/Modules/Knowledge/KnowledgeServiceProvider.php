@@ -13,7 +13,7 @@ final class KnowledgeServiceProvider extends ModuleServiceProvider
         // Last of the night, after the catalogue was synced and the scores computed, so the
         // snapshot describes the day that just finished rather than the one before it.
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            $schedule->command('knowledge', ['snapshot', '--all' => true])
+            $schedule->command('knowledge snapshot --all')
                 ->dailyAt('05:10')
                 ->timezone('Asia/Jerusalem')
                 ->name('knowledge:snapshot-daily')

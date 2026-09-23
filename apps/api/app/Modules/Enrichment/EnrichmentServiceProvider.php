@@ -21,7 +21,7 @@ final class EnrichmentServiceProvider extends ModuleServiceProvider
         // Once a week, early Sunday Israel time, the audit samples a few articles in every shop that
         // has them and asks whether code read them well. It only ever proposes; a person publishes.
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            $schedule->command('enrichment', ['audit', '--scheduled' => true])
+            $schedule->command('enrichment audit --scheduled')
                 ->weeklyOn(0, '04:40')
                 ->timezone('Asia/Jerusalem')
                 ->name('enrichment:audit-weekly')

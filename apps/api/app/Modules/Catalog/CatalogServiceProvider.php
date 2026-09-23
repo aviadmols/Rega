@@ -12,7 +12,7 @@ final class CatalogServiceProvider extends ModuleServiceProvider
     {
         // Every connected shop with catalog.daily_sync on is read again at night, Israel time.
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            $schedule->command('catalog:sync', ['--scheduled' => true])
+            $schedule->command('catalog:sync --scheduled')
                 ->dailyAt('02:30')
                 ->timezone('Asia/Jerusalem')
                 ->name('catalog:sync-daily')
