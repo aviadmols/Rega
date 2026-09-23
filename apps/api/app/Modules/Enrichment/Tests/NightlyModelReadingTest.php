@@ -9,6 +9,7 @@ use App\Modules\Ai\Contracts\SpendCapReached;
 use App\Modules\Ai\Contracts\SpendGuard;
 use App\Modules\Ai\Enums\AiProviderName;
 use App\Modules\Catalog\Models\CatalogCategory;
+use App\Modules\Enrichment\Actions\ImportVocabulary;
 use App\Modules\Enrichment\Actions\RunNightlyModelReading;
 use App\Modules\Enrichment\Enums\FactOrigin;
 use App\Modules\Enrichment\Models\EnrichmentFact;
@@ -108,5 +109,26 @@ final class NightlyModelReadingTest extends TestCase
         $this->assertSame(0, $this->model->calls, 'nothing was asked');
         $this->assertSame('spend_cap', $run->output['stopped']);
         $this->assertSame(0, $this->inShop(fn (): int => EnrichmentFact::query()->where('origin', FactOrigin::Model)->count()), 'and nothing was written');
+    }
+
+    public function test_it_moves_on_to_the_next_vocabulary_when_the_first_has_nothing_left(): void
+    {
+        // Two branches. The first by name has nothing a model has not read; the second does.
+        $adhesives = $this->category('1749', 'הדבקה ואטימה');
+        $this->product('50', 'סיליקון שקוף 280', 'סיליקון איכותי לאטימה.', [$adhesives]);
+        $data = ImportVocabulary::template('adhesives');
+        $data['root_category_external_id'] = '1749';
+        app(ImportVocabulary::class)->handle($this->shop->id, $data, 'test');
+
+        foreach (range(1, 3) as $i) {
+            $this->product("6{$i}", "מקדחה נטענת {$i} 18V", 'מקדחה חזקה לעבודות בית.', [$this->root]);
+        }
+
+        Settings::set('enrichment.nightly_model_requests', 5, $this->shop->id);
+
+        $run = app(RunNightlyModelReading::class)->handle($this->shop->id);
+
+        $this->assertSame('succeeded', $run->status->value);
+        $this->assertGreaterThan(0, $run->output['asked'], 'the branch with unread products was found');
     }
 }

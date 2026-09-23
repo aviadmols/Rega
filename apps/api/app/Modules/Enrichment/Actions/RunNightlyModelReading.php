@@ -54,14 +54,27 @@ final class RunNightlyModelReading
                 }
 
                 $model = (string) Settings::get('assistant.scope_model');
-                $vocabulary = $this->tenant->run($shopId, fn (): ?EnrichmentVocabulary => EnrichmentVocabulary::query()
-                    ->where('active', true)->orderBy('key')->first());
+
+                // A shop's catalogue is divided between several vocabularies, and a product can
+                // only be read against the one its branch belongs to. Taking the first would mean
+                // reading one branch until it was finished and never touching the others, so each
+                // is tried in turn until one still has something unread.
+                $vocabularies = $this->tenant->run($shopId, fn () => EnrichmentVocabulary::query()
+                    ->where('active', true)->orderBy('key')->get());
+                $batch = null;
+
+                foreach ($vocabularies as $vocabulary) {
+                    $batch = $this->batches->handle($shopId, TaskType::ProductExtraction, $vocabulary->id, limit: $limit)['batch'] ?? null;
+
+                    if ($batch !== null) {
+                        break;
+                    }
+                }
 
                 // Nothing to read is the ordinary case for a shop that has caught up.
-                $batch = $this->batches->handle($shopId, TaskType::ProductExtraction, $vocabulary?->id, limit: $limit)['batch'] ?? null;
-
                 if ($batch === null) {
-                    $run->output(['asked' => 0])->summary('enrichment::runs.nightly_model_nothing');
+                    $run->output(['asked' => 0, 'vocabularies' => $vocabularies->count()])
+                        ->summary('enrichment::runs.nightly_model_nothing');
 
                     return;
                 }
