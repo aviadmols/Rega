@@ -2,7 +2,9 @@
 
 namespace App\Modules\Enrichment\Console;
 
+use App\Core\Facades\Features;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Enrichment\Actions\AuditContentReading;
 use App\Modules\Enrichment\Actions\ComputeProductRelations;
 use App\Modules\Enrichment\Actions\ComputeRankings;
@@ -36,7 +38,7 @@ final class EnrichmentCommand extends Command
 {
     protected $signature = 'enrichment
         {step : vocabulary, code, content, audit, promises, tasks, results, rankings, rules or relations}
-        {target : shop slug, or batch ID for results}
+        {target? : shop slug, or batch ID for results; none with --scheduled}
         {argument? : task type for tasks, results file for results}
         {--template= : vocabulary template name}
         {--file= : vocabulary JSON file}
@@ -47,7 +49,8 @@ final class EnrichmentCommand extends Command
         {--limit= : maximum requests}
         {--out= : where to write the task file}
         {--model= : the model that produced the results}
-        {--include-done : ask again about products already read with the same input}';
+        {--include-done : ask again about products already read with the same input}
+        {--scheduled : every shop that has articles, when its flag is on (audit only)}';
 
     protected $description = 'Run enrichment steps from the command line.';
 
@@ -59,7 +62,7 @@ final class EnrichmentCommand extends Command
             'results' => $this->results(),
             'rankings' => $this->rankings(),
             'code' => $this->shopStep(fn (Shop $shop): Run => app(ReadProductsInCode::class)->handle($shop->id)),
-            'audit' => $this->shopStep(fn (Shop $shop): Run => app(AuditContentReading::class)->handle($shop->id)),
+            'audit' => $this->shopStep(fn (Shop $shop): Run => app(AuditContentReading::class)->handle($shop->id), 'enrichment.weekly_audit'),
             'content' => $this->shopStep(fn (Shop $shop): Run => app(ReadContentInCode::class)->handle($shop->id)),
             'promises' => $this->shopStep(fn (Shop $shop): Run => app(ReadPromisesInCode::class)->handle($shop->id)),
             'relations' => $this->shopStep(fn (Shop $shop): Run => app(ComputeProductRelations::class)->handle($shop->id)),
@@ -149,9 +152,16 @@ final class EnrichmentCommand extends Command
         return self::SUCCESS;
     }
 
-    /** @param callable(Shop): Run $step */
-    private function shopStep(callable $step): int
+    /**
+     * @param  callable(Shop): Run  $step
+     * @param  string|null  $flag  the feature a shop opts out of the scheduled walk with
+     */
+    private function shopStep(callable $step, ?string $flag = null): int
     {
+        if ($this->option('scheduled')) {
+            return $flag === null ? $this->failWith('This step has no scheduled form.') : $this->everyShop($step, $flag);
+        }
+
         $shop = $this->shop();
 
         if (! $shop) {
@@ -179,6 +189,32 @@ final class EnrichmentCommand extends Command
         $this->line((string) $result['run']->summary());
 
         return $result['rules'] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * The step for every shop that has articles to read, unless the shop turned the flag off.
+     * A shop that fails does not stop the others; the scheduler sees one failure at the end.
+     *
+     * @param  callable(Shop): Run  $step
+     */
+    private function everyShop(callable $step, string $flag): int
+    {
+        $shopIds = CatalogContent::query()->active()->whereNotNull('body')->distinct()->pluck('shop_id');
+        $failed = 0;
+
+        foreach (Shop::query()->whereIn('id', $shopIds)->orderBy('slug')->get() as $shop) {
+            if (! Features::enabled($flag, $shop->id)) {
+                $this->line("{$shop->slug}: off");
+
+                continue;
+            }
+
+            $run = $step($shop);
+            $this->line("{$shop->slug}: ".$run->summary());
+            $failed += $run->status->value === 'succeeded' ? 0 : 1;
+        }
+
+        return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }
 
     private function shop(): ?Shop

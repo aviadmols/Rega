@@ -2,10 +2,13 @@
 
 namespace App\Modules\Enrichment\Tests;
 
+use App\Core\Facades\Features;
+use App\Core\Tenancy\TenantContext;
 use App\Modules\Admin\Models\User;
 use App\Modules\Ai\Contracts\ChatModel;
 use App\Modules\Ai\Contracts\ModelReply;
 use App\Modules\Ai\Enums\AiProviderName;
+use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Enrichment\Actions\AuditContentReading;
 use App\Modules\Enrichment\Actions\PublishContentRules;
 use App\Modules\Enrichment\Actions\ReadContentInCode;
@@ -16,6 +19,8 @@ use App\Modules\Enrichment\Models\EnrichmentFact;
 use App\Modules\Enrichment\Models\EnrichmentRuleProposal;
 use App\Modules\Enrichment\Support\ContentRules;
 use App\Modules\Enrichment\Tests\Concerns\BuildsCatalog;
+use App\Modules\Runs\Models\Run;
+use App\Modules\Tenancy\Models\Shop;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -191,5 +196,31 @@ final class ContentAuditTest extends TestCase
         $second = $this->inShop(fn () => EnrichmentRuleProposal::query()->latest('id')->first())->sampled;
 
         $this->assertSame([], array_intersect(array_column($first, 'article'), array_column($second, 'article')), 'the next audit reads what the last one did not');
+    }
+
+    public function test_the_weekly_walk_audits_every_shop_with_articles_and_skips_one_that_opted_out(): void
+    {
+        // A second shop with an article that said no, and a third with no articles at all.
+        $optedOut = Shop::factory()->create();
+        app(TenantContext::class)->run($optedOut->id, fn () => CatalogContent::query()->create([
+            'shop_id' => $optedOut->id, 'type' => 'post', 'external_id' => '1', 'title' => 'x', 'excerpt' => 'y', 'body' => 'y', 'hash' => 'h',
+        ]));
+        Features::override('enrichment.weekly_audit', false, $optedOut->id);
+        $empty = Shop::factory()->create();
+
+        $this->model->replies = [['missed' => [], 'wrong' => []]];
+
+        $this->artisan('enrichment', ['step' => 'audit', '--scheduled' => true])
+            ->expectsOutputToContain($this->shop->slug.': ')
+            ->expectsOutputToContain($optedOut->slug.': off')
+            ->assertSuccessful();
+
+        $audited = app(TenantContext::class)->runUnscoped(fn () => Run::query()
+            ->where('action', AuditContentReading::ACTION)
+            ->pluck('shop_id')
+            ->all());
+
+        $this->assertSame([$this->shop->id], $audited, 'only the shop with articles that did not opt out');
+        $this->assertNotContains($empty->id, $audited);
     }
 }

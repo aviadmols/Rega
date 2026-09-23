@@ -6,6 +6,7 @@ use App\Core\Modules\ModuleServiceProvider;
 use App\Modules\Enrichment\Actions\RereadPage;
 use App\Modules\Enrichment\Console\EnrichmentCommand;
 use App\Modules\Enrichment\Contracts\RereadsPages;
+use Illuminate\Console\Scheduling\Schedule;
 
 final class EnrichmentServiceProvider extends ModuleServiceProvider
 {
@@ -13,6 +14,20 @@ final class EnrichmentServiceProvider extends ModuleServiceProvider
     {
         // Another module may ask for one page to be read again; it gets the code readers only.
         $this->app->bind(RereadsPages::class, RereadPage::class);
+    }
+
+    protected function bootModule(): void
+    {
+        // Once a week, early Sunday Israel time, the audit samples a few articles in every shop that
+        // has them and asks whether code read them well. It only ever proposes; a person publishes.
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('enrichment', ['audit', '--scheduled' => true])
+                ->weeklyOn(0, '04:40')
+                ->timezone('Asia/Jerusalem')
+                ->name('enrichment:audit-weekly')
+                ->withoutOverlapping()
+                ->onOneServer();
+        });
     }
 
     protected function moduleCommands(): array
