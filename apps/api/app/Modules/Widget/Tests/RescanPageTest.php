@@ -71,4 +71,20 @@ final class RescanPageTest extends TestCase
         $this->assertNotEmpty(array_filter($result['added'], fn (string $line): bool => str_contains($line, 'כותנה')), 'the promise reaches the page');
         $this->assertSame(FactStatus::Approved, $kept->fresh()->status, 'the person\'s decision stands');
     }
+
+    public function test_the_screen_offers_recent_articles_to_start_from_before_anyone_types(): void
+    {
+        $this->article('901', 'מדריך חדש', 'טקסט ארוך מספיק כדי להיחשב מאמר אמיתי כאן.');
+        $this->product('11', 'מוצר', 'x', []);
+
+        $page = Livewire::test(ProductPage::class);
+        $recent = $page->instance()->recent();
+
+        $this->assertNotEmpty($recent, 'a search box alone asks a person to already know what they want');
+        $this->assertSame('content', $recent->first()['type'], 'an article first: it cannot be reached from the catalogue');
+
+        // Once a page is chosen the offer gets out of the way.
+        $page->call('pick', $this->shop->id, 'content', '901');
+        $this->assertEmpty($page->instance()->recent());
+    }
 }

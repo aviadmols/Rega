@@ -16,6 +16,17 @@
                 @endforeach
             </ul>
         @endif
+        @if ($this->recent()->isNotEmpty())
+            <p style="margin-top:10px;{{ $small }}">{{ __('widget::ui.page.recent') }}</p>
+            <ul style="margin-top:4px;display:grid;gap:4px">
+                @foreach ($this->recent() as $item)
+                    <li>
+                        <button type="button" wire:click="pick('{{ $item['shop_id'] }}', '{{ $item['type'] }}', '{{ $item['external_id'] }}')" style="text-decoration:underline;text-align:start">{{ $item['title'] }}</button>
+                        <span style="{{ $small }}">{{ __('widget::ui.preview.page_types.'.$item['type']) }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </x-filament::section>
 
     @php($page = $this->page())

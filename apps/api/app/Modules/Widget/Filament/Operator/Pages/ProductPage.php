@@ -113,6 +113,40 @@ class ProductPage extends Page
         });
     }
 
+    /**
+     * Something to start from when nobody has typed anything.
+     *
+     * A search box on its own asks a person to already know which page they want. Most of the
+     * time they want the article that was published this week, or any article at all, so the
+     * most recently written ones are offered and the box is for when they want a particular
+     * one. Articles first: a product's page can be reached from the catalogue, an article's
+     * cannot.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function recent(): Collection
+    {
+        if (trim($this->search) !== '' || $this->id !== null) {
+            return collect();
+        }
+
+        $shop = $this->shop ?? app(TenantContext::class)->id();
+
+        return app(TenantContext::class)->runUnscoped(function () use ($shop): Collection {
+            $articles = CatalogContent::query()->whereNull('removed_at')
+                ->when($shop !== null, fn ($q) => $q->where('shop_id', $shop))
+                ->orderByDesc('source_updated_at')->limit(6)->get(['shop_id', 'external_id', 'title', 'type'])
+                ->map(fn (CatalogContent $c): array => ['shop_id' => $c->shop_id, 'type' => 'content', 'external_id' => $c->external_id, 'title' => $c->title]);
+
+            $products = CatalogProduct::query()->whereNull('removed_at')
+                ->when($shop !== null, fn ($q) => $q->where('shop_id', $shop))
+                ->orderByDesc('source_updated_at')->limit(4)->get(['shop_id', 'external_id', 'title'])
+                ->map(fn (CatalogProduct $p): array => ['shop_id' => $p->shop_id, 'type' => 'product', 'external_id' => $p->external_id, 'title' => $p->title]);
+
+            return $articles->concat($products)->values();
+        });
+    }
+
     /** Products to add into the section being edited. @return Collection<int, CatalogProduct> */
     public function addMatches(): Collection
     {

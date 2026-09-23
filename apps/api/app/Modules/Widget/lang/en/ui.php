@@ -24,6 +24,7 @@ return [
         'empty_articles' => 'No articles with matching products yet.',
     ],
     'page' => [
+        'recent' => 'Or start from one of these — the most recently updated:',
         'rescan' => 'Rescan this page',
         'rescan_same' => 'The rescan changed nothing shown on the page.',
         'title' => 'Page in the widget',
