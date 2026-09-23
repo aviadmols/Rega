@@ -4,6 +4,7 @@ namespace App\Modules\Analytics\Console;
 
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Analytics\Actions\ComputePopularity;
+use App\Modules\Analytics\Actions\ComputePriors;
 use App\Modules\Analytics\Actions\ComputeScores;
 use App\Modules\Connections\Models\StoreConnection;
 use App\Modules\Tenancy\Models\Shop;
@@ -36,6 +37,12 @@ final class ComputeScoresCommand extends Command
         foreach ($shopIds as $shopId) {
             $this->line((string) $scores->handle((string) $shopId)->summary());
             $this->line((string) $popularity->handle((string) $shopId)->summary());
+        }
+
+        // Once every shop has been scored, what a trade as a whole has learned — the starting
+        // point a shop with no scores of its own is given instead of the order of a loop.
+        if ($target === null) {
+            $this->line((string) app(ComputePriors::class)->handle()->summary());
         }
 
         return self::SUCCESS;

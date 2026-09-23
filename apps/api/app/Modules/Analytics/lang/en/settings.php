@@ -45,4 +45,8 @@ return [
         'label' => 'How much is enough before saying anything',
         'description' => 'Below this on either side the measurement says "too early" instead of inventing a conclusion.',
     ],
+    'prior_min_shops' => [
+        'label' => 'How many shops make a starting point',
+        'description' => 'How many shops of a trade are needed before an average is worth giving a new shop. Fewer than that and one shop\'s habits are not its trade\'s.',
+    ],
 ];

@@ -7,6 +7,7 @@ use App\Core\Facades\Settings;
 use App\Core\Modules\ModuleRepository;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Analytics\Models\AnalyticsPopularity;
+use App\Modules\Analytics\Models\AnalyticsPrior;
 use App\Modules\Analytics\Models\AnalyticsScore;
 use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogCategory;
@@ -22,6 +23,7 @@ use App\Modules\Enrichment\Models\EnrichmentProductRelation;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
 use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
+use App\Modules\Tenancy\Models\Shop;
 use App\Modules\Widget\Models\WidgetCuration;
 use App\Modules\Widget\Support\GuideRelevance;
 use App\Modules\Widget\Support\OpeningHours;
@@ -596,11 +598,47 @@ final class BuildPageBank
      * - Sections: in order of their score on this page, or across the shop while the page has none.
      *   A section nobody has seen yet gets the best known score, so it gets seen.
      *
-     * Without scores the built order stands.
+     * Without scores of its own, a shop borrows how the panels tend to do across its trade —
+     * rates from other shops, with nothing of theirs in them. Without that either, the built
+     * order stands.
      *
      * @param  list<array<string, mixed>>  $sections
      * @return list<array<string, mixed>>
      */
+    /**
+     * The order the shops of this trade would put these panels in.
+     *
+     * A shop opened this morning has watched nobody, and the order its panels happen to be
+     * built in is not an opinion about anything. Its trade has been watched for months.
+     *
+     * @param  list<array<string, mixed>>  $sections
+     * @return list<array<string, mixed>>
+     */
+    private function asTradeWould(string $shopId, array $sections): array
+    {
+        $shop = $this->tenant->runUnscoped(fn () => Shop::query()->find($shopId));
+        $priors = AnalyticsPrior::forVertical($shop?->vertical?->value);
+
+        if ($priors === []) {
+            return $sections;
+        }
+
+        // A panel the trade has never been able to judge keeps a middling position rather
+        // than being pushed to the end for having no evidence either way.
+        $middle = array_sum($priors) / count($priors);
+
+        usort($sections, fn (array $a, array $b): int => ($priors[$b['candidate']] ?? $middle) <=> ($priors[$a['candidate']] ?? $middle));
+
+        foreach ($sections as $section) {
+            $this->note((string) $section['candidate'], '', ['trade' => [
+                'vertical' => $shop?->vertical?->value,
+                'score' => $priors[$section['candidate']] ?? null,
+            ]]);
+        }
+
+        return $sections;
+    }
+
     private function learned(string $shopId, string $type, string $externalId, array $sections, int $maxProducts): array
     {
         $scores = $sections === [] ? collect() : AnalyticsScore::query()
@@ -642,7 +680,7 @@ final class BuildPageBank
         $sections = array_values(array_filter($sections, fn (array $s): bool => ! isset($s['products']) || $s['products'] !== []));
 
         if ($scores->isEmpty()) {
-            return $sections;
+            return $this->asTradeWould($shopId, $sections);
         }
 
         $known = $module->pluck('score')->map(fn ($s): float => (float) $s)->filter(fn (float $s): bool => $s > 0);

@@ -114,6 +114,15 @@
             "max": 100000,
             "scope": "shop",
             "unit": "exposures"
+        },
+        {
+            "name": "prior_min_shops",
+            "type": "int",
+            "default": 2,
+            "min": 2,
+            "max": 50,
+            "scope": "global",
+            "unit": "shops"
         }
     ]
 }
