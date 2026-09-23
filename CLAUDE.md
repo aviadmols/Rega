@@ -130,6 +130,9 @@ On this Windows machine PHP comes from Herd. From Git Bash use
 
 - `AuthenticateShopKey` implements `AuthenticatesRequests` so Laravel runs it before
   `ThrottleRequests`; otherwise the per-shop rate limit silently becomes per-IP.
+- A Livewire page must never have a public property and a public method of the same name.
+  The server side works and a `->call()` test passes, but in the browser `$wire.<name>` resolves
+  to the property, so `wire:click="<name>"` calls `null()` and the button does nothing, silently.
 - Postgres refuses `FOR UPDATE` with aggregates: lock the parent row, then count.
 - Tests run on SQLite locally and on Postgres + pgvector in CI. Tests that create their own
   tables must drop them in tearDown.
