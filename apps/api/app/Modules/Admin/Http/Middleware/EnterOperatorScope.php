@@ -22,14 +22,18 @@ final class EnterOperatorScope
 
     public function handle(Request $request, Closure $next): Response
     {
-        $shop = CurrentShop::id() ?? CurrentShop::theOnlyShop();
+        $chosen = CurrentShop::id();
 
         // A shop deleted since it was picked leaves the panel across every shop, not broken.
-        if ($shop !== null && CurrentShop::exists($shop)) {
-            CurrentShop::set($shop);
+        if ($chosen !== null && ! CurrentShop::exists($chosen)) {
+            CurrentShop::set(null);
+        }
+
+        $shop = CurrentShop::effective();
+
+        if ($shop !== null) {
             $this->tenant->set($shop);
         } else {
-            CurrentShop::set(null);
             // Said out loud rather than relied on: a request gets a fresh context, but going back
             // to every shop must drop the last one even when the instance is reused.
             $this->tenant->clear();

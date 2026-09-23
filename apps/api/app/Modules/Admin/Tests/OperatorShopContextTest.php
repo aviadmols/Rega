@@ -122,6 +122,34 @@ final class OperatorShopContextTest extends TestCase
 
         // One shop left: choosing it would be the only sensible thing to do, so it is done.
         $this->assertSame($this->first->id, $this->scopeDuringRequest());
-        $this->assertSame($this->first->id, CurrentShop::id(), 'and the picker says so');
+        $this->assertSame($this->first->id, CurrentShop::effective(), 'and the picker says so');
+    }
+
+    public function test_asking_for_every_shop_is_an_answer_and_is_not_undone(): void
+    {
+        // With one shop, the panel helps itself in. Stepping out must then stick.
+        $this->second->delete();
+        $this->assertSame($this->first->id, $this->scopeDuringRequest());
+
+        $this->post('/admin/shop', ['shop' => CurrentShop::EVERY]);
+
+        $this->assertNull(CurrentShop::id());
+        $this->assertNull($this->scopeDuringRequest(), 'and the only shop does not pull it back in');
+        $this->assertNull($this->scopeDuringRequest(), 'on the next page either');
+    }
+
+    public function test_a_shops_own_settings_come_first_and_the_platform_tuning_is_folded_away(): void
+    {
+        $this->post('/admin/shop', ['shop' => $this->first->id]);
+
+        $page = $this->get('/operator/configuration')->assertOk();
+
+        // What running a store is about, in its own groups.
+        $page->assertSee(__('admin::configuration.groups.shown.title'));
+        $page->assertSee(__('admin::configuration.groups.whatsapp.title'));
+
+        // Everything else is behind one heading rather than spread over the screen.
+        $page->assertSee(__('admin::configuration.groups.advanced.title'));
+        $page->assertSee(__('admin::configuration.groups.advanced.help'));
     }
 }

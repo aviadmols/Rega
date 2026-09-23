@@ -27,52 +27,6 @@ final class DisplaySettings extends OperatorConfiguration
 {
     use LocksShopToPanelTenant;
 
-    /**
-     * What a shop owner decides, grouped the way they think about it rather than by the module
-     * the code happens to live in. This is also the allow-list: a key that is not in a group is
-     * not read and cannot be written from here, so which model answers, what a run may cost and
-     * every other platform decision stays with the operator.
-     *
-     * @var array<string, list<string>>
-     */
-    private const GROUPS = [
-        'shown' => [
-            'widget.on_products',
-            'widget.on_content',
-            'widget.layout',
-            'widget.max_products',
-            'widget.popularity',
-            'widget.promises',
-        ],
-        'placement' => [
-            'widget.product_selector',
-            'widget.product_position',
-            'widget.content_selector',
-            'widget.content_position',
-            'widget.floating_fallback',
-        ],
-        'assistant' => [
-            'assistant.on_products',
-            'assistant.on_content',
-        ],
-        'whatsapp' => [
-            'widget.whatsapp',
-            'widget.whatsapp_number',
-            'widget.whatsapp_title',
-            'widget.whatsapp_button',
-            'widget.whatsapp_message',
-            'widget.whatsapp_offline_note',
-            'widget.whatsapp_when_offline',
-        ],
-        'signup' => [
-            'shoppers.recent_products',
-            'shoppers.signup',
-            'shoppers.signup_title',
-            'shoppers.signup_consent',
-            'shoppers.signup_note',
-        ],
-    ];
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSwatch;
 
     protected static ?int $navigationSort = 60;
@@ -137,7 +91,7 @@ final class DisplaySettings extends OperatorConfiguration
         $settings = collect($this->settings())->keyBy(fn (SettingDefinition $d): string => $d->key());
         $sections = [];
 
-        foreach (self::GROUPS as $group => $keys) {
+        foreach (OperatorConfiguration::SHOP_GROUPS as $group => $keys) {
             $fields = [];
 
             foreach ($keys as $key) {
@@ -164,6 +118,6 @@ final class DisplaySettings extends OperatorConfiguration
     /** @return list<string> */
     private static function allowed(): array
     {
-        return array_merge(...array_values(self::GROUPS));
+        return array_merge(...array_values(OperatorConfiguration::SHOP_GROUPS));
     }
 }

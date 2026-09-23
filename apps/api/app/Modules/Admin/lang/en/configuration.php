@@ -20,5 +20,6 @@ return [
         'assistant' => ['title' => 'What the assistant answers', 'help' => 'Answers are written from the store\'s own information and checked before a shopper sees them.'],
         'whatsapp' => ['title' => 'Talking to the team on WhatsApp', 'help' => 'The number and the wording. Answering hours are on the "Answering hours" screen.'],
         'signup' => ['title' => 'Products they viewed, and signing up', 'help' => 'What is kept for a returning shopper, and what the sign-up asks.'],
+        'advanced' => ['title' => 'Advanced — platform tuning', 'help' => 'Caps, time windows, scanning and models. Not needed to run a store; open it only if you know what you are changing.'],
     ],
 ];

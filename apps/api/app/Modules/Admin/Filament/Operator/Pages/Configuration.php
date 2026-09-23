@@ -179,15 +179,122 @@ class Configuration extends Page implements HasForms
         $this->mount();
     }
 
-    /** @return list<Component> */
+    /**
+     * What a shop's own settings are, in the order a shop owner thinks about them. The same list
+     * the merchant's screen is built from, so the two screens never drift apart.
+     *
+     * @var array<string, list<string>>
+     */
+    public const SHOP_GROUPS = [
+        'shown' => [
+            'widget.on_products',
+            'widget.on_content',
+            'widget.layout',
+            'widget.max_products',
+            'widget.popularity',
+            'widget.promises',
+        ],
+        'placement' => [
+            'widget.product_selector',
+            'widget.product_position',
+            'widget.content_selector',
+            'widget.content_position',
+            'widget.floating_fallback',
+        ],
+        'assistant' => [
+            'assistant.on_products',
+            'assistant.on_content',
+        ],
+        'whatsapp' => [
+            'widget.whatsapp',
+            'widget.whatsapp_number',
+            'widget.whatsapp_title',
+            'widget.whatsapp_button',
+            'widget.whatsapp_message',
+            'widget.whatsapp_offline_note',
+            'widget.whatsapp_when_offline',
+        ],
+        'signup' => [
+            'shoppers.recent_products',
+            'shoppers.signup',
+            'shoppers.signup_title',
+            'shoppers.signup_consent',
+            'shoppers.signup_note',
+        ],
+    ];
+
+    /**
+     * With a shop in hand this screen had sixty-odd fields on it, most of them platform tuning
+     * that has nothing to do with running a store. The shop's own settings come first, in their
+     * groups; everything else is folded away under one heading, open only when it is wanted.
+     *
+     * @return list<Component>
+     */
     protected function moduleSections(): array
+    {
+        $features = collect($this->features())->keyBy(fn (FeatureDefinition $d): string => $d->key());
+        $settings = collect($this->settings())->keyBy(fn (SettingDefinition $d): string => $d->key());
+
+        $sections = [];
+        $inGroups = [];
+
+        foreach (self::SHOP_GROUPS as $group => $keys) {
+            $fields = [];
+
+            foreach ($keys as $key) {
+                $field = match (true) {
+                    $features->has($key) => $this->featureField($features->get($key)),
+                    $settings->has($key) => $this->settingField($settings->get($key)),
+                    default => null,
+                };
+
+                if ($field !== null) {
+                    $fields[] = $field;
+                    $inGroups[] = $key;
+                }
+            }
+
+            if ($fields !== []) {
+                $sections[] = Section::make(__("admin::configuration.groups.{$group}.title"))
+                    ->description(__("admin::configuration.groups.{$group}.help"))
+                    ->columns(2)
+                    ->schema($fields);
+            }
+        }
+
+        $rest = $this->restByModule($inGroups);
+
+        if ($rest !== []) {
+            $sections[] = Section::make(__('admin::configuration.groups.advanced.title'))
+                ->description(__('admin::configuration.groups.advanced.help'))
+                ->collapsible()
+                ->collapsed()
+                ->schema($rest);
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Everything the groups did not take, still one section per module, inside the fold.
+     *
+     * @param  list<string>  $taken
+     * @return list<Component>
+     */
+    private function restByModule(array $taken): array
     {
         $sections = [];
 
         foreach (app(ModuleRepository::class)->enabled() as $module) {
             $fields = [
-                ...array_map(fn (FeatureDefinition $d) => $this->featureField($d), $this->features($module)),
-                ...array_map(fn (SettingDefinition $d) => $this->settingField($d), $this->settings($module)),
+                ...array_map(
+                    fn (FeatureDefinition $d) => $this->featureField($d),
+                    array_values(array_filter($this->features($module), fn (FeatureDefinition $d): bool => ! in_array($d->key(), $taken, true))),
+                ),
+                ...array_map(
+                    fn (SettingDefinition $d) => $this->settingField($d),
+                    array_values(array_filter($this->settings($module), fn (SettingDefinition $d): bool => ! in_array($d->key(), $taken, true))),
+                ),
             ];
 
             if ($fields !== []) {

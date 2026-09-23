@@ -30,15 +30,31 @@ final class CurrentShop
     {
         $id = Session::get(self::SESSION_KEY);
 
-        return is_string($id) && $id !== '' ? $id : null;
+        return is_string($id) && $id !== '' && $id !== self::EVERY ? $id : null;
     }
 
     /**
-     * Nothing chosen yet, and only one shop on the platform: that is the shop. Otherwise a new
-     * operator would meet a panel with most of its screens missing and read it as a fault.
+     * Whether the operator has said anything at all. "Every shop" is an answer, so it is kept
+     * like any other: without this, a platform with one shop would pull itself back into that
+     * shop the moment the operator asked to step out of it.
      */
-    public static function theOnlyShop(): ?string
+    public static function chosen(): bool
     {
+        return is_string(Session::get(self::SESSION_KEY));
+    }
+
+    /**
+     * The shop the panel is actually inside: the one chosen, or — while nothing has been said and
+     * the platform has a single shop — that one, so a new operator does not meet a panel with most
+     * of its screens missing and read it as a fault. Once they answer, their answer stands, even
+     * when the answer is "every shop".
+     */
+    public static function effective(): ?string
+    {
+        if (self::chosen()) {
+            return self::id();
+        }
+
         $shops = Shop::query()->orderBy('name')->limit(2)->pluck('id');
 
         return $shops->count() === 1 ? (string) $shops->first() : null;
@@ -56,18 +72,12 @@ final class CurrentShop
         return Shop::query()->whereKey($id)->exists();
     }
 
-    /** Picking a shop that no longer exists, or "every shop", clears the choice. */
+    /** "Every shop", or a shop that no longer exists, is remembered as looking across them all. */
     public static function set(?string $id): void
     {
-        $id = $id === self::EVERY ? null : $id;
+        $across = $id === null || $id === self::EVERY || ! self::exists($id);
 
-        if ($id === null || ! Shop::query()->whereKey($id)->exists()) {
-            Session::forget(self::SESSION_KEY);
-
-            return;
-        }
-
-        Session::put(self::SESSION_KEY, $id);
+        Session::put(self::SESSION_KEY, $across ? self::EVERY : $id);
     }
 
     /**

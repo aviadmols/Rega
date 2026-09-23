@@ -71,8 +71,8 @@ final class OperatorPanelProvider extends PanelProvider
             BLADE,
             [
                 'options' => CurrentShop::options(),
-                'current' => CurrentShop::id() ?? CurrentShop::EVERY,
-                'chosen' => CurrentShop::id() !== null,
+                'current' => CurrentShop::effective() ?? CurrentShop::EVERY,
+                'chosen' => CurrentShop::effective() !== null,
                 'label' => __('admin::panels.shop.label'),
                 'back' => '/'.ltrim(Request::path(), '/'),
             ],
