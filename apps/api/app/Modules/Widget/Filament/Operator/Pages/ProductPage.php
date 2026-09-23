@@ -11,6 +11,7 @@ use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
+use App\Modules\Enrichment\Contracts\RereadsPages;
 use App\Modules\Widget\Actions\BuildPageBank;
 use App\Modules\Widget\Models\WidgetCuration;
 use BackedEnum;
@@ -339,6 +340,70 @@ class ProductPage extends Page
         }
 
         return app(TenantContext::class)->run($this->shop, fn () => CatalogProduct::query()->whereIn('external_id', $externalIds)->pluck('title', 'external_id')->all());
+    }
+
+    /**
+     * What a fresh reading of this page would change in the widget: the bank before, the code
+     * readers run for this page alone, the bank after, and the difference between the two.
+     *
+     * @var array<string, mixed>|null
+     */
+    public ?array $rescan = null;
+
+    public function rescan(): void
+    {
+        if ($this->shop === null || $this->id === null) {
+            return;
+        }
+
+        $before = $this->shape(app(BuildPageBank::class)->handle($this->shop, $this->type, $this->id, 'he'));
+        $written = app(RereadsPages::class)->reread($this->shop, $this->type, $this->id);
+
+        // The storefront reads the bank from a cache; a rescan is the one time it must not.
+        foreach (['he', 'en'] as $locale) {
+            Cache::forget("widget:page:{$this->shop}:{$this->type}:{$this->id}:{$locale}");
+        }
+
+        $after = $this->shape(app(BuildPageBank::class)->handle($this->shop, $this->type, $this->id, 'he'));
+
+        $this->rescan = [
+            'written' => $written,
+            'before' => $before,
+            'after' => $after,
+            'added' => array_values(array_diff($after['lines'], $before['lines'])),
+            'removed' => array_values(array_diff($before['lines'], $after['lines'])),
+        ];
+    }
+
+    /**
+     * A bank reduced to the lines a person would notice changing: each section with its count,
+     * every point and promise as text.
+     *
+     * @param  array<string, mixed>  $bank
+     * @return array{sections: array<string, int>, lines: list<string>}
+     */
+    private function shape(array $bank): array
+    {
+        $sections = [];
+        $lines = [];
+
+        foreach ((array) ($bank['sections'] ?? []) as $section) {
+            $count = count((array) ($section['products'] ?? $section['items'] ?? $section['guides'] ?? $section['specs'] ?? $section['lines'] ?? []));
+            $sections[(string) $section['candidate']] = $count;
+
+            foreach ((array) ($section['items'] ?? []) as $item) {
+                $lines[] = trim(($item['key'] ?? '').' '.($item['text'] ?? ''));
+            }
+            foreach ((array) ($section['lines'] ?? []) as $line) {
+                $lines[] = (string) ($line['text'] ?? '');
+            }
+        }
+
+        foreach ((array) ($bank['assurances'] ?? []) as $assurance) {
+            $lines[] = (string) ($assurance['text'] ?? '');
+        }
+
+        return ['sections' => $sections, 'lines' => array_values(array_filter(array_unique($lines)))];
     }
 
     public function maxProducts(): int

@@ -24,6 +24,15 @@ return [
         'empty_articles' => 'No articles with matching products yet.',
     ],
     'page' => [
+        'rescan' => 'Rescan this page',
+        'rescan_help' => 'Runs the code readers on this page alone and shows what would change in the widget. No model, no cost.',
+        'rescan_written' => ':n facts written from the reading',
+        'rescan_same' => 'The fresh reading changed nothing the widget shows.',
+        'rescan_notes' => [
+            'not_found' => 'The page is not in the catalog.',
+            'no_takeaways' => 'No takeaways were found in the article — exactly what the audit looks at.',
+            'rankings_and_relations_need_the_whole_shop' => 'Superlatives and relations are computed against the whole shop and do not change from one page\x27s rescan.',
+        ],
         'title' => 'Page in the widget',
         'subheading' => 'What the widget shows on one page, why, and what the store team decides: pin, hide or add. The decision overrides code and learning.',
         'search' => 'Search a product or article by name or number…',

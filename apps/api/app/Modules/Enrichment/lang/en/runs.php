@@ -16,6 +16,7 @@ return [
     'read_content' => 'Code read :articles articles: :takeaways takeaways, and :empty articles it found nothing in.',
     'audit_content' => 'The audit read :articles articles and found :missed lines code missed.',
     'audit_nothing' => 'There are no articles to audit.',
+    'reread_page' => 'The page was read again in code: :written facts written.',
     'relations_computed' => ':relations relations: :complements complements for :products products, :families other sizes, :alternatives alternatives.',
     'relation_rules_saved' => 'Matching rules saved, version :version: :rules rules.',
     'relation_rules_invalid' => 'The matching rules were not saved: :count problems.',
