@@ -75,17 +75,33 @@ return [
         'label' => 'The note outside opening hours',
         'description' => 'Shown under the button when nobody is there now. Empty shows the default.',
     ],
-    'whatsapp_hours' => [
-        'label' => 'Opening hours, Sunday to Thursday',
-        'description' => 'As 09:00-18:00. Empty closes the day.',
+    'hours_sunday' => [
+        'label' => 'Answering hours on Sunday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
     ],
-    'whatsapp_hours_friday' => [
-        'label' => 'Opening hours on Friday',
-        'description' => 'As 09:00-13:00. Empty closes the day.',
+    'hours_monday' => [
+        'label' => 'Answering hours on Monday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
     ],
-    'whatsapp_hours_saturday' => [
-        'label' => 'Opening hours on Saturday',
-        'description' => 'As 10:00-14:00. Empty closes the day.',
+    'hours_tuesday' => [
+        'label' => 'Answering hours on Tuesday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
+    ],
+    'hours_wednesday' => [
+        'label' => 'Answering hours on Wednesday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
+    ],
+    'hours_thursday' => [
+        'label' => 'Answering hours on Thursday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
+    ],
+    'hours_friday' => [
+        'label' => 'Answering hours on Friday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
+    ],
+    'hours_saturday' => [
+        'label' => 'Answering hours on Saturday',
+        'description' => 'As 09:00-18:00. Empty means no answer that day. Edited on the "Answering hours" screen.',
     ],
     'whatsapp_timezone' => [
         'label' => 'The shop time zone',

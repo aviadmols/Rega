@@ -909,9 +909,8 @@
       minutes = now.getHours() * 60 + now.getMinutes();
     }
 
-    // Sunday to Thursday share their hours; Friday and Saturday have their own.
-    var today = day === 5 ? hours[1] : (day === 6 ? hours[2] : hours[0]);
-    var match = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/.exec(String(today || '').trim());
+    // One entry per day, Sunday first. Empty means the shop is closed that day.
+    var match = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/.exec(String(hours[day] || '').trim());
 
     if (!match) {
       return false;
@@ -920,7 +919,8 @@
     var from = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
     var until = parseInt(match[3], 10) * 60 + parseInt(match[4], 10);
 
-    return minutes >= from && minutes < until;
+    // A day that runs past midnight ends on the day it started.
+    return until > from ? (minutes >= from && minutes < until) : (minutes >= from || minutes < until);
   }
 
   /** The strip that opens WhatsApp with this product, when the shop asked for one. */

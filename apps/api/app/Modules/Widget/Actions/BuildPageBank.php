@@ -24,6 +24,7 @@ use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
 use App\Modules\Widget\Models\WidgetCuration;
 use App\Modules\Widget\Support\GuideRelevance;
+use App\Modules\Widget\Support\OpeningHours;
 use App\Modules\Widget\Support\ProductCard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -1133,12 +1134,11 @@ final class BuildPageBank
             'offline_note' => $text('offline_note'),
             'hide_when_offline' => Settings::get('widget.whatsapp_when_offline', $shopId) === 'hide',
             'timezone' => (string) Settings::get('widget.whatsapp_timezone', $shopId),
-            // "09:00-18:00", empty for a day the shop is closed. Sunday to Thursday, then Friday, then Saturday.
-            'hours' => [
-                (string) Settings::get('widget.whatsapp_hours', $shopId),
-                (string) Settings::get('widget.whatsapp_hours_friday', $shopId),
-                (string) Settings::get('widget.whatsapp_hours_saturday', $shopId),
-            ],
+            // One entry per day, Sunday first. "09:00-18:00", or empty on a day the shop is closed.
+            'hours' => OpeningHours::fromDays(array_map(
+                fn (string $day): string => (string) Settings::get("widget.hours_{$day}", $shopId),
+                OpeningHours::DAYS,
+            ))->toList(),
             'online_label' => (string) __('widget::bank.contact.online', [], $this->locale),
             'offline_label' => (string) __('widget::bank.contact.offline', [], $this->locale),
         ];

@@ -1,30 +1,254 @@
-{ "name": "Widget", "enabled": true, "requires": [ "Tenancy", "Connections", "Catalog", "Enrichment", "Analytics", "Shoppers", "Assistant", "Admin" ], "provider": "WidgetServiceProvider", "features": [ { "name": "on_products", "default": true },
-        { "name": "on_content", "default": true },
-        { "name": "whatsapp", "default": false },
-        { "name": "popularity", "default": true },
-        { "name": "promises", "default": true }
+{
+    "name": "Widget",
+    "enabled": true,
+    "requires": [
+        "Tenancy",
+        "Connections",
+        "Catalog",
+        "Enrichment",
+        "Analytics",
+        "Shoppers",
+        "Assistant",
+        "Admin"
+    ],
+    "provider": "WidgetServiceProvider",
+    "features": [
+        {
+            "name": "on_products",
+            "default": true
+        },
+        {
+            "name": "on_content",
+            "default": true
+        },
+        {
+            "name": "whatsapp",
+            "default": false
+        },
+        {
+            "name": "popularity",
+            "default": true
+        },
+        {
+            "name": "promises",
+            "default": true
+        }
     ],
     "settings": [
-        { "name": "layout", "type": "enum", "options": [ "circles", "chat" ], "default": "circles", "scope": "shop" },
-        { "name": "product_selector", "type": "string", "default": "form.cart", "min": 1, "max": 200, "scope": "shop" },
-        { "name": "product_position", "type": "enum", "options": [ "after", "before", "prepend", "append" ], "default": "after", "scope": "shop" },
-        { "name": "content_selector", "type": "string", "default": ".entry-content", "min": 1, "max": 200, "scope": "shop" },
-        { "name": "content_position", "type": "enum", "options": [ "after", "before", "prepend", "append" ], "default": "after", "scope": "shop" },
-        { "name": "floating_fallback", "type": "bool", "default": true, "scope": "shop" },
-        { "name": "max_products", "type": "int", "default": 4, "min": 1, "max": 12, "scope": "shop", "unit": "products" },
-        { "name": "common_highlight_products", "type": "int", "default": 5, "min": 2, "max": 500, "scope": "shop", "unit": "products" },
-        { "name": "page_cache_seconds", "type": "int", "default": 300, "min": 0, "max": 86400, "scope": "global", "unit": "seconds" },
-        { "name": "page_requests_per_minute", "type": "int", "default": 240, "min": 10, "max": 5000, "scope": "global", "unit": "requests" },
-        { "name": "popularity_min_count", "type": "int", "default": 3, "min": 1, "max": 100000, "scope": "shop", "unit": "times" },
-        { "name": "whatsapp_number", "type": "string", "default": "", "min": 0, "max": 20, "scope": "shop" },
-        { "name": "whatsapp_title", "type": "string", "default": "", "min": 0, "max": 120, "scope": "shop" },
-        { "name": "whatsapp_button", "type": "string", "default": "", "min": 0, "max": 60, "scope": "shop" },
-        { "name": "whatsapp_message", "type": "string", "default": "", "min": 0, "max": 300, "scope": "shop" },
-        { "name": "whatsapp_offline_note", "type": "string", "default": "", "min": 0, "max": 200, "scope": "shop" },
-        { "name": "whatsapp_hours", "type": "string", "default": "09:00-18:00", "min": 0, "max": 40, "scope": "shop" },
-        { "name": "whatsapp_hours_friday", "type": "string", "default": "", "min": 0, "max": 40, "scope": "shop" },
-        { "name": "whatsapp_hours_saturday", "type": "string", "default": "", "min": 0, "max": 40, "scope": "shop" },
-        { "name": "whatsapp_timezone", "type": "string", "default": "Asia/Jerusalem", "min": 1, "max": 40, "scope": "shop" },
-        { "name": "whatsapp_when_offline", "type": "enum", "options": [ "show", "hide" ], "default": "show", "scope": "shop" }
+        {
+            "name": "layout",
+            "type": "enum",
+            "options": [
+                "circles",
+                "chat"
+            ],
+            "default": "circles",
+            "scope": "shop"
+        },
+        {
+            "name": "product_selector",
+            "type": "string",
+            "default": "form.cart",
+            "min": 1,
+            "max": 200,
+            "scope": "shop"
+        },
+        {
+            "name": "product_position",
+            "type": "enum",
+            "options": [
+                "after",
+                "before",
+                "prepend",
+                "append"
+            ],
+            "default": "after",
+            "scope": "shop"
+        },
+        {
+            "name": "content_selector",
+            "type": "string",
+            "default": ".entry-content",
+            "min": 1,
+            "max": 200,
+            "scope": "shop"
+        },
+        {
+            "name": "content_position",
+            "type": "enum",
+            "options": [
+                "after",
+                "before",
+                "prepend",
+                "append"
+            ],
+            "default": "after",
+            "scope": "shop"
+        },
+        {
+            "name": "floating_fallback",
+            "type": "bool",
+            "default": true,
+            "scope": "shop"
+        },
+        {
+            "name": "max_products",
+            "type": "int",
+            "default": 4,
+            "min": 1,
+            "max": 12,
+            "scope": "shop",
+            "unit": "products"
+        },
+        {
+            "name": "common_highlight_products",
+            "type": "int",
+            "default": 5,
+            "min": 2,
+            "max": 500,
+            "scope": "shop",
+            "unit": "products"
+        },
+        {
+            "name": "page_cache_seconds",
+            "type": "int",
+            "default": 300,
+            "min": 0,
+            "max": 86400,
+            "scope": "global",
+            "unit": "seconds"
+        },
+        {
+            "name": "page_requests_per_minute",
+            "type": "int",
+            "default": 240,
+            "min": 10,
+            "max": 5000,
+            "scope": "global",
+            "unit": "requests"
+        },
+        {
+            "name": "popularity_min_count",
+            "type": "int",
+            "default": 3,
+            "min": 1,
+            "max": 100000,
+            "scope": "shop",
+            "unit": "times"
+        },
+        {
+            "name": "whatsapp_number",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 20,
+            "scope": "shop"
+        },
+        {
+            "name": "whatsapp_title",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 120,
+            "scope": "shop"
+        },
+        {
+            "name": "whatsapp_button",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 60,
+            "scope": "shop"
+        },
+        {
+            "name": "whatsapp_message",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 300,
+            "scope": "shop"
+        },
+        {
+            "name": "whatsapp_offline_note",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 200,
+            "scope": "shop"
+        },
+        {
+            "name": "whatsapp_timezone",
+            "type": "string",
+            "default": "Asia/Jerusalem",
+            "min": 1,
+            "max": 40,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_sunday",
+            "type": "string",
+            "default": "09:00-18:00",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_monday",
+            "type": "string",
+            "default": "09:00-18:00",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_tuesday",
+            "type": "string",
+            "default": "09:00-18:00",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_wednesday",
+            "type": "string",
+            "default": "09:00-18:00",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_thursday",
+            "type": "string",
+            "default": "09:00-18:00",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_friday",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "hours_saturday",
+            "type": "string",
+            "default": "",
+            "min": 0,
+            "max": 11,
+            "scope": "shop"
+        },
+        {
+            "name": "whatsapp_when_offline",
+            "type": "enum",
+            "options": [
+                "show",
+                "hide"
+            ],
+            "default": "show",
+            "scope": "shop"
+        }
     ]
 }

@@ -135,7 +135,8 @@ final class PageBankTest extends TestCase
 
         Settings::set('widget.whatsapp_number', '+972 50-123-4567', $this->shop->id);
         Settings::set('widget.whatsapp_title', 'רוצה שנשלח לך סרטון של המוצר?', $this->shop->id);
-        Settings::set('widget.whatsapp_hours_friday', '09:00-13:00', $this->shop->id);
+        Settings::set('widget.hours_friday', '09:00-13:00', $this->shop->id);
+        Settings::set('widget.hours_thursday', '', $this->shop->id);
         Settings::set('widget.whatsapp_when_offline', 'hide', $this->shop->id);
         Cache::flush();
 
@@ -145,7 +146,11 @@ final class PageBankTest extends TestCase
         $this->assertSame('רוצה שנשלח לך סרטון של המוצר?', $contact['title']);
         $this->assertSame('לשיחה בוואטסאפ', $contact['button'], 'what the shop did not write comes from the default');
         $this->assertStringContainsString(':product', $contact['message'], 'the widget fills in the product and the page');
-        $this->assertSame(['09:00-18:00', '09:00-13:00', ''], $contact['hours'], 'Sunday to Thursday, Friday, Saturday closed');
+        $this->assertSame(
+            ['09:00-18:00', '09:00-18:00', '09:00-18:00', '09:00-18:00', '', '09:00-13:00', ''],
+            $contact['hours'],
+            'one entry per day, Sunday first: Thursday and Saturday closed, Friday its own',
+        );
         $this->assertSame('Asia/Jerusalem', $contact['timezone']);
         $this->assertTrue($contact['hide_when_offline']);
 
