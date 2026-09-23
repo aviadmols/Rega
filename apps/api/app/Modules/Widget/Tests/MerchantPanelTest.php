@@ -56,30 +56,30 @@ final class MerchantPanelTest extends TestCase
     {
         $screen = Livewire::test(DisplaySettings::class);
 
+        // The areas are a shop owner's, and there are no others.
+        $this->assertSame(
+            ['shown', 'placement', 'assistant', 'whatsapp', 'signup'],
+            array_keys($screen->instance()->areas()),
+            'nothing about the platform is offered here at all',
+        );
+
         // Wording and placement are theirs.
-        $screen->assertSee(__('widget::settings.layout.label'))
-            ->assertSee(__('widget::settings.whatsapp_number.label'))
-            ->assertSee(__('widget::features.on_products.label'));
+        $screen->call('openArea', 'shown')->assertFormFieldExists('s__widget__layout');
+        $screen->call('openArea', 'whatsapp')->assertFormFieldExists('s__widget__whatsapp_number');
 
-        // Caps, limits and anything about enrichment are not.
-        $screen->assertDontSee(__('catalog::settings.max_products.label'))
-            ->assertDontSee(__('enrichment::features.auto_approve.label'))
-            ->assertDontSee(__('assistant::settings.answer_model.label'), 'which model answers is the platform'."'".'s call')
-            ->assertDontSee(__('assistant::settings.questions_per_shop_per_day.label'));
+        // Caps, limits, enrichment and which model answers are not.
+        foreach (['s__catalog__max_products', 'f__enrichment__auto_approve', 's__assistant__answer_model', 's__assistant__questions_per_shop_per_day'] as $field) {
+            $screen->assertFormFieldDoesNotExist($field);
+        }
 
-        // Grouped the way a shop owner thinks, not one section per module.
-        $screen->assertSee(__('admin::configuration.groups.shown.title'))
-            ->assertSee(__('admin::configuration.groups.placement.title'))
-            ->assertSee(__('admin::configuration.groups.whatsapp.title'))
-            ->assertSee(__('admin::configuration.groups.signup.title'));
-
-        $screen->set('data.s__widget__layout', 'chat')->call('save')->assertHasNoErrors();
+        $screen->call('openArea', 'shown')->set('data.s__widget__layout', 'chat')->call('save')->assertHasNoErrors();
         $this->assertSame('chat', Settings::get('widget.layout', $this->mine->id));
         $this->assertNotSame('chat', Settings::get('widget.layout', $this->theirs->id), 'only their own shop');
 
         // A key that is not on the screen cannot be written from it.
         $before = Settings::get('catalog.max_products', $this->mine->id);
         Livewire::test(DisplaySettings::class)
+            ->call('openArea', 'shown')
             ->set('shop', $this->theirs->id)
             ->set('data.s__catalog__max_products', '7')
             ->call('save')

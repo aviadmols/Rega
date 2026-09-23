@@ -8,9 +8,6 @@ use App\Core\Settings\SettingDefinition;
 use App\Core\Tenancy\LocksShopToPanelTenant;
 use App\Modules\Admin\Filament\Operator\Pages\Configuration as OperatorConfiguration;
 use BackedEnum;
-use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
 /**
@@ -55,12 +52,6 @@ final class DisplaySettings extends OperatorConfiguration
         parent::mount();
     }
 
-    /** No shop picker: the shop is the one whose panel this is. */
-    public function form(Schema $schema): Schema
-    {
-        return $schema->statePath('data')->components($this->moduleSections());
-    }
-
     /** @return list<FeatureDefinition> */
     protected function features(?ModuleManifest $module = null): array
     {
@@ -77,42 +68,6 @@ final class DisplaySettings extends OperatorConfiguration
             parent::settings($module),
             fn (SettingDefinition $definition): bool => in_array($definition->key(), self::allowed(), true),
         ));
-    }
-
-    /**
-     * Sections a shop owner recognises — what shows, where it sits, what the assistant answers,
-     * WhatsApp, sign-up — instead of one section per module, each holding a field or two.
-     *
-     * @return list<Component>
-     */
-    protected function moduleSections(): array
-    {
-        $features = collect($this->features())->keyBy(fn (FeatureDefinition $d): string => $d->key());
-        $settings = collect($this->settings())->keyBy(fn (SettingDefinition $d): string => $d->key());
-        $sections = [];
-
-        foreach (OperatorConfiguration::SHOP_GROUPS as $group => $keys) {
-            $fields = [];
-
-            foreach ($keys as $key) {
-                $fields[] = match (true) {
-                    $features->has($key) => $this->featureField($features->get($key)),
-                    $settings->has($key) => $this->settingField($settings->get($key)),
-                    default => null,
-                };
-            }
-
-            $fields = array_values(array_filter($fields));
-
-            if ($fields !== []) {
-                $sections[] = Section::make(__("admin::configuration.groups.{$group}.title"))
-                    ->description(__("admin::configuration.groups.{$group}.help"))
-                    ->columns(2)
-                    ->schema($fields);
-            }
-        }
-
-        return $sections;
     }
 
     /** @return list<string> */

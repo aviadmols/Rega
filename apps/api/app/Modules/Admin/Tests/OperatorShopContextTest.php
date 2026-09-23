@@ -144,13 +144,11 @@ final class OperatorShopContextTest extends TestCase
 
         $page = $this->get('/operator/configuration')->assertOk();
 
-        // What running a store is about, in its own groups.
-        $page->assertSee(__('admin::configuration.groups.shown.title'));
-        $page->assertSee(__('admin::configuration.groups.whatsapp.title'));
-
-        // Two tabs, and everything else is behind the second one rather than spread out.
+        // A list of areas, a store's own first, and only one of them on the screen.
         $page->assertSee(__('admin::configuration.tabs.shop'));
         $page->assertSee(__('admin::configuration.tabs.advanced'));
-        $page->assertSee(__('admin::configuration.groups.advanced.help'));
+        $page->assertSee(__('admin::configuration.groups.shown.title'));
+        $page->assertSee(__('admin::configuration.groups.whatsapp.title'));
+        $page->assertDontSee(__('tenancy::settings.max_active_api_keys.label'));
     }
 }
