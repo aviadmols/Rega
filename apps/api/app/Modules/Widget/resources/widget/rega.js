@@ -542,6 +542,7 @@
     '.bn-tile.is-made{background:rgba(217,119,6,.10);color:#b45309}',
     '.bn-tile.is-compare{background:rgba(17,24,39,.06);color:#3f3f46}',
     '.bn-tile.is-ask{background:rgba(var(--g2),.10);color:rgb(var(--g2))}',
+    '.bn-tile.is-points{background:rgba(66,133,244,.10);color:#1d4ed8}',
     '.bn-bubbles{display:flex;flex:none;padding-inline-start:8px}',
     '.bn-bubbles img,.bn-bubbles .bn-more{width:32px;height:32px;border-radius:50%;margin-inline-start:-8px;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.10)}',
     '.bn-bubbles img{object-fit:contain;background:#f6f6f7}',
@@ -2207,6 +2208,8 @@
   var SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>';
   var STAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.1 4.6 5 .6-3.7 3.4 1 4.9L12 14.1 7.6 16.5l1-4.9L4.9 8.2l5-.6z"/></svg>';
 
+  var BULB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.4.3.6.7.6 1.1v.5h5.8V15c0-.4.2-.8.6-1.1A6 6 0 0 0 12 3z"/></svg>';
+
   var SCALES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M7 20h10M4 8h16M8 8l-3 6a3 3 0 0 0 6 0zM16 8l3 6a3 3 0 0 1-6 0z"/></svg>';
 
   var QUESTION = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3.2-6.4M9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>';
@@ -2320,6 +2323,28 @@
           add('best', bannerRow(bannerRank(lines[l].of, labels), lines[l].short || lines[l].text, lines[l].note), best.index);
           break;
         }
+      }
+    }
+
+    // What is worth knowing about it, in the store's own words, a point per turn. A point the
+    // store repeats on half its catalogue is not worth a frame, so the common ones are left out.
+    if (best) {
+      var points = (best.item.section.items || []).filter(function (item) {
+        return item && item.key && item.text && !item.common;
+      }).slice(0, 3);
+
+      if (points.length) {
+        var point = add('points', bannerRow(bannerTile('points', BULB), points[0].key, points[0].text), best.index);
+        var pointTitle = point.node.querySelector('.bn-title');
+        var pointText = point.node.querySelector('.bn-sub');
+        var pointAt = 0;
+
+        point.enter = function () {
+          var shown = points[pointAt % points.length];
+          pointTitle.textContent = shown.key;
+          pointText.textContent = shown.text;
+          pointAt++;
+        };
       }
     }
 

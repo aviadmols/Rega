@@ -195,6 +195,7 @@ return [
         'banner_play' => 'המשך',
         'banner_label_open' => 'הפתיח',
         'banner_label_goes' => 'מתאים עם',
+        'banner_label_points' => 'חשוב לדעת',
         'banner_label_best' => 'הכי בקטגוריה',
         'banner_label_hot' => 'מבוקש בחנות',
         'banner_label_seen' => 'מוצרים אחרונים',

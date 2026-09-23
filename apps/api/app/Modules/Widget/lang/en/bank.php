@@ -195,6 +195,7 @@ return [
         'banner_play' => 'Play',
         'banner_label_open' => 'Opening line',
         'banner_label_goes' => 'Goes with',
+        'banner_label_points' => 'Good to know',
         'banner_label_best' => 'Best in its kind',
         'banner_label_hot' => 'Wanted in the store',
         'banner_label_seen' => 'Products you looked at',
