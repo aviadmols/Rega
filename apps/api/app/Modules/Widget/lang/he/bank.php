@@ -161,7 +161,7 @@ return [
         'view_list' => 'תצוגת רשימה',
         'view_prev' => 'הקודמים',
         'view_next' => 'הבאים',
-        'chat_who' => 'רגע · העוזר של החנות',
+        'chat_who' => 'Lets AI',
         'chat_aside' => 'עונה מהמידע בחנות',
         'chat_greeting' => 'היי! עברתי על המוצר הזה. במה לעזור לך להחליט?',
         'chat_teaser' => 'יש לי :count דברים שיעזרו לך להחליט על המוצר הזה',
@@ -224,5 +224,10 @@ return [
         'banner_label_sale' => 'מבצעים',
         'banner_label_ask' => 'לשאול שאלה',
         'banner_label_asked' => 'שאלה שנשאלה',
+        // The quieter way out of a question nobody could answer.
+        'callback_open' => 'או השאירו פרטים ונעדכן אתכם כשיש תשובה',
+        'callback_send' => 'עדכנו אותי',
+        'callback_consent' => 'אני מאשר/ת שהחנות תשמור את פרטיי כדי לחזור אליי עם התשובה לשאלה הזו.',
+        'callback_saved' => 'נשמר. נעדכן אתכם כשתהיה תשובה.',
     ],
 ];

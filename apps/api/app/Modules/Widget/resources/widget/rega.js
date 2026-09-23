@@ -588,13 +588,20 @@
     '.handover{margin-top:10px;padding:12px;border:1px solid transparent;border-radius:14px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box}',
     '.handover-title{font-size:13.5px;line-height:1.45;margin-bottom:8px}',
     '.handover-when{margin-top:8px;font-size:12px;color:var(--muted)}',
+    '.callback{margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f2}',
+    '.callback-open{all:unset;box-sizing:border-box;cursor:pointer;font-size:12px;color:rgb(var(--g2));text-decoration:underline}',
+    '.callback-open[hidden]{display:none}',
+    '.callback-form[hidden]{display:none}',
+    '.callback-row{display:flex;gap:8px}',
+    '.callback .signup-input{height:38px;font-size:14px}.callback .signup-send{height:38px}',
     '.contact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}',
     '.contact-head{display:flex;align-items:center;gap:8px;flex:1 1 200px;min-width:0}',
     '.contact-title{font-size:14px;line-height:1.4}',
     '.contact-badge{flex:none;display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:rgba(17,24,39,.07);color:var(--muted);font-size:11px}',
     '.contact-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}',
     '.contact.is-online .contact-badge{background:#e8f6ee;color:#146c43}',
-    '.contact-button{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:999px;background:#25d366;color:#0b2e13;text-decoration:none;font-size:14px;font-weight:600}',
+    '.contact-button{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-size:14px;font-weight:600}',
+    '.contact-button svg{width:17px;height:17px;flex:none;fill:currentColor}',
     '.contact-button:hover,.contact-button:focus-visible{filter:brightness(.95)}',
     '.contact-note{flex:1 1 100%;font-size:12px;color:var(--muted)}',
     '.browse{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
@@ -949,7 +956,9 @@
     head.appendChild(el('span', 'contact-title', contact.title));
     strip.appendChild(head);
 
-    var button = el('a', 'contact-button', contact.button);
+    var button = el('a', 'contact-button');
+    button.innerHTML = WHATSAPP;
+    button.appendChild(el('span', null, contact.button));
     button.href = 'https://wa.me/' + contact.number + '?text=' + encodeURIComponent(message);
     button.target = '_blank';
     button.rel = 'noopener';
@@ -995,6 +1004,7 @@
     box.appendChild(el('div', 'handover-title', labels.ask_team));
 
     var button = el('a', 'contact-button');
+    button.innerHTML = WHATSAPP;
     button.href = 'https://wa.me/' + contact.number + '?text=' + encodeURIComponent(
       String(labels.ask_team_message || '')
         .replace(':product', title)
@@ -1009,12 +1019,115 @@
     var when = el('div', 'handover-when', online ? contact.online_label : (contact.offline_note || contact.offline_label));
     box.appendChild(when);
 
+    if (bank.callbacks) {
+      box.appendChild(callbackBox(question, labels));
+    }
+
     var section = { candidate: 'contact', model: 'contact' };
     button.addEventListener('click', function () {
       track('click', section, 'panel', PAGE_TYPE === 'product' ? { product_id: PAGE_ID } : { content_id: PAGE_ID });
     });
 
     return box;
+  }
+
+  /**
+   * A quieter way out than WhatsApp: leave a phone or an email and the team comes back with the
+   * answer. Closed until it is asked for, so it never competes with the green button above it.
+   */
+  function callbackBox(question, labels) {
+    var wrap = el('div', 'callback');
+
+    var open = el('button', 'callback-open', labels.callback_open);
+    open.type = 'button';
+    wrap.appendChild(open);
+
+    var form = el('form', 'callback-form');
+    form.hidden = true;
+
+    var row = el('div', 'callback-row');
+    var input = el('input', 'signup-input');
+    input.type = 'text';
+    input.maxLength = 120;
+    input.placeholder = labels.signup_placeholder || '';
+    input.setAttribute('aria-label', labels.callback_open || '');
+    var send = el('button', 'signup-send');
+    send.type = 'submit';
+    send.appendChild(el('span', null, labels.callback_send));
+    row.appendChild(input);
+    row.appendChild(send);
+    form.appendChild(row);
+
+    var agree = el('label', 'signup-consent');
+    var tick = el('input');
+    tick.type = 'checkbox';
+    agree.appendChild(tick);
+    agree.appendChild(el('span', null, labels.callback_consent));
+    form.appendChild(agree);
+
+    var said = el('div', 'signup-status');
+    said.hidden = true;
+    form.appendChild(said);
+
+    open.addEventListener('click', function () {
+      form.hidden = false;
+      open.hidden = true;
+      input.focus();
+      track('open', { candidate: 'callback', model: 'contact' }, 'panel');
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var typed = input.value.trim();
+
+      if (!typed) {
+        return;
+      }
+      if (!tick.checked) {
+        said.hidden = false;
+        said.textContent = labels.signup_need_consent;
+
+        return;
+      }
+
+      send.disabled = true;
+      fetch(API + '/widget/' + ctx.site + '/signup', {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          vid: vid,
+          contact: typed,
+          consent: true,
+          locale: String(ctx.locale || 'he').slice(0, 2),
+          question: question,
+          type: PAGE_TYPE,
+          id: PAGE_ID
+        })
+      })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (json) {
+          var status = json && json.data && json.data.status;
+          said.hidden = false;
+          said.textContent = status === 'invalid_contact' ? labels.signup_invalid : labels.callback_saved;
+
+          if (status !== 'invalid_contact') {
+            row.hidden = true;
+            agree.hidden = true;
+            track('submit', { candidate: 'callback', model: 'contact' }, 'panel');
+          }
+          send.disabled = false;
+        })
+        .catch(function () {
+          said.hidden = false;
+          said.textContent = labels.signup_error;
+          send.disabled = false;
+        });
+    });
+
+    wrap.appendChild(form);
+
+    return wrap;
   }
 
   function askPanel(section, labels, live) {
@@ -2363,6 +2476,8 @@
       }
     };
   }
+
+  var WHATSAPP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2 22l5.25-1.37c1.44.79 3.07 1.2 4.72 1.2h.01c5.46 0 9.91-4.45 9.91-9.91C21.89 6.45 17.5 2 12.04 2zm0 18.06h-.01c-1.48 0-2.93-.4-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.39c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.41a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.22.25-.85.84-.85 2.04 0 1.2.87 2.36.99 2.53.12.16 1.71 2.62 4.15 3.67.58.25 1.03.4 1.39.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.22-.16-.47-.28z"/></svg>';
 
   var SPARK_G = '<svg class="spark-g" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rega-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285F4"/><stop offset=".6" stop-color="#8B5CF6"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs><path fill="url(#rega-g)" d="M12 2l2.3 6.4 6.4 2.3-6.4 2.3L12 19.4l-2.3-6.4L3.3 10.7l6.4-2.3z"/><path fill="url(#rega-g)" opacity=".7" d="M19 15l.9 2.4 2.4.9-2.4.9L19 21.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg>';
 

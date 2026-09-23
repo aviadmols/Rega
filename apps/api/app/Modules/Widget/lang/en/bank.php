@@ -161,7 +161,7 @@ return [
         'view_list' => 'List view',
         'view_prev' => 'Previous',
         'view_next' => 'Next',
-        'chat_who' => 'Rega · the store\'s assistant',
+        'chat_who' => 'Lets AI',
         'chat_aside' => 'Answers from the store\'s information',
         'chat_greeting' => 'Hi! I went over this product. What would help you decide?',
         'chat_teaser' => 'I have :count things that will help you decide on this product',
@@ -224,5 +224,10 @@ return [
         'banner_label_sale' => 'On sale',
         'banner_label_ask' => 'Ask a question',
         'banner_label_asked' => 'A question asked here',
+        // The quieter way out of a question nobody could answer.
+        'callback_open' => 'Or leave your details and we will tell you when we know',
+        'callback_send' => 'Tell me',
+        'callback_consent' => 'I agree that the store keeps my contact in order to come back to me with the answer to this question.',
+        'callback_saved' => 'Kept. We will let you know when there is an answer.',
     ],
 ];

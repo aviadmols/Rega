@@ -32,4 +32,9 @@ return [
         'no_sms' => 'No SMS provider is set, so a phone is kept without verification.',
         'no_mail' => 'The server cannot send email, so an address is kept without verification.',
     ],
+    'waiting' => [
+        'title' => 'Waiting for an answer',
+        'help' => 'Shoppers who asked something the assistant did not know and left a way to reach them. The contact is encrypted; only its tail is shown here.',
+        'done' => 'Done',
+    ],
 ];

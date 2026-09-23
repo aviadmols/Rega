@@ -5,6 +5,7 @@ namespace App\Modules\Shoppers\Actions;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Shoppers\Mail\VerificationCode;
+use App\Modules\Shoppers\Models\ShopperCallback;
 use App\Modules\Shoppers\Models\ShopperIdentity;
 use App\Modules\Shoppers\Models\ShopperVerification;
 use App\Modules\Shoppers\Models\ShopperVisitor;
@@ -30,7 +31,11 @@ final class SignUp
      * @return array{status: string, channel?: string, masked?: string, minutes?: int}
      *                                                                                 status: saved, code_sent, invalid_contact, no_consent or too_many
      */
-    public function handle(string $shopId, string $visitorHash, string $typed, bool $consent, string $locale): array
+    /**
+     * @param  array{question: string, type: string, id: string}|null  $waitingFor  a question they want
+     *                                                                              the team to come back to them about
+     */
+    public function handle(string $shopId, string $visitorHash, string $typed, bool $consent, string $locale, ?array $waitingFor = null): array
     {
         $contact = Contact::parse($typed, $shopId);
 
@@ -42,7 +47,7 @@ final class SignUp
             return ['status' => 'no_consent'];
         }
 
-        return $this->tenant->run($shopId, function () use ($shopId, $visitorHash, $contact, $locale): array {
+        return $this->tenant->run($shopId, function () use ($shopId, $visitorHash, $contact, $locale, $waitingFor): array {
             $perDay = (int) Settings::get('shoppers.signups_per_visitor_per_day', $shopId);
 
             if (ShopperVerification::query()->where('visitor_hash', $visitorHash)->where('created_at', '>=', now()->subDay())->count() >= $perDay) {
@@ -67,6 +72,17 @@ final class SignUp
                 $link->verified = false;
             }
             $link->fill(['identity_id' => $identity->id, 'linked_at' => now()])->save();
+
+            // They are not signing up for offers; they are waiting for one answer.
+            if ($waitingFor !== null) {
+                ShopperCallback::query()->create([
+                    'shop_id' => $shopId,
+                    'identity_id' => $identity->id,
+                    'question' => mb_substr($waitingFor['question'], 0, 500),
+                    'page_type' => $waitingFor['type'],
+                    'page_id' => $waitingFor['id'],
+                ]);
+            }
 
             if (! Channels::canVerify($contact->channel, $shopId)) {
                 return ['status' => 'saved', 'channel' => $contact->channel, 'masked' => $contact->masked];

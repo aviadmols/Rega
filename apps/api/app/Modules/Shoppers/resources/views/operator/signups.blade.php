@@ -1,4 +1,24 @@
 <x-filament-panels::page>
+
+    @if ($this->waiting() !== [])
+        <x-filament::section :heading="__('shoppers::ui.waiting.title')" :description="__('shoppers::ui.waiting.help')">
+            <div style="display:flex;flex-direction:column;gap:7px">
+                @foreach ($this->waiting() as $row)
+                    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;border:1px solid #ececee">
+                        <div style="flex-grow:1;min-width:0">
+                            <div style="font-size:13px;line-height:1.4">{{ $row['question'] }}</div>
+                            <div style="margin-top:2px;font-size:11.5px;color:#9ca3af">
+                                {{ $row['contact'] }} · {{ $row['at']?->diffForHumans() }} · #{{ $row['page'] }}
+                            </div>
+                        </div>
+                        <x-filament::button size="xs" color="gray" wire:click="answered({{ $row['id'] }})">
+                            {{ __('shoppers::ui.waiting.done') }}
+                        </x-filament::button>
+                    </div>
+                @endforeach
+            </div>
+        </x-filament::section>
+    @endif
     @php($data = $this->signUps())
     @php($small = 'font-size:12px;opacity:.7')
 

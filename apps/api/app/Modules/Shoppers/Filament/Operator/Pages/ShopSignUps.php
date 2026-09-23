@@ -6,6 +6,7 @@ use App\Core\Facades\Features;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Shoppers\Contracts\VisitHistory;
+use App\Modules\Shoppers\Models\ShopperCallback;
 use App\Modules\Shoppers\Models\ShopperIdentity;
 use App\Modules\Shoppers\Support\Channels;
 use App\Modules\Tenancy\Models\Shop;
@@ -89,6 +90,45 @@ class ShopSignUps extends Page
     }
 
     /** @return array{on: bool, can_verify: array<string, bool>, people: list<array<string, mixed>>}|null */
+    /**
+     * People waiting on an answer the assistant did not have, newest first. The question is in
+     * the open because the team has to read it; the contact stays masked until they act on it.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function waiting(): array
+    {
+        if ($this->shop === null) {
+            return [];
+        }
+
+        return app(TenantContext::class)->run($this->shop, fn (): array => ShopperCallback::query()
+            ->with('identity:id,contact_masked,channel')
+            ->whereNull('answered_at')
+            ->latest('created_at')
+            ->limit(30)
+            ->get()
+            ->map(fn (ShopperCallback $row): array => [
+                'id' => $row->id,
+                'question' => $row->question,
+                'contact' => $row->identity?->contact_masked,
+                'channel' => $row->identity?->channel,
+                'page' => $row->page_id,
+                'at' => $row->created_at,
+            ])
+            ->all());
+    }
+
+    /** The team came back to them; it stops being a thing waiting. */
+    public function answered(int $id): void
+    {
+        if ($this->shop === null) {
+            return;
+        }
+
+        app(TenantContext::class)->run($this->shop, fn () => ShopperCallback::query()->whereKey($id)->update(['answered_at' => now()]));
+    }
+
     public function signUps(): ?array
     {
         if ($this->shop === null) {
