@@ -8,6 +8,7 @@ use App\Core\Localization\Locales;
 use App\Modules\Tenancy\Database\Factories\ShopFactory;
 use App\Modules\Tenancy\Enums\ShopPlatform;
 use App\Modules\Tenancy\Enums\ShopStatus;
+use App\Modules\Tenancy\Enums\Vertical;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $currency
  * @property string $timezone
  * @property ShopStatus $status
+ * @property ?Vertical $vertical
+ * @property int $vertical_confidence
+ * @property bool $vertical_locked
  */
 class Shop extends Model
 {
@@ -42,6 +46,8 @@ class Shop extends Model
         'currency',
         'timezone',
         'status',
+        'vertical',
+        'vertical_locked',
     ];
 
     protected $attributes = [
@@ -56,6 +62,8 @@ class Shop extends Model
         return [
             'platform' => ShopPlatform::class,
             'status' => ShopStatus::class,
+            'vertical' => Vertical::class,
+            'vertical_locked' => 'boolean',
         ];
     }
 

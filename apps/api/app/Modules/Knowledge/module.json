@@ -1,0 +1,17 @@
+{
+    "name": "Knowledge",
+    "enabled": true,
+    "requires": [
+        "Tenancy",
+        "Runs",
+        "Catalog",
+        "Enrichment",
+        "Analytics",
+        "Widget",
+        "Assistant",
+        "Admin"
+    ],
+    "provider": "KnowledgeServiceProvider",
+    "features": [],
+    "settings": []
+}
