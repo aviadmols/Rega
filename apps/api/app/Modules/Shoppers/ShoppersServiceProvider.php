@@ -4,6 +4,8 @@ namespace App\Modules\Shoppers;
 
 use App\Core\Facades\Settings;
 use App\Core\Modules\ModuleServiceProvider;
+use App\Modules\Shoppers\Actions\ReadContact;
+use App\Modules\Shoppers\Contracts\ReadsContacts;
 use App\Modules\Shoppers\Contracts\VisitHistory;
 use App\Modules\Shoppers\Models\ShopperVerification;
 use App\Modules\Shoppers\Support\Visits;
@@ -17,6 +19,7 @@ final class ShoppersServiceProvider extends ModuleServiceProvider
     protected function registerModule(): void
     {
         $this->app->bind(VisitHistory::class, Visits::class);
+        $this->app->bind(ReadsContacts::class, ReadContact::class);
     }
 
     protected function bootModule(): void

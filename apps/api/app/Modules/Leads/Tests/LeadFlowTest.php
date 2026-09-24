@@ -1,0 +1,157 @@
+<?php
+
+namespace App\Modules\Leads\Tests;
+
+use App\Core\Facades\Features;
+use App\Core\Tenancy\TenantContext;
+use App\Modules\Connections\Models\StoreConnection;
+use App\Modules\Connections\Support\SiteKeys;
+use App\Modules\Leads\Enums\LeadGoal;
+use App\Modules\Leads\Models\Lead;
+use App\Modules\Leads\Models\LeadFlow;
+use App\Modules\Leads\Support\FlowMachine;
+use App\Modules\Tenancy\Models\Shop;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
+
+/**
+ * The part of the conversation that is trying to get somewhere, which is all code.
+ */
+final class LeadFlowTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const TOKEN = 'tok_leads_flow_abcdefghijklmnopqrst';
+
+    private Shop $shop;
+
+    private string $site;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->shop = Shop::factory()->create();
+        app(TenantContext::class)->runUnscoped(fn () => StoreConnection::query()->create([
+            'shop_id' => $this->shop->id, 'site_url' => 'https://store.test', 'access_token' => self::TOKEN,
+        ]));
+        $this->site = SiteKeys::site(self::TOKEN);
+        Features::override('leads.enabled', true, $this->shop->id);
+
+        app(TenantContext::class)->run($this->shop->id, fn () => LeadFlow::query()->create([
+            'shop_id' => $this->shop->id, 'version' => 1, 'goal' => LeadGoal::Advice,
+            'offer' => 'שיחת ייעוץ של 15 דקות', 'promise' => 'נחזור תוך יום',
+            'consent' => 'אני מאשר/ת שהפרטים יישמרו.', 'active' => true,
+            'fields' => [
+                ['type' => 'phone', 'key' => 'phone', 'label' => 'טלפון', 'required' => true],
+                ['type' => 'name', 'key' => 'name', 'label' => 'שם', 'required' => false],
+            ],
+        ]));
+    }
+
+    public function test_it_asks_one_field_at_a_time_then_consent_then_keeps_the_lead(): void
+    {
+        $first = $this->step([]);
+        $first->assertOk();
+        $this->assertSame(FlowMachine::FIELD, $first->json('data.state'));
+        $this->assertSame('phone', $first->json('data.field.key'), 'the phone before anything else');
+        $this->assertSame('שיחת ייעוץ של 15 דקות', $first->json('data.offer'));
+
+        $second = $this->step(['phone' => '050-123-4567']);
+        $this->assertSame('name', $second->json('data.field.key'));
+
+        // Consent comes last: agreeing before seeing what is asked for is not agreeing.
+        $third = $this->step(['phone' => '050-123-4567', 'name' => 'אביעד']);
+        $this->assertSame(FlowMachine::CONSENT, $third->json('data.state'));
+        $this->assertSame('אני מאשר/ת שהפרטים יישמרו.', $third->json('data.consent'));
+        $this->assertSame(0, $this->countLeads(), 'nothing is kept before the consent');
+
+        $done = $this->step(['phone' => '050-123-4567', 'name' => 'אביעד'], consent: true, asked: 2);
+        $this->assertSame(FlowMachine::DONE, $done->json('data.state'));
+        $this->assertSame('נחזור תוך יום', $done->json('data.promise'));
+
+        $lead = $this->onlyLead();
+        $this->assertSame('phone', $lead->channel);
+        $this->assertSame('972501234567', $lead->contact, 'kept as the parser reads it, encrypted at rest');
+        $this->assertSame(['name' => 'אביעד'], $lead->answers);
+        $this->assertSame('אני מאשר/ת שהפרטים יישמרו.', $lead->consent_wording, 'the wording travels with the lead');
+        $this->assertSame(100, $lead->quality, 'everything given, and they asked first');
+    }
+
+    public function test_a_phone_that_is_not_a_phone_is_refused_with_the_field_to_try_again(): void
+    {
+        $answer = $this->step(['phone' => 'לא מספר']);
+
+        $answer->assertOk();
+        $this->assertSame(FlowMachine::FIELD, $answer->json('data.state'));
+        $this->assertSame('not_a_phone', $answer->json('data.error'));
+        $this->assertSame(0, $this->countLeads());
+    }
+
+    public function test_nothing_the_flow_did_not_ask_for_can_be_posted_into_a_lead(): void
+    {
+        $this->step(
+            ['phone' => '0501234567', 'name' => 'אביעד', 'salary' => '40000', 'notes' => 'x'],
+            consent: true,
+        );
+
+        $this->assertSame(['name' => 'אביעד'], $this->onlyLead()->answers, 'only the shop\'s own fields');
+    }
+
+    public function test_saying_no_ends_it_and_keeps_nothing(): void
+    {
+        $answer = $this->step(['phone' => '0501234567'], declined: true);
+
+        $this->assertSame(FlowMachine::DECLINED, $answer->json('data.state'));
+        $this->assertSame(0, $this->countLeads());
+    }
+
+    public function test_the_same_person_asking_twice_on_one_page_is_one_lead(): void
+    {
+        $this->step(['phone' => '0501234567'], consent: true);
+        $this->step(['phone' => '050-123-4567', 'name' => 'אביעד'], consent: true);
+
+        $this->assertSame(1, $this->countLeads(), 'a second ask updates the first');
+        $this->assertSame(['name' => 'אביעד'], $this->onlyLead()->answers);
+    }
+
+    public function test_a_shop_with_no_flow_collects_nothing(): void
+    {
+        app(TenantContext::class)->run($this->shop->id, fn () => LeadFlow::query()->update(['active' => false]));
+
+        $this->step(['phone' => '0501234567'], consent: true)->assertStatus(409);
+    }
+
+    public function test_the_flow_is_closed_to_another_origin(): void
+    {
+        $this->postJson("/api/v1/widget/{$this->site}/lead", ['id' => '10', 'type' => 'product'], [
+            'Origin' => 'https://somewhere.else',
+        ])->assertStatus(403);
+    }
+
+    /** @param array<string, string> $given */
+    private function step(array $given, bool $consent = false, bool $declined = false, int $asked = 0): TestResponse
+    {
+        return $this->postJson("/api/v1/widget/{$this->site}/lead", [
+            'id' => '10',
+            'type' => 'product',
+            'vid' => 'anon-abcdefghijklmnopqrstuv',
+            'given' => $given,
+            'consent' => $consent,
+            'declined' => $declined,
+            'asked' => $asked,
+        ], ['Origin' => 'https://store.test']);
+    }
+
+    /** The whole query has to run inside the shop's scope, not just be built there. */
+    private function countLeads(): int
+    {
+        return app(TenantContext::class)->run($this->shop->id, fn (): int => Lead::query()->count());
+    }
+
+    private function onlyLead(): Lead
+    {
+        return app(TenantContext::class)->run($this->shop->id, fn (): Lead => Lead::query()->sole());
+    }
+}

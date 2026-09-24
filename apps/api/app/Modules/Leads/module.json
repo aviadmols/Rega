@@ -1,0 +1,43 @@
+{
+    "name": "Leads",
+    "enabled": true,
+    "requires": [
+        "Tenancy",
+        "Runs",
+        "Catalog",
+        "Enrichment",
+        "Assistant",
+        "Shoppers",
+        "Analytics",
+        "Ai",
+        "Admin",
+        "Connections"
+    ],
+    "provider": "LeadsServiceProvider",
+    "features": [
+        {
+            "name": "enabled",
+            "default": false
+        }
+    ],
+    "settings": [
+        {
+            "name": "steps_per_minute",
+            "type": "int",
+            "default": 30,
+            "min": 5,
+            "max": 300,
+            "scope": "global",
+            "unit": "requests"
+        },
+        {
+            "name": "retention_days",
+            "type": "int",
+            "default": 365,
+            "min": 30,
+            "max": 3650,
+            "scope": "shop",
+            "unit": "days"
+        }
+    ]
+}
