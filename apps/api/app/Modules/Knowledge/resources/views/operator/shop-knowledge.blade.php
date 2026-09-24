@@ -16,7 +16,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
                 <div>
                     <div style="font-size:34px;font-weight:700;line-height:1">{{ $coverage['known_share'] }}%</div>
-                    <div style="{{ $small }}">{{ __('knowledge::ui.known_share') }}</div>
+                    <div style="{{ $small }}">{{ __('knowledge::ui.known_share_of.'.($coverage['known_share_of'] ?? 'products')) }}</div>
                     @if ($was !== null)
                         @php($delta = $coverage['known_share'] - ($was['known_share'] ?? 0))
                         <div style="{{ $small }};color:{{ $delta > 0 ? '#15803d' : ($delta < 0 ? '#b91c1c' : 'inherit') }}">

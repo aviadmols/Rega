@@ -87,9 +87,13 @@ final class Census
                 'no_info' => AssistantAnswer::query()->where('outcome', AssistantAnswer::NO_INFO)->count(),
                 'refused' => AssistantAnswer::query()->where('outcome', AssistantAnswer::OUT_OF_SCOPE)->count(),
             ],
-            // One number for the top of the screen: the share of products anything checked is
-            // known about at all.
-            'known_share' => self::share(max($withCode, $withModel), $products),
+            // One number for the top of the screen. A shop is measured on its products; a site
+            // that sells nothing is measured on its articles, because otherwise the honest answer
+            // for a magazine that has been read from end to end is nought per cent.
+            'known_share' => $products === 0
+                ? self::share($takeaways, $articles)
+                : self::share(max($withCode, $withModel), $products),
+            'known_share_of' => $products === 0 ? 'articles' : 'products',
         ];
     }
 

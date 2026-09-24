@@ -4,8 +4,10 @@ return [
     'title' => 'What is known about this shop',
     'help' => 'Everything the system knows about this shop, where it came from, and what is still missing.',
     'pick_a_shop' => 'Choose a shop above to see what is known about it. Knowledge belongs to one shop and is never shown across all of them.',
-
-    'known_share' => 'of products have something checked known about them',
+    'known_share_of' => [
+        'products' => 'of products have something checked known about them',
+        'articles' => 'of articles have points found in them',
+    ],
     'week_ago' => 'A week ago: :n%',
     'scanned' => ':products products, :articles articles and :pages content pages were scanned.',
     'scanned_short' => ':products products · :articles articles · :pages pages',
