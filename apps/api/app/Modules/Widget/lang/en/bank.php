@@ -15,6 +15,12 @@ return [
         'article_products' => 'Products for this guide',
     ],
     'chips' => [
+        'recent' => 'Products the shopper viewed',
+        'compare' => 'Compared with the previous product',
+        'ask' => 'A question about the page',
+        'chat' => 'The conversation with the assistant',
+        'contact' => 'Reaching the team',
+        'callback' => 'Leaving details for an answer',
         'position' => 'Why this model',
         'highlights' => 'Good to know',
         'specs' => 'Specs',

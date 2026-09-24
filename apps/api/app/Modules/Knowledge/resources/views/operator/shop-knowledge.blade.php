@@ -83,7 +83,7 @@
                             <td style="{{ $cell }}">{{ __('knowledge::knowledge.gaps.'.$gap['key']) }}</td>
                             <td style="{{ $cell }};{{ $small }}">
                                 @if ($gap['fix'])
-                                    {{ __('knowledge::ui.closed_by', ['step' => __('knowledge::knowledge.steps.'.$gap['fix'])]) }}
+                                    {{ __('knowledge::ui.closed_by', ['step' => __('knowledge::knowledge.steps.'.str_replace('.', '_', $gap['fix']))]) }}
                                 @else
                                     {{ __('knowledge::ui.nothing_closes_this') }}
                                 @endif
@@ -152,7 +152,7 @@
                     @php($at = $now['freshness'][$step] ?? null)
                     @php($stale = $at !== null && \Illuminate\Support\Carbon::parse($at)->lt(now()->subDays($this->staleAfterDays())))
                     <tr>
-                        <td style="{{ $cell }}">{{ __('knowledge::knowledge.steps.'.$step) }}</td>
+                        <td style="{{ $cell }}">{{ __('knowledge::knowledge.steps.'.str_replace('.', '_', $step)) }}</td>
                         <td style="{{ $cell }};text-align:end;{{ $small }}">
                             @if ($at === null)
                                 <x-filament::badge color="danger">{{ __('knowledge::ui.never') }}</x-filament::badge>

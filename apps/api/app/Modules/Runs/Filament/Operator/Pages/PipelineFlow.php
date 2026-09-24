@@ -80,7 +80,7 @@ final class PipelineFlow extends Page
 
                 $steps[] = [
                     'action' => $action,
-                    'label' => __("runs::pipeline.actions.{$action}"),
+                    'label' => self::name($action),
                     'model' => $this->modelName($step, $seen['models'] ?? []),
                     'outside' => (bool) ($step['outside'] ?? false),
                     'clock' => Pipeline::CLOCK[$action] ?? null,
@@ -109,7 +109,7 @@ final class PipelineFlow extends Page
             ->get()
             ->map(fn (Run $run): array => [
                 'id' => $run->id,
-                'label' => __("runs::pipeline.actions.{$run->action}"),
+                'label' => self::name((string) $run->action),
                 'shop' => $run->shop?->name,
                 'model' => $run->model,
                 'status' => $run->status->value,
@@ -204,5 +204,21 @@ final class PipelineFlow extends Page
     private function unscoped(callable $read): mixed
     {
         return app(TenantContext::class)->runUnscoped($read);
+    }
+
+    /**
+     * What an action is called, in words.
+     *
+     * An action is named 'enrichment.read_in_code', and a translation key cannot hold a dot:
+     * __() reads each one as a step down into the array, finds nothing, and prints the
+     * identifier. So the dots come out before the name is looked up, and an action nobody has
+     * named yet shows as itself rather than as a missing key.
+     */
+    private static function name(string $action): string
+    {
+        $key = 'runs::pipeline.actions.'.str_replace('.', '_', $action);
+        $name = __($key);
+
+        return is_string($name) && $name !== $key ? $name : $action;
     }
 }
