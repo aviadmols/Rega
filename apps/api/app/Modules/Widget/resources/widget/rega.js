@@ -617,6 +617,12 @@
     '.callback-form[hidden]{display:none}',
     '.callback-row{display:flex;gap:8px}',
     '.callback .signup-input{height:38px;font-size:14px}.callback .signup-send{height:38px}',
+    '.lead{margin-top:10px;padding:11px 12px;border:1px solid transparent;border-radius:14px;background:var(--wash) padding-box,linear-gradient(#fff,#fff) padding-box,var(--hairline) border-box}',
+    '.lead-said{font-size:13.5px;line-height:1.5}',
+    '.lead-form{margin-top:8px}.lead-row{display:flex;gap:8px}',
+    '.lead-done{font-size:13.5px;line-height:1.5;font-weight:600}',
+    '.lead-no{all:unset;cursor:pointer;display:inline-block;margin-top:7px;font-size:12px;color:var(--muted);text-decoration:underline}',
+    '.lead .signup-input{height:38px;font-size:14px}.lead .signup-send{height:38px}',
     // The badge is lifted out of the flow and hung above the card, so the card keeps its shape
     // whether or not anyone is answering.
     '.contact-wrap{position:relative;margin-top:10px;padding-top:22px}',
@@ -1062,6 +1068,166 @@
     return box;
   }
 
+
+  /**
+   * The conversation that is trying to get somewhere.
+   *
+   * One field at a time, because a form of six boxes in a chat bubble is a form, and people fill
+   * in forms less often than they answer a question. The server decides what comes next and
+   * whether what was typed is real — this only draws it — so the widget cannot be talked into
+   * skipping the consent by anybody editing it in a console.
+   *
+   * Saying no ends it for this visit. Being asked twice is how a helpful thing becomes a pop-up.
+   */
+  function leadFlow(labels, asked, onDone) {
+    var wrap = el('div', 'lead');
+    var said = el('div', 'lead-said');
+    var form = el('form', 'lead-form');
+    var row = el('div', 'lead-row');
+    var input = el('input', 'signup-input');
+    var send = el('button', 'signup-send');
+    var given = {};
+    var declined = false;
+    var busy = false;
+
+    input.type = 'text';
+    input.maxLength = 200;
+    send.type = 'submit';
+    send.appendChild(el('span', null, labels.lead_next));
+    row.appendChild(input);
+    row.appendChild(send);
+
+    var agree = el('label', 'signup-consent');
+    var tick = el('input');
+    tick.type = 'checkbox';
+    agree.hidden = true;
+    agree.appendChild(tick);
+    var agreeText = el('span');
+    agree.appendChild(agreeText);
+
+    var no = el('button', 'lead-no', labels.lead_no);
+    no.type = 'button';
+
+    wrap.appendChild(said);
+    form.appendChild(row);
+    form.appendChild(agree);
+    wrap.appendChild(form);
+    wrap.appendChild(no);
+
+    var field = null;
+
+    function step(body) {
+      if (busy) {
+        return;
+      }
+      busy = true;
+      send.disabled = true;
+
+      fetch(API + '/widget/' + ctx.site + '/lead', {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          id: PAGE_ID, type: PAGE_TYPE, vid: vid, asked: asked(),
+          given: given, consent: body.consent === true, declined: body.declined === true
+        })
+      })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (json) {
+          var data = json && json.data;
+          if (!data) {
+            said.textContent = labels.lead_error;
+
+            return;
+          }
+          draw(data);
+        })
+        .catch(function () { said.textContent = labels.lead_error; })
+        .then(function () { busy = false; send.disabled = false; });
+    }
+
+    function draw(data) {
+      if (data.error) {
+        said.textContent = labels['lead_error_' + data.error] || labels.lead_error;
+      }
+
+      if (data.state === 'declined') {
+        declined = true;
+        wrap.textContent = '';
+        wrap.appendChild(el('div', 'lead-said', labels.lead_declined));
+
+        return;
+      }
+
+      if (data.state === 'done') {
+        wrap.textContent = '';
+        wrap.appendChild(el('div', 'lead-done', data.promise || labels.lead_thanks));
+        if (typeof onDone === 'function') {
+          onDone();
+        }
+
+        return;
+      }
+
+      no.hidden = false;
+
+      if (data.state === 'consent') {
+        field = null;
+        said.textContent = labels.lead_consent_ask;
+        input.hidden = true;
+        agree.hidden = false;
+        agreeText.textContent = data.consent || '';
+        send.firstChild.textContent = labels.lead_finish;
+
+        return;
+      }
+
+      field = data.field;
+      input.hidden = false;
+      agree.hidden = true;
+      input.value = '';
+      input.type = field.type === 'email' ? 'email' : (field.type === 'phone' ? 'tel' : 'text');
+      input.placeholder = field.label || '';
+      input.setAttribute('aria-label', field.label || '');
+      if (!data.error) {
+        said.textContent = (data.offer ? data.offer + ' — ' : '') + String(labels.lead_ask_field).replace(':field', field.label || '');
+      }
+      send.firstChild.textContent = labels.lead_next;
+      input.focus();
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (declined) {
+        return;
+      }
+
+      if (field) {
+        given[field.key] = input.value;
+        step({});
+
+        return;
+      }
+
+      if (!tick.checked) {
+        said.textContent = labels.signup_need_consent;
+
+        return;
+      }
+
+      step({ consent: true });
+    });
+
+    no.addEventListener('click', function () {
+      step({ declined: true });
+    });
+
+    // The first call asks the server what to open with.
+    step({});
+
+    return wrap;
+  }
   /**
    * A quieter way out than WhatsApp: leave a phone or an email and the team comes back with the
    * answer. Closed until it is asked for, so it never competes with the green button above it.
@@ -1185,6 +1351,8 @@
     node.appendChild(el('div', 'ask-note', labels.ask_note));
 
     var busy = false;
+    var answered = 0;
+    var offered = false;
     function ask(question) {
       question = String(question || '').trim();
       if (!question || busy) {
@@ -1209,6 +1377,14 @@
           var data = json && json.data;
           reply.className = 'ask-a';
           reply.textContent = data ? data.answer : labels.ask_error;
+          answered++;
+
+          // A reader who got an answer is a reader worth asking. Once, and only where the shop
+          // has said what it wants — otherwise this is a pop-up with extra steps.
+          if (bank.lead && !offered && answered >= 1) {
+            offered = true;
+            answer.appendChild(leadFlow(labels, function () { return answered; }, null));
+          }
           // Written into a bubble that was already on the screen, so nothing scrolls on its own.
           if (typeof reply.scrollIntoView === 'function') {
             try { reply.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { /* older browsers manage */ }

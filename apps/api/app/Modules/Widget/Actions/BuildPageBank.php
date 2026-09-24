@@ -204,6 +204,9 @@ final class BuildPageBank
         // Whether a shopper may leave a way to be told an answer the assistant did not have.
         $bank['callbacks'] = Features::enabled('shoppers.callbacks', $shopId);
         $bank['signup'] = $this->signUp($shopId);
+        // Whether this shop has said what it wants from a reader. The flow itself is asked for
+        // step by step, so nothing about it is cached with the page.
+        $bank['lead'] = Features::enabled('leads.enabled', $shopId);
 
         if ($this->explain) {
             $bank['explain'] = $this->why;
