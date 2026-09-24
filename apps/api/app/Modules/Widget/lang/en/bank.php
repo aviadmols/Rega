@@ -72,6 +72,7 @@ return [
     'pack' => 'Pieces in the pack',
     'price_unit' => 'Price',
     'reasons' => [
+        'bought_together' => 'Shoppers buy these two together',
         'category_affinity' => 'Usually bought with :category',
     ],
     // What the shop can rewrite in its settings; these are the defaults.

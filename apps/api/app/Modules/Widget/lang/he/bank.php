@@ -72,6 +72,7 @@ return [
     'pack' => 'יחידות באריזה',
     'price_unit' => 'המחיר',
     'reasons' => [
+        'bought_together' => 'לקוחות קונים את שניהם יחד',
         'category_affinity' => 'לרוב נקנה יחד עם :category',
     ],
     // What the shop can rewrite in its settings; these are the defaults.

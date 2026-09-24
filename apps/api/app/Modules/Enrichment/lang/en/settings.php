@@ -33,4 +33,12 @@ return [
         'label' => 'Products a model reads each night',
         'description' => 'How many products are sent to a model nightly. 0 turns model reading off. The monthly spend cap still wins.',
     ],
+    'copurchase_window_days' => [
+        'label' => 'How far back orders are read',
+        'description' => 'The window what-is-bought-with-what is learned from. Longer gives more data; shorter follows the season.',
+    ],
+    'copurchase_min_orders' => [
+        'label' => 'Orders needed before two products are linked',
+        'description' => 'Below this it is a coincidence rather than a pattern, and no relation is made.',
+    ],
 ];

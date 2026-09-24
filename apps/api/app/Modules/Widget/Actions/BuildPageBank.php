@@ -799,6 +799,12 @@ final class BuildPageBank
             ->map(fn (string $source): ?string => $ruleLabels[$source][$this->locale] ?? null)
             ->first(fn (?string $label): bool => $label !== null);
 
+        // What shoppers really did. The number of orders stays here: a shopper is told that
+        // people buy the two together, not how many of them there were.
+        if ($label === null && isset($reasons['bought_together'])) {
+            return __('widget::bank.reasons.bought_together', [], $this->locale);
+        }
+
         // The store's own habit: products of this category are usually linked to that one.
         if ($label === null && $relation->source === 'category_affinity' && isset($reasons['affinity'][1])) {
             return __('widget::bank.reasons.category_affinity', ['category' => $reasons['affinity'][1]], $this->locale);

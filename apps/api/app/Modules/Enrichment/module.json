@@ -6,7 +6,8 @@
         "Runs",
         "Catalog",
         "Admin",
-        "Ai"
+        "Ai",
+        "Analytics"
     ],
     "provider": "EnrichmentServiceProvider",
     "features": [
@@ -99,6 +100,24 @@
             "max": 500,
             "scope": "shop",
             "unit": "requests"
+        },
+        {
+            "name": "copurchase_window_days",
+            "type": "int",
+            "default": 180,
+            "min": 30,
+            "max": 730,
+            "scope": "shop",
+            "unit": "days"
+        },
+        {
+            "name": "copurchase_min_orders",
+            "type": "int",
+            "default": 3,
+            "min": 2,
+            "max": 100,
+            "scope": "shop",
+            "unit": "orders"
         }
     ]
 }

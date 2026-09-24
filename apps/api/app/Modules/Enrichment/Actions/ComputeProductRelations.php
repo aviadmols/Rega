@@ -2,7 +2,9 @@
 
 namespace App\Modules\Enrichment\Actions;
 
+use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Analytics\Models\AnalyticsOrder;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Enrichment\Enums\FactKind;
 use App\Modules\Enrichment\Enums\FactStatus;
@@ -62,6 +64,12 @@ final class ComputeProductRelations
     /** A product with fewer complements than this gets its category's habitual partners. */
     private const AFFINITY_WHEN_FEWER_THAN = 2;
 
+    /** Past this many partners a product's complements stop being a suggestion and become a list. */
+    private const TOGETHER_LIMIT = 4;
+
+    /** An order with more lines than this is a restock, not a decision about what goes together. */
+    private const TOGETHER_MAX_LINES = 12;
+
     /** @var array<string, array<string, mixed>> key "product|related|kind" => row */
     private array $rows = [];
 
@@ -117,6 +125,10 @@ final class ComputeProductRelations
                 $this->add($productId, $linking->id, RelationKind::Complement, 'merchant_reverse', 110 - $i, ['merchant' => 'links_to_this', 'link' => $type]);
             }
         }
+
+        // 2b. What shoppers actually bought together. Evidence rather than anybody's opinion,
+        // so it outranks both the merchant's pairings and the rules.
+        $ruleStats['bought_together'] = $this->applyBoughtTogether($shopId, $byExternal);
 
         // 3. The shop's rules.
         $rules = EnrichmentRelationRules::query()->where('active', true)->orderByDesc('version')->first();
@@ -415,6 +427,94 @@ final class ComputeProductRelations
      * @param  array<string, array<string, mixed>>  $profiles
      * @return array{pairs: int, from: int, related: int}
      */
+    /**
+     * What shoppers actually bought in the same order.
+     *
+     * Every other source here is somebody's opinion about what goes together: the merchant's
+     * cross-sells, a rule written for the trade, a habit read off the merchant's own links. This
+     * one is what happened. A pair that keeps appearing in the same basket is the strongest thing
+     * the shop knows about itself, so it outranks all of them.
+     *
+     * It is deliberately blunt. Two products in one order, counted; below the shop's threshold it
+     * is a coincidence and nothing is written. A basket with more lines than a person decides on
+     * at once is a restock rather than a decision about what goes with what, and is skipped —
+     * otherwise a single trade order would pair everything in it with everything else.
+     *
+     * Nothing about the shopper is read, and nothing leaves the shop: an order here is a list of
+     * product ids and nothing more.
+     *
+     * @param  Collection<string, CatalogProduct>  $byExternal
+     * @return array<string, int>
+     */
+    private function applyBoughtTogether(string $shopId, Collection $byExternal): array
+    {
+        $days = (int) Settings::get('enrichment.copurchase_window_days', $shopId);
+        $need = (int) Settings::get('enrichment.copurchase_min_orders', $shopId);
+
+        $pairs = [];
+        $orders = 0;
+
+        AnalyticsOrder::query()
+            ->where('ordered_at', '>=', now()->subDays($days))
+            // chunkById needs the key it chunks by, so it is selected with the basket.
+            ->select(['id', 'items'])
+            ->chunkById(500, function (Collection $chunk) use (&$pairs, &$orders, $byExternal): void {
+                foreach ($chunk as $order) {
+                    $ids = collect((array) $order->items)
+                        ->pluck('product_id')
+                        ->map(fn ($id): string => (string) $id)
+                        ->filter(fn (string $id): bool => $byExternal->has($id))
+                        ->unique()
+                        ->values();
+
+                    if ($ids->count() < 2 || $ids->count() > self::TOGETHER_MAX_LINES) {
+                        continue;
+                    }
+
+                    $orders++;
+
+                    // Every unordered pair in the basket, counted once.
+                    foreach ($ids as $i => $one) {
+                        foreach ($ids->slice($i + 1) as $other) {
+                            $key = $one < $other ? $one.'|'.$other : $other.'|'.$one;
+                            $pairs[$key] = ($pairs[$key] ?? 0) + 1;
+                        }
+                    }
+                }
+            });
+
+        arsort($pairs);
+        $written = 0;
+        $perProduct = [];
+
+        foreach ($pairs as $key => $count) {
+            if ($count < $need) {
+                break;
+            }
+
+            [$one, $other] = explode('|', $key);
+
+            foreach ([[$one, $other], [$other, $one]] as [$from, $to]) {
+                if (($perProduct[$from] ?? 0) >= self::TOGETHER_LIMIT) {
+                    continue;
+                }
+
+                $product = $byExternal->get($from);
+                $related = $byExternal->get($to);
+
+                if ($product === null || $related === null || ! $related->in_stock || ! $related->purchasable) {
+                    continue;
+                }
+
+                $perProduct[$from] = ($perProduct[$from] ?? 0) + 1;
+                $this->add($product->id, $related->id, RelationKind::Complement, 'bought_together', 200 - ($perProduct[$from] - 1), ['bought_together' => $count]);
+                $written++;
+            }
+        }
+
+        return ['orders' => $orders, 'pairs' => count($pairs), 'written' => $written];
+    }
+
     private function applyCategoryAffinity(Collection $products, array $profiles, array $rules): array
     {
         $byExternal = $products->keyBy('external_id');
