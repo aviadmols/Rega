@@ -172,6 +172,8 @@ return [
         'view_next' => 'Next',
         'chat_who' => 'Lets AI',
         'chat_aside' => 'Answers from the store\'s information',
+        'chat_earlier_one' => 'Show the earlier message',
+        'chat_earlier' => 'Show :n earlier messages',
         'chat_greeting' => 'Hi! I went over this product. What would help you decide?',
         'chat_teaser' => 'I have :count things that will help you decide on this product',
         'chat_teaser_one' => 'I have something that will help you decide on this product',

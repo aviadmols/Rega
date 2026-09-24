@@ -584,7 +584,10 @@
     'background-size:auto,auto,220% 220%;animation:rega-drift 9s ease-in-out infinite alternate;box-shadow:0 14px 40px rgba(var(--g2),.10)}',
     '.chat[hidden]{display:none}',
     '.chat-head{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.chat-head .who{font-weight:500}.chat-head .aside{margin-inline-start:auto;font-size:11px;color:#a1a1aa}',
-    '.thread{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:60vh;overflow-y:auto;scrollbar-width:thin}',
+    '.thread{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:46vh;overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}',
+    '.bubble[hidden]{display:none}',
+    '.earlier{all:unset;box-sizing:border-box;align-self:center;cursor:pointer;padding:4px 12px;border-radius:999px;background:rgba(17,24,39,.05);font-size:12px;color:var(--muted)}',
+    '.earlier:hover,.earlier:focus-visible{background:rgba(17,24,39,.1)}',
     '.bubble{align-self:flex-start;max-width:94%;box-sizing:border-box;padding:9px 12px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid #ececee;font-size:14px;line-height:1.5;animation:rega-in .3s ease-out}',
     '.bubble.me{align-self:flex-end;max-width:78%;border-radius:16px 16px 4px 16px;background:#f4f4f5;border:0}',
     '.bubble .mark{font-family:Georgia,serif;font-size:22px;line-height:.5;color:rgba(var(--g2),.85);margin-inline-end:6px;vertical-align:-4px}',
@@ -1206,6 +1209,10 @@
           var data = json && json.data;
           reply.className = 'ask-a';
           reply.textContent = data ? data.answer : labels.ask_error;
+          // Written into a bubble that was already on the screen, so nothing scrolls on its own.
+          if (typeof reply.scrollIntoView === 'function') {
+            try { reply.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { /* older browsers manage */ }
+          }
           if (data && data.source === 'general') {
             answer.appendChild(el('div', 'ask-general', labels.ask_general));
           }
@@ -1915,6 +1922,66 @@
       card.appendChild(chead);
 
       var thread = el('div', 'thread');
+
+      /**
+       * Keeps the conversation to what is being said now.
+       *
+       * A thread that only grows pushes the newest answer, and then the field itself, off the
+       * bottom of the screen — on a phone within three questions. So everything past the last
+       * few turns is folded away behind a button, which is where a reader would look for it
+       * anyway, and nothing is thrown out.
+       */
+      var KEEP = 4;
+      var expanded = false;
+      var earlier = el('button', 'earlier');
+      earlier.type = 'button';
+      earlier.hidden = true;
+      earlier.addEventListener('click', function () {
+        // Asked for the whole conversation: it stays whole from here on.
+        expanded = true;
+        var all = thread.querySelectorAll('.bubble');
+        for (var i = 0; i < all.length; i++) { all[i].hidden = false; }
+        earlier.hidden = true;
+      });
+      thread.appendChild(earlier);
+
+      function fold() {
+        if (expanded) {
+          return;
+        }
+        var all = thread.querySelectorAll('.bubble');
+        var over = all.length - KEEP;
+        // Run over every bubble each time, not only the new ones: a thread that folded once
+        // and never again grows just as far off the screen, only more confusingly.
+        for (var i = 0; i < all.length; i++) {
+          all[i].hidden = i < over;
+        }
+        earlier.textContent = over === 1
+          ? String(labels.chat_earlier_one || '')
+          : String(labels.chat_earlier || '').replace(':n', over);
+        earlier.hidden = over <= 0;
+      }
+
+      /**
+       * Brings what was just said, and the field it is answered in, back into view.
+       *
+       * The bottom of the card, not the nearest edge of it: with the top of the card already
+       * on the screen a browser considers 'nearest' satisfied and scrolls nothing, which
+       * leaves the newest answer and the field itself below the fold — the whole complaint.
+       */
+      function showLatest() {
+        fold();
+        thread.scrollTop = thread.scrollHeight;
+        if (typeof card.scrollIntoView !== 'function') {
+          return;
+        }
+        try {
+          card.scrollIntoView({ block: 'end', behavior: 'smooth' });
+        } catch (e) {
+          card.scrollIntoView(false);
+        }
+      }
+
       thread.appendChild(el('div', 'bubble', labels.chat_greeting));
       if (quoteText) {
         var said = el('div', 'bubble');
@@ -1979,11 +2046,13 @@
         busy = true;
         var item = rendered[index];
         thread.appendChild(el('div', 'bubble me', item.section.chip || item.section.title));
+        showLatest();
         var dots = el('div', 'bubble dots');
         dots.appendChild(el('span'));
         dots.appendChild(el('span'));
         dots.appendChild(el('span'));
         thread.appendChild(dots);
+        showLatest();
         suggestions.textContent = '';
 
         // A moment of "thinking": the answer was ready before the page finished loading.
@@ -1993,6 +2062,7 @@
           reply.appendChild(el('div', 'bubble-lead', item.section.title));
           reply.appendChild(item.body);
           thread.appendChild(reply);
+          showLatest();
           if (typeof item.body.load === 'function') {
             item.body.load();
           }
