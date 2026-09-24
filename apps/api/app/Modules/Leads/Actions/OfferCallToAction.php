@@ -24,7 +24,24 @@ final class OfferCallToAction implements OffersCallsToAction
             return null;
         }
 
-        $cta = $this->tenant->run($shopId, fn (): ?LeadCta => LeadCta::forPage($pageType, $externalId)->first());
+        $cta = $this->tenant->run($shopId, function () use ($pageType, $externalId): ?LeadCta {
+            $versions = LeadCta::forPage($pageType, $externalId)->get();
+
+            if ($versions->isEmpty()) {
+                return null;
+            }
+
+            // What readers did, where enough of them have done it. A version nobody has seen
+            // enough of keeps its place in the order and gets its turn: a page that only ever
+            // shows its best guess never finds out it was wrong.
+            $rates = LearnFromReaders::rates();
+
+            if ($rates === []) {
+                return $versions->first();
+            }
+
+            return $versions->sortByDesc(fn (LeadCta $version): float => $rates[$version->variant] ?? PHP_FLOAT_MAX)->first();
+        });
 
         if ($cta === null) {
             return null;

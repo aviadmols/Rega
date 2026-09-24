@@ -1113,7 +1113,7 @@
       + 'background:#6366f1;color:#fff;font:inherit;font-size:14px;font-weight:600';
 
     go.addEventListener('click', function () {
-      track('click', { candidate: 'cta', model: 'cta' }, 'inline', { cta: cta.id });
+      track('click', { candidate: 'cta', model: cta.variant }, 'inline', { cta: cta.id });
       if (typeof open === 'function') {
         open();
       }
@@ -1124,7 +1124,7 @@
     card.appendChild(go);
     slot.appendChild(card);
 
-    track('exposure', { candidate: 'cta', model: 'cta' }, 'inline', { cta: cta.id });
+    track('exposure', { candidate: 'cta', model: cta.variant }, 'inline', { cta: cta.id });
   }
   /**
    * The conversation that is trying to get somewhere.
@@ -1145,6 +1145,8 @@
     var send = el('button', 'signup-send');
     var given = {};
     var declined = false;
+    // How many fields this reader has been shown, so an abandoned flow says where it stopped.
+    var step_ = 0;
     var busy = false;
 
     input.type = 'text';
@@ -1210,6 +1212,7 @@
 
       if (data.state === 'declined') {
         declined = true;
+        track('lead_declined', null, null, { step: step_ });
         wrap.textContent = '';
         wrap.appendChild(el('div', 'lead-said', labels.lead_declined));
 
@@ -1217,6 +1220,7 @@
       }
 
       if (data.state === 'done') {
+        track('lead_done', null, null, { steps: step_ });
         wrap.textContent = '';
         wrap.appendChild(el('div', 'lead-done', data.promise || labels.lead_thanks));
         if (typeof onDone === 'function') {
@@ -1239,6 +1243,8 @@
         return;
       }
 
+      step_++;
+      track('lead_step', null, null, { step: step_, field: data.field.type });
       field = data.field;
       input.hidden = false;
       agree.hidden = true;
@@ -1281,6 +1287,7 @@
     });
 
     // The first call asks the server what to open with.
+    track('lead_start', null, null, {});
     step({});
 
     return wrap;
@@ -2272,7 +2279,7 @@
         bubble.appendChild(leadFlow(labels, function () { return answered; }, null));
         thread.appendChild(bubble);
         showLatest();
-        track('click', { candidate: 'cta', model: 'cta' }, 'banner', { cta: cta.id });
+        track('click', { candidate: 'cta', model: cta.variant }, 'banner', { cta: cta.id });
       }
 
       /** Puts a question to the assistant inside the conversation, opening its bubble first. */

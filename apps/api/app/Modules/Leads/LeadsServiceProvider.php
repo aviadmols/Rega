@@ -45,6 +45,15 @@ final class LeadsServiceProvider extends ModuleServiceProvider
                 ->name('leads:write-nightly')
                 ->withoutOverlapping()
                 ->onOneServer();
+
+            // And last, what readers made of all of it — including whether the reviewer's scores
+            // were worth anything.
+            $schedule->command('leads learn --scheduled')
+                ->dailyAt('01:40')
+                ->timezone('Asia/Jerusalem')
+                ->name('leads:learn-nightly')
+                ->withoutOverlapping()
+                ->onOneServer();
         });
 
         // A form that can be posted to as fast as a script wants is a form that will be.

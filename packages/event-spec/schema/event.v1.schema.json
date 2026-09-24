@@ -289,7 +289,11 @@
         "dismiss",
         "answer",
         "add_to_cart",
-        "chat_question"
+        "chat_question",
+        "lead_start",
+        "lead_step",
+        "lead_done",
+        "lead_declined"
       ]
     },
     "eventId": {

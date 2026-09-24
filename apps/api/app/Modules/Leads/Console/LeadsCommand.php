@@ -6,7 +6,9 @@ use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Leads\Actions\ComposeCallsToAction;
+use App\Modules\Leads\Actions\LearnFromReaders;
 use App\Modules\Leads\Actions\WriteCallsToAction;
+use App\Modules\Runs\Models\Run;
 use App\Modules\Tenancy\Enums\ShopStatus;
 use App\Modules\Tenancy\Models\Shop;
 use Illuminate\Console\Command;
@@ -20,7 +22,7 @@ use Illuminate\Console\Command;
 final class LeadsCommand extends Command
 {
     protected $signature = 'leads
-        {step : compose or write}
+        {step : compose, write or learn}
         {target? : shop slug or ID}
         {--scheduled : every shop that is collecting}';
 
@@ -31,6 +33,7 @@ final class LeadsCommand extends Command
         return $tenant->runUnscoped(fn (): int => match ($this->argument('step')) {
             'compose' => $this->compose(),
             'write' => $this->write(),
+            'learn' => $this->each(fn (Shop $shop): Run => app(LearnFromReaders::class)->handle($shop->id)),
             default => $this->failWith('Unknown step.'),
         });
     }
@@ -55,6 +58,32 @@ final class LeadsCommand extends Command
             }
 
             $run = app(ComposeCallsToAction::class)->handle($shop->id);
+            $this->line("{$shop->slug}: ".$run->summary());
+            $failed += $run->status->value === 'succeeded' ? 0 : 1;
+        }
+
+        return $failed === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** @param callable(Shop): Run $step */
+    private function each(callable $step): int
+    {
+        $shops = $this->option('scheduled')
+            ? Shop::query()->where('status', ShopStatus::Active)->orderBy('slug')->get()
+            : collect([$this->shop()])->filter();
+
+        if ($shops->isEmpty()) {
+            return $this->failWith('Shop not found.');
+        }
+
+        $failed = 0;
+
+        foreach ($shops as $shop) {
+            if ($this->option('scheduled') && ! Features::enabled('leads.enabled', $shop->id)) {
+                continue;
+            }
+
+            $run = $step($shop);
             $this->line("{$shop->slug}: ".$run->summary());
             $failed += $run->status->value === 'succeeded' ? 0 : 1;
         }
