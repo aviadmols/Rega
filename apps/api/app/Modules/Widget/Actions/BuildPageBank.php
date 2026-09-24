@@ -9,6 +9,7 @@ use App\Core\Tenancy\TenantContext;
 use App\Modules\Analytics\Models\AnalyticsPopularity;
 use App\Modules\Analytics\Models\AnalyticsPrior;
 use App\Modules\Analytics\Models\AnalyticsScore;
+use App\Modules\Assistant\Contracts\SuggestsQuestions;
 use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogCategory;
 use App\Modules\Catalog\Models\CatalogContent;
@@ -79,6 +80,9 @@ final class BuildPageBank
         'position', 'highlights', 'specs', 'complement', 'family',
         'alternatives', 'on_sale', 'good_for', 'guides', 'article_products',
     ];
+
+    /** More than this in the closed widget stops being an offer and becomes a menu. */
+    private const MAX_SUGGESTED = 4;
 
     private const MAX_POSITIONS = 3;
 
@@ -187,6 +191,10 @@ final class BuildPageBank
         $bank['ask'] = Features::enabled($type === 'product' ? 'assistant.on_products' : 'assistant.on_content', $shopId);
         $bank['asked'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): int => $this->asked($type, $externalId)) : 0;
         $bank['questions'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): array => $this->askedQuestions($type, $externalId)) : [];
+        // What this page is worth being asked, whether or not anybody has asked it yet. The
+        // closed widget puts one of these in front of a shopper who has opened nothing, so it
+        // has to be in the bank rather than fetched when the question box opens.
+        $bank['suggested'] = $bank['ask'] ? $this->tenant->run($shopId, fn (): array => $this->suggestedQuestions($type, $externalId)) : [];
         $bank['contact'] = $this->contact($shopId);
         $bank['popularity'] = $type === 'product' ? $this->tenant->run($shopId, fn (): ?array => $this->popularity($shopId, $externalId)) : null;
         $bank['assurances'] = $this->tenant->run($shopId, fn (): array => $this->assurances($shopId, $type === 'product' ? $externalId : null));
@@ -1263,6 +1271,24 @@ final class BuildPageBank
      *
      * @return list<string>
      */
+    /**
+     * The questions the closed widget may offer, asked or not.
+     *
+     * @return list<string>
+     */
+    private function suggestedQuestions(string $type, string $externalId): array
+    {
+        $page = $type === 'content'
+            ? CatalogContent::query()->active()->where('external_id', $externalId)->first()
+            : CatalogProduct::query()->whereNull('removed_at')->where('external_id', $externalId)->first();
+
+        if ($page === null) {
+            return [];
+        }
+
+        return app(SuggestsQuestions::class)->for($page->id, $type === 'content', $this->locale, self::MAX_SUGGESTED);
+    }
+
     private function askedQuestions(string $type, string $externalId): array
     {
         return $this->answersHere($type, $externalId)

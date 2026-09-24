@@ -5,13 +5,11 @@ namespace App\Modules\Assistant\Http\Controllers;
 use App\Core\Facades\Features;
 use App\Core\Facades\Settings;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Assistant\Contracts\SuggestsQuestions;
 use App\Modules\Assistant\Models\AssistantAnswer;
 use App\Modules\Catalog\Models\CatalogContent;
 use App\Modules\Catalog\Models\CatalogProduct;
 use App\Modules\Connections\Models\StoreConnection;
-use App\Modules\Enrichment\Enums\FactKind;
-use App\Modules\Enrichment\Enums\FactStatus;
-use App\Modules\Enrichment\Models\EnrichmentFact;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -67,12 +65,9 @@ final class QuestionsController
                 ->get(['question', 'answer', 'source', 'asked_count', 'last_asked_at']);
 
             $limit = (int) Settings::get('assistant.suggested_questions', $shopId);
-            // What this page itself is worth being asked, then what shoppers have asked here, then
-            // the questions any page of this kind can answer. Specific before general, always.
-            $suggested = collect($page === null ? [] : self::worthAsking($page->id, $onArticle, $locale))
-                ->concat($answered->sortByDesc('asked_count')->pluck('question'))
-                ->concat((array) __($onArticle ? 'assistant::questions.article' : 'assistant::questions.common', [], $locale))
-                ->unique()->take($limit)->values()->all();
+            $suggested = $page === null
+                ? []
+                : app(SuggestsQuestions::class)->for($page->id, $onArticle, $locale, $limit);
 
             return [
                 'enabled' => true,
@@ -83,38 +78,5 @@ final class QuestionsController
         });
 
         return response()->json(['data' => $data])->header('Cache-Control', 'no-store');
-    }
-
-    /**
-     * The questions this page was found to be worth being asked, worded for the reader.
-     *
-     * The scan stored them as kinds and subjects rather than sentences, so the same reading can
-     * be put to a Hebrew reader and an English one without being read twice.
-     *
-     * @return list<string>
-     */
-    private static function worthAsking(string $pageId, bool $onArticle, string $locale): array
-    {
-        if (! $onArticle) {
-            return [];
-        }
-
-        $asks = EnrichmentFact::query()
-            ->where('content_id', $pageId)
-            ->where('kind', FactKind::Tag)
-            ->where('status', FactStatus::Approved)
-            ->where('key', 'like', 'ask%')
-            ->orderBy('key')
-            ->get(['key', 'value_text', 'value_number', 'quote']);
-
-        return $asks->map(function (EnrichmentFact $ask) use ($locale): ?string {
-            $kind = (string) $ask->quote;
-            $line = (string) __('assistant::questions.asked.'.$kind, [
-                'term' => (string) $ask->value_text,
-                'count' => (string) (int) $ask->value_number,
-            ], $locale);
-
-            return str_contains($line, 'assistant::') ? null : $line;
-        })->filter()->values()->all();
     }
 }

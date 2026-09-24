@@ -230,6 +230,7 @@ return [
         'banner_sale_one' => 'One similar product on sale',
         'banner_ask' => 'Ask me anything about this product',
         'banner_ask_note' => 'Answered from the store\'s information ›',
+        'banner_suggested_note' => 'Tap and I will answer',
         'banner_asked_note' => 'Asked here · see the answer ›',
         'banner_label_compare' => 'Comparison',
         'banner_label_family' => 'Other sizes',

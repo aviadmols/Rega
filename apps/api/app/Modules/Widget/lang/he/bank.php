@@ -230,6 +230,7 @@ return [
         'banner_sale_one' => 'מוצר דומה אחד במבצע',
         'banner_ask' => 'שאלו אותי כל שאלה על המוצר',
         'banner_ask_note' => 'התשובה נכתבת מהמידע של החנות ›',
+        'banner_suggested_note' => 'לחיצה ואני עונה',
         'banner_asked_note' => 'נשאל כאן · לתשובה ›',
         'banner_label_compare' => 'השוואה',
         'banner_label_family' => 'מידות נוספות',

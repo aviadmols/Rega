@@ -2458,14 +2458,19 @@
     // back with no model. With nothing asked yet, the invitation stands in its place.
     var ask = at('ask');
     var asked = (bank.questions || []).filter(function (text) { return text; });
+    // Nobody has asked anything here yet on most pages, and an invitation to ask is a worse
+    // offer than a question. So what the scan decided this page can answer stands in for the
+    // questions that have not been asked, and a click asks it exactly the same way.
+    var offers = asked.length ? asked : (bank.suggested || []).filter(function (text) { return text; });
+    var note = asked.length ? labels.banner_asked_note : labels.banner_suggested_note;
 
-    if (ask && asked.length) {
-      var question = add('asked', bannerRow(bannerTile('ask', QUESTION), asked[0], labels.banner_asked_note), ask.index);
+    if (ask && offers.length) {
+      var question = add('asked', bannerRow(bannerTile('ask', QUESTION), offers[0], note), ask.index);
       var heading = question.node.querySelector('.bn-title');
       var turn = 0;
-      question.ask = asked[0];
+      question.ask = offers[0];
       question.enter = function () {
-        question.ask = asked[turn % asked.length];
+        question.ask = offers[turn % offers.length];
         heading.textContent = question.ask;
         turn++;
       };
