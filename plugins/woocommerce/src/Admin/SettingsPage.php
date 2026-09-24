@@ -83,6 +83,7 @@ final class SettingsPage {
 
 		$types = isset( $_POST['content_post_types'] ) ? (array) wp_unslash( $_POST['content_post_types'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized against registered post types.
 		Settings::save_content_post_types( array_map( 'sanitize_key', $types ) );
+		Settings::save_cta_after_paragraph( isset( $_POST['cta_after_paragraph'] ) ? (int) $_POST['cta_after_paragraph'] : 0 );
 
 		wp_safe_redirect( self::url( array( 'rega_notice' => 'saved' ) ) );
 		exit;
@@ -239,6 +240,16 @@ final class SettingsPage {
 						</label>
 					<?php endforeach; ?>
 				</fieldset>
+
+				<h3><?php esc_html_e( 'Where the offer sits inside a post', 'rega' ); ?></h3>
+				<p class="description"><?php esc_html_e( 'Rega can drop its offer after a paragraph, so you do not have to edit posts. Put [lets_cta] in a post to place it by hand instead — a post that has one is left alone.', 'rega' ); ?></p>
+				<p>
+					<label>
+						<?php esc_html_e( 'After paragraph', 'rega' ); ?>
+						<input type="number" name="cta_after_paragraph" min="0" max="20" value="<?php echo esc_attr( (string) Settings::cta_after_paragraph() ); ?>" style="width:5em" />
+					</label>
+					<span class="description"><?php esc_html_e( '0 places it only where you write the shortcode.', 'rega' ); ?></span>
+				</p>
 				<?php submit_button( __( 'Save', 'rega' ) ); ?>
 			</form>
 		</div>

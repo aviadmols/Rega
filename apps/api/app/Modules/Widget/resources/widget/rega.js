@@ -1073,6 +1073,59 @@
   }
 
 
+
+  /**
+   * Fills the slot the plugin left inside the article.
+   *
+   * The widget itself sits beside the content, where the store's placement setting puts it. An
+   * offer belongs in the middle of the piece, where a reader has had enough of it to want more —
+   * so the plugin leaves an empty element there and this fills it. Only the first: a page with
+   * two offers on it has none.
+   *
+   * It lives outside the shadow root, in the page's own DOM, so it inherits the site's typeface
+   * and reads as part of the article rather than as something bolted on.
+   */
+  function fillCtaSlot(cta, labels, open) {
+    var slot = document.querySelector('.rega-cta[data-rega-cta]');
+
+    if (!slot || !cta || slot.dataset.regaFilled) {
+      return;
+    }
+    slot.dataset.regaFilled = '1';
+
+    var card = document.createElement('div');
+    card.setAttribute('dir', document.documentElement.dir || 'rtl');
+    card.style.cssText = 'margin:22px 0;padding:16px 18px;border-radius:14px;border:1px solid rgba(17,24,39,.1);'
+      + 'background:linear-gradient(135deg,rgba(99,102,241,.06),rgba(236,72,153,.05));font-family:inherit';
+
+    var head = document.createElement('div');
+    head.textContent = cta.headline;
+    head.style.cssText = 'font-size:17px;font-weight:700;line-height:1.35';
+
+    var body = document.createElement('div');
+    body.textContent = cta.body;
+    body.style.cssText = 'margin-top:5px;font-size:14.5px;line-height:1.5;opacity:.85';
+
+    var go = document.createElement('button');
+    go.type = 'button';
+    go.textContent = cta.button;
+    go.style.cssText = 'margin-top:11px;padding:9px 20px;border:0;border-radius:999px;cursor:pointer;'
+      + 'background:#6366f1;color:#fff;font:inherit;font-size:14px;font-weight:600';
+
+    go.addEventListener('click', function () {
+      track('click', { candidate: 'cta', model: 'cta' }, 'inline', { cta: cta.id });
+      if (typeof open === 'function') {
+        open();
+      }
+    });
+
+    card.appendChild(head);
+    card.appendChild(body);
+    card.appendChild(go);
+    slot.appendChild(card);
+
+    track('exposure', { candidate: 'cta', model: 'cta' }, 'inline', { cta: cta.id });
+  }
   /**
    * The conversation that is trying to get somewhere.
    *
@@ -2304,6 +2357,17 @@
 
       // Under the field: what there is to ask about, so the thread above stays the conversation.
       card.appendChild(suggestions);
+
+      // The offer the plugin left inside the article opens this same conversation.
+      if (bank.cta && bank.lead) {
+        fillCtaSlot(bank.cta, labels, function () {
+          openChat();
+          startLead(bank.cta);
+          if (typeof card.scrollIntoView === 'function') {
+            try { card.scrollIntoView({ block: 'end', behavior: 'smooth' }); } catch (e) { card.scrollIntoView(false); }
+          }
+        });
+      }
 
       function openChat() {
         if (!card.hidden) {

@@ -147,6 +147,24 @@ $guide_id = wp_insert_post(
 	)
 );
 
+$cta_id = wp_insert_post(
+	array(
+		'post_type'    => 'post',
+		'post_status'  => 'publish',
+		'post_title'   => 'איפה לשים את ההצעה',
+		'post_content' => '<p>פסקה ראשונה.</p>[lets_cta]<p>פסקה שנייה.</p>',
+	)
+);
+
+$long_id = wp_insert_post(
+	array(
+		'post_type'    => 'post',
+		'post_status'  => 'publish',
+		'post_title'   => 'כתבה ארוכה בלי שורטקוד',
+		'post_content' => '<p>אחת.</p><p>שתיים.</p><p>שלוש.</p><p>ארבע.</p><p>חמש.</p>',
+	)
+);
+
 $protected_id = wp_insert_post(
 	array(
 		'post_type'     => 'post',
@@ -188,6 +206,8 @@ file_put_contents(
 			),
 			'variations'  => $variation_ids,
 			'guide'       => $guide_id,
+			'cta'         => $cta_id,
+			'long'        => $long_id,
 			'protected'   => $protected_id,
 			'terms'       => $terms_id,
 			'woocommerce' => WC()->version,

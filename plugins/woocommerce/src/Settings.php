@@ -57,6 +57,22 @@ final class Settings {
 	 *
 	 * @return list<string>
 	 */
+	/** Which paragraph the offer is dropped after, or 0 to place it only by shortcode. */
+	public static function cta_after_paragraph(): int {
+		$stored = get_option( self::OPTION, array() );
+		$after  = is_array( $stored ) && isset( $stored['cta_after_paragraph'] ) ? (int) $stored['cta_after_paragraph'] : 0;
+
+		return max( 0, min( 20, $after ) );
+	}
+
+	public static function save_cta_after_paragraph( int $after ): void {
+		$stored                        = get_option( self::OPTION, array() );
+		$stored                        = is_array( $stored ) ? $stored : array();
+		$stored['cta_after_paragraph'] = max( 0, min( 20, $after ) );
+
+		update_option( self::OPTION, $stored );
+	}
+
 	public static function content_post_types(): array {
 		$stored = get_option( self::OPTION, array() );
 		$types  = is_array( $stored ) && isset( $stored['content_post_types'] ) ? (array) $stored['content_post_types'] : array( 'post', 'page' );

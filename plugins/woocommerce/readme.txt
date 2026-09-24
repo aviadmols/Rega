@@ -4,7 +4,7 @@ Tags: woocommerce, shopping assistant, product recommendations
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.2.3
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,7 +51,7 @@ WooCommerce > Rega reports shows page views, visitors, hot pages, hot display mo
 
 == Changelog ==
 
-= 0.2.3 =
+= 0.3.0 =
 * Pages are shared alongside posts by default, so what the store promises — returns, shipping, warranty — can be read and shown to shoppers. A shop that saved its own choice keeps it.
 
 = 0.2.2 =

@@ -5,6 +5,7 @@ namespace Rega;
 use Rega\Admin\ReportsPage;
 use Rega\Admin\SettingsPage;
 use Rega\Rest\Routes;
+use Rega\Storefront\CallToAction;
 use Rega\Storefront\OrderReporter;
 use Rega\Storefront\Widget;
 
@@ -21,6 +22,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( Routes::class, 'register' ) );
 
 		Widget::register();
+		CallToAction::register();
 		OrderReporter::register();
 
 		if ( is_admin() ) {

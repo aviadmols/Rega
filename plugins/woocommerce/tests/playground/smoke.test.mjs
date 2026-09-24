@@ -319,3 +319,21 @@ test('repeated wrong tokens lock the address out, even for the right token', asy
   assert.equal(locked.status, 429);
   assert.equal(locked.body.code, 'rega_rate_limited');
 });
+
+test('the call to action is placed where the author asked for it', async () => {
+  // Preview mode by default, and the widget only loads for the team — but the slot itself is
+  // written by the plugin, so a visitor's HTML carries it either way.
+  const html = await pageHtml({ p: String(fixtures.cta) });
+  const slots = html.match(/class="rega-cta"/g) ?? [];
+
+  assert.equal(slots.length, 1, 'one slot, where the shortcode was');
+  assert.ok(html.indexOf('פסקה ראשונה') < html.indexOf('rega-cta'), 'after the first paragraph');
+  assert.ok(html.indexOf('rega-cta') < html.indexOf('פסקה שנייה'), 'and before the second');
+  assert.ok(!html.includes('[lets_cta]'), 'the shortcode itself is never printed');
+});
+
+test('a post with no shortcode gets nothing until a shop asks for a paragraph', async () => {
+  const html = await pageHtml({ p: String(fixtures.long) });
+
+  assert.ok(!html.includes('rega-cta'), 'nothing is added to a post nobody asked about');
+});

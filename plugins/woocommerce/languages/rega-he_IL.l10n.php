@@ -96,5 +96,9 @@ return array(
 		'You do not have permission to manage Rega.' => 'אין לך הרשאה לנהל את Rega.',
 		'Your new token. Copy it now: it is shown only once.' => 'הטוקן החדש שלך. העתק אותו עכשיו, הוא מוצג פעם אחת בלבד.',
 		'never' => 'אף פעם',
+		'After paragraph' => 'אחרי פסקה',
+		'Rega can drop its offer after a paragraph, so you do not have to edit posts. Put [lets_cta] in a post to place it by hand instead — a post that has one is left alone.' => 'אפשר לשים את ההצעה אחרי פסקה, בלי לערוך פוסטים. אפשר גם לכתוב [lets_cta] בפוסט ולמקם אותה ידנית — פוסט שיש בו שורטקוד נשאר כמו שהוא.',
+		'Where the offer sits inside a post' => 'איפה ההצעה יושבת בתוך הפוסט',
+		'0 places it only where you write the shortcode.' => '0 מציב אותה רק במקום שבו כתבתם את השורטקוד.',
 	),
 );
