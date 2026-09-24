@@ -37,6 +37,14 @@ final class LeadsServiceProvider extends ModuleServiceProvider
                 ->name('leads:compose-nightly')
                 ->withoutOverlapping()
                 ->onOneServer();
+
+            // Then the two models, on whatever the templates could only offer generically.
+            $schedule->command('leads write --scheduled')
+                ->dailyAt('01:20')
+                ->timezone('Asia/Jerusalem')
+                ->name('leads:write-nightly')
+                ->withoutOverlapping()
+                ->onOneServer();
         });
 
         // A form that can be posted to as fast as a script wants is a form that will be.

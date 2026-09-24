@@ -38,6 +38,45 @@
             "max": 3650,
             "scope": "shop",
             "unit": "days"
+        },
+        {
+            "name": "writer_model",
+            "type": "string",
+            "default": "gpt-5.4-mini",
+            "scope": "global"
+        },
+        {
+            "name": "reviewer_model",
+            "type": "string",
+            "default": "gpt-5.4-nano",
+            "scope": "global"
+        },
+        {
+            "name": "reviewer_bar",
+            "type": "int",
+            "default": 70,
+            "min": 40,
+            "max": 95,
+            "scope": "global",
+            "unit": "points"
+        },
+        {
+            "name": "model_tokens",
+            "type": "int",
+            "default": 700,
+            "min": 200,
+            "max": 3000,
+            "scope": "global",
+            "unit": "tokens"
+        },
+        {
+            "name": "pages_written_per_night",
+            "type": "int",
+            "default": 20,
+            "min": 0,
+            "max": 500,
+            "scope": "shop",
+            "unit": "pages"
         }
     ]
 }
