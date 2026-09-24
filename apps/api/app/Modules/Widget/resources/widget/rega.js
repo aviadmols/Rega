@@ -133,6 +133,10 @@
   var queue = [];
   var shop = null;
   var bank = null;
+  // How many questions the assistant has answered on this page, and whether the offer has been
+  // made. Once per page: being asked twice is how a helpful thing turns into a pop-up.
+  var answered = 0;
+  var offered = false;
   var teamPreview = false;
   var viewed = null;
 
@@ -1351,8 +1355,6 @@
     node.appendChild(el('div', 'ask-note', labels.ask_note));
 
     var busy = false;
-    var answered = 0;
-    var offered = false;
     function ask(question) {
       question = String(question || '').trim();
       if (!question || busy) {
@@ -2081,7 +2083,9 @@
       frames.forEach(function (frame) {
         frame.node.addEventListener('click', function () {
           openChat();
-          if (frame.ask) {
+          if (frame.cta) {
+            startLead(frame.cta);
+          } else if (frame.ask) {
             askInChat(frame.ask);
           } else if (frame.index !== null) {
             pick(frame.index);
@@ -2200,6 +2204,23 @@
         });
       }
       offer(null);
+
+      /**
+       * Opens the flow straight away, for a reader who came to the offer rather than to a
+       * question. They can still ask anything: the question box is a bubble away.
+       */
+      function startLead(cta) {
+        if (offered) {
+          return;
+        }
+        offered = true;
+        var bubble = el('div', 'bubble');
+        bubble.appendChild(el('div', 'bubble-lead', cta.headline));
+        bubble.appendChild(leadFlow(labels, function () { return answered; }, null));
+        thread.appendChild(bubble);
+        showLatest();
+        track('click', { candidate: 'cta', model: 'cta' }, 'banner', { cta: cta.id });
+      }
 
       /** Puts a question to the assistant inside the conversation, opening its bubble first. */
       function askInChat(text) {
@@ -2627,6 +2648,14 @@
       var kind = assurance.scope === 'product' ? 'made' : 'promise';
       add(kind, bannerRow(bannerTile(kind, kind === 'made' ? STAR : SHIELD), assurance.text, assurance.note));
     });
+
+    // What this page offers a reader. It goes before the question frame: a shopper who is
+    // ready to talk to somebody should meet that offer before being handed another question.
+    if (bank.cta && bank.lead) {
+      var offer = add('cta', bannerRow(bannerTile('ask', SPARK), bank.cta.headline, bank.cta.body));
+      offer.ask = null;
+      offer.cta = bank.cta;
+    }
 
     // A question a shopper really asked here, when there is one. It reached this frame only
     // because both checks passed — the question was about this page and the answer was about it

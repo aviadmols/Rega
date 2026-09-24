@@ -9,7 +9,8 @@
         "Analytics",
         "Shoppers",
         "Assistant",
-        "Admin"
+        "Admin",
+        "Leads"
     ],
     "provider": "WidgetServiceProvider",
     "features": [

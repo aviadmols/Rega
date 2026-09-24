@@ -24,6 +24,7 @@ use App\Modules\Enrichment\Models\EnrichmentProductRelation;
 use App\Modules\Enrichment\Models\EnrichmentRanking;
 use App\Modules\Enrichment\Models\EnrichmentRelationRules;
 use App\Modules\Enrichment\Models\EnrichmentVocabulary;
+use App\Modules\Leads\Contracts\OffersCallsToAction;
 use App\Modules\Tenancy\Models\Shop;
 use App\Modules\Widget\Models\WidgetCuration;
 use App\Modules\Widget\Support\GuideRelevance;
@@ -207,6 +208,8 @@ final class BuildPageBank
         // Whether this shop has said what it wants from a reader. The flow itself is asked for
         // step by step, so nothing about it is cached with the page.
         $bank['lead'] = Features::enabled('leads.enabled', $shopId);
+        // What this page offers a reader, in the version being tried on them.
+        $bank['cta'] = app(OffersCallsToAction::class)->forPage($shopId, $type, $externalId, $this->locale);
 
         if ($this->explain) {
             $bank['explain'] = $this->why;
